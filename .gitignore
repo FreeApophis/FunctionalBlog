@@ -4,6 +4,9 @@
 *.sln.docstates
 /.vs
 
+# Claude config
+.claude
+
 # Build results
 
 [Dd]ebug/

@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 public static class Router
 {
     public static Middleware Create() => _ => request => env =>
@@ -16,7 +18,8 @@ public static class Router
             _ => null
         };
 
-    private static bool TryArticlePath(string path, out ArticleId id)
+
+    private static bool TryArticlePath(string path, [NotNullWhen(true)] out ArticleId? id)
     {
         id = default;
 
