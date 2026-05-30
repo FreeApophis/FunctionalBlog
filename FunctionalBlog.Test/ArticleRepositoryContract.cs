@@ -1,0 +1,89 @@
+namespace FunctionalBlog.Test;
+
+public abstract class ArticleRepositoryContract
+{
+    protected abstract IArticleRepository CreateRepository();
+
+    [Fact]
+    public async Task Save_then_Find_returns_the_saved_article()
+    {
+        var repo = CreateRepository();
+        var id = await repo.NextId();
+        var article = AnArticle(id);
+
+        await repo.Save(article);
+
+        Assert.Equal(article, await repo.Find(id));
+    }
+
+    [Fact]
+    public async Task Find_returns_null_for_an_unknown_id()
+    {
+        var repo = CreateRepository();
+
+        Assert.Null(await repo.Find(new ArticleId(987_654)));
+    }
+
+    [Fact]
+    public async Task NextId_returns_an_id_that_does_not_yet_exist()
+    {
+        var repo = CreateRepository();
+
+        var id = await repo.NextId();
+
+        Assert.Null(await repo.Find(id));
+    }
+
+    [Fact]
+    public async Task NextId_returns_distinct_values_across_calls()
+    {
+        var repo = CreateRepository();
+
+        var first = await repo.NextId();
+        var second = await repo.NextId();
+
+        Assert.NotEqual(first, second);
+    }
+
+    [Fact]
+    public async Task All_returns_saved_articles_in_descending_CreatedAt_order()
+    {
+        var repo = CreateRepository();
+        var older = AnArticle(await repo.NextId(), createdAt: new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var newer = AnArticle(await repo.NextId(), createdAt: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+
+        await repo.Save(older);
+        await repo.Save(newer);
+
+        var saved = (await repo.All())
+            .Where(a => a.Id == older.Id || a.Id == newer.Id)
+            .ToList();
+
+        Assert.Equal(new[] { newer, older }, saved);
+    }
+
+    [Fact]
+    public async Task Save_replaces_an_existing_article_with_the_same_id()
+    {
+        var repo = CreateRepository();
+        var id = await repo.NextId();
+        var original = AnArticle(id, title: "Original");
+        var updated = AnArticle(id, title: "Aktualisiert");
+
+        await repo.Save(original);
+        await repo.Save(updated);
+
+        Assert.Equal(updated, await repo.Find(id));
+    }
+
+    private static Article AnArticle(
+        ArticleId id,
+        string title = "Titel",
+        string text = "Text",
+        DateTimeOffset? createdAt = null) =>
+        Article.Create(
+            id,
+            new ArticleTitle(title),
+            new ArticleText(text),
+            createdAt ?? new DateTimeOffset(2026, 5, 29, 12, 0, 0, TimeSpan.Zero));
+}

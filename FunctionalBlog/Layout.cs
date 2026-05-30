@@ -8,76 +8,7 @@ public static class Layout
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
             <title>{{Html.Encode(title)}}</title>
-            <style>
-                :root {
-                    color-scheme: light dark;
-                    --bg: #f3eadc;
-                    --fg: #1f2933;
-                    --muted: #6b7280;
-                    --card: #fffaf1;
-                    --accent: #6d4aff;
-                    --danger: #a3333d;
-                    --line: rgba(0,0,0,.12);
-                }
-
-                @media (prefers-color-scheme: dark) {
-                    :root {
-                        --bg: #17212b;
-                        --fg: #edf2f7;
-                        --muted: #a8b3c2;
-                        --card: #202c38;
-                        --accent: #d3a84f;
-                        --danger: #ff8a8a;
-                        --line: rgba(255,255,255,.15);
-                    }
-                }
-
-                * { box-sizing: border-box; }
-                body {
-                    margin: 0;
-                    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-                    background: var(--bg);
-                    color: var(--fg);
-                    line-height: 1.6;
-                }
-                main {
-                    width: min(760px, calc(100vw - 2rem));
-                    margin: 3rem auto;
-                }
-                article, form, .errors {
-                    background: var(--card);
-                    border: 1px solid var(--line);
-                    border-radius: 1rem;
-                    padding: 1rem 1.25rem;
-                    margin: 1rem 0;
-                    box-shadow: 0 10px 30px rgba(0,0,0,.06);
-                }
-                h1, h2 { line-height: 1.15; }
-                a { color: var(--accent); font-weight: 650; }
-                small { color: var(--muted); display: block; margin-bottom: .75rem; }
-                label { display: grid; gap: .35rem; margin: 1rem 0; font-weight: 650; }
-                input, textarea {
-                    width: 100%;
-                    border: 1px solid var(--line);
-                    border-radius: .75rem;
-                    padding: .8rem;
-                    font: inherit;
-                    background: color-mix(in srgb, var(--card), white 8%);
-                    color: var(--fg);
-                }
-                button {
-                    border: 0;
-                    border-radius: 999px;
-                    padding: .75rem 1.2rem;
-                    font: inherit;
-                    font-weight: 750;
-                    cursor: pointer;
-                    background: var(--accent);
-                    color: white;
-                }
-                .errors { color: var(--danger); }
-                .post-text { white-space: normal; }
-            </style>
+            <link rel="stylesheet" href="/styles.css" />
         </head>
         <body>
             <main>{{body}}</main>

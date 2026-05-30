@@ -1,7 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 	<PropertyGroup>
-		<TargetFramework>net10.0</TargetFramework>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
 	</PropertyGroup>
+  
+	<ItemGroup>
+		<Content Remove="wwwroot\styles.css" />
+		<EmbeddedResource Include="wwwroot\styles.css" />
+	</ItemGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\FunctionalBlog.Application\FunctionalBlog.Application.csproj" />
+		<ProjectReference Include="..\FunctionalBlog.DataAccess\FunctionalBlog.DataAccess.csproj" />
+	</ItemGroup>
 </Project>

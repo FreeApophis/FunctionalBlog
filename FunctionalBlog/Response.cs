@@ -11,6 +11,9 @@ public sealed record Response(
     public static Response Text(string body, int status = 200) =>
         new(status, "text/plain; charset=utf-8", EmptyHeaders, body);
 
+    public static Response Css(string body, int status = 200) =>
+        new(status, "text/css; charset=utf-8", EmptyHeaders, body);
+
     public static Response Redirect(string location) =>
         new(303, "text/plain; charset=utf-8", new Dictionary<string, string>
         {

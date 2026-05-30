@@ -12,6 +12,7 @@ public static class Router
         (request.Method, request.Path) switch
         {
             ("GET", "/") => BlogHandlers.Index,
+            ("GET", "/styles.css") => StaticHandlers.Styles,
             ("GET", "/articles/new") => BlogHandlers.NewArticleForm,
             ("POST", "/articles") => BlogHandlers.CreateArticle,
             _ when request.Method == "GET" && TryArticlePath(request.Path, out var id) => BlogHandlers.ShowArticle(id),
