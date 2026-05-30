@@ -11,6 +11,7 @@ public static class Seeder
     {
         await SeedRoles(env);
         await SeedAdminUser(env);
+        await SeedSampleArticles(env);
     }
 
     private static async ValueTask SeedRoles(Env env)
@@ -51,7 +52,42 @@ public static class Seeder
 
         var id = await env.Users.NextId();
         var hash = env.PasswordHasher.Hash(AdminPassword);
-        var user = User.Create(id, email, hash, [AdminRoleName], env.Clock.Now);
+        var user = User.Create(id, email, new DisplayName("Admin"), hash, [AdminRoleName], env.Clock.Now);
         await env.Users.Save(user);
+    }
+
+    private static async ValueTask SeedSampleArticles(Env env)
+    {
+        if ((await env.Articles.All()).Count > 0)
+        {
+            return;
+        }
+
+        var admin = await env.Users.FindByEmail(Email.Parse(AdminEmail)!);
+
+        if (admin is null)
+        {
+            return;
+        }
+
+        var id1 = await env.Articles.NextId();
+        await env.Articles.Save(Article.Create(
+            id1,
+            new ArticleTitle("Hallo funktionales Blog"),
+            new ArticleTeaser("Ein funktionaler Ansatz für einen modernen Blog mit .NET 10."),
+            new ArticleText("Dieser Blog wurde mit einem funktionalen Ansatz in .NET 10 entwickelt. " +
+                "Das Kernstück ist eine curried, reader-style Pipeline ausgedrückt mit Delegates."),
+            admin.Id,
+            new DateTimeOffset(2026, 1, 15, 10, 0, 0, TimeSpan.Zero)));
+
+        var id2 = await env.Articles.NextId();
+        await env.Articles.Save(Article.Create(
+            id2,
+            new ArticleTitle("Macarons selbst backen"),
+            new ArticleTeaser("Macarons sind kleine französische Mandelbaisers mit einer Cremefüllung."),
+            new ArticleText("Macarons sind kleine französische Mandelbaisers mit einer Cremefüllung. " +
+                "Das Rezept ist anspruchsvoll, aber das Ergebnis ist köstlich."),
+            admin.Id,
+            new DateTimeOffset(2026, 2, 20, 14, 0, 0, TimeSpan.Zero)));
     }
 }

@@ -5,6 +5,7 @@ public static class ArticleForm
     public static DecodedArticleForm Decode(Request request)
     {
         var title = request.Form.GetValueOrDefault("title", string.Empty).Trim();
+        var teaser = request.Form.GetValueOrDefault("teaser", string.Empty).Trim();
         var text = request.Form.GetValueOrDefault("text", string.Empty).Trim();
 
         var errors = new List<string>();
@@ -12,6 +13,11 @@ public static class ArticleForm
         if (title.Length < 3)
         {
             errors.Add("Der Titel muss mindestens 3 Zeichen lang sein.");
+        }
+
+        if (teaser.Length < 10)
+        {
+            errors.Add("Der Teaser muss mindestens 10 Zeichen lang sein.");
         }
 
         if (text.Length < 10)
@@ -23,6 +29,7 @@ public static class ArticleForm
             IsValid: errors.Count == 0,
             Errors: errors,
             Title: title,
+            Teaser: teaser,
             Text: text);
     }
 }

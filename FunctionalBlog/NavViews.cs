@@ -17,7 +17,7 @@ public static class NavViews
                 ? " · " + Html.Link("/admin/users", "Admin")
                 : string.Empty;
 
-            links += $" · {Html.Encode(user.Email.Value)} · {settingsLink} · {logoutForm}{adminLink}";
+            links += $" · {Html.Encode(user.DisplayName.Value)} · {settingsLink} · {logoutForm}{adminLink}";
         }
         else
         {

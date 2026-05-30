@@ -2,9 +2,13 @@ namespace FunctionalBlog.Identity;
 
 public static class AuthViews
 {
-    public static string RegisterForm(IReadOnlyList<string> errors, string email, IPrincipal principal)
+    public static string RegisterForm(IReadOnlyList<string> errors, string email, string displayName, IPrincipal principal)
     {
         var fields = $"""
+            <label>
+                Anzeigename
+                <input type="text" name="displayName" value="{Html.Encode(displayName)}" />
+            </label>
             <label>
                 E-Mail
                 <input type="email" name="email" value="{Html.Encode(email)}" />

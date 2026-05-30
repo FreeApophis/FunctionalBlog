@@ -5,26 +5,11 @@ namespace FunctionalBlog.DataAccess.Articles;
 public sealed class InMemoryArticleRepository : IArticleRepository
 {
     private readonly ConcurrentDictionary<int, Article> _articles = new();
-    private int _nextId = 3;
-
-    public InMemoryArticleRepository()
-    {
-        _articles[1] = Article.Create(
-            new ArticleId(1),
-            new ArticleTitle("Hallo funktionales Blog"),
-            new ArticleText("Dieser Blog wurde mit einem funktionalen Ansatz in .NET 10 entwickelt."),
-            DateTimeOffset.UtcNow);
-
-        _articles[2] = Article.Create(
-            new ArticleId(2),
-            new ArticleTitle("Macarons selbst backen"),
-            new ArticleText("Macarons sind kleine französische Mandelbaisers mit einer Cremefüllung."),
-            DateTimeOffset.UtcNow);
-    }
+    private int _nextId = 1;
 
     public ValueTask<IReadOnlyList<Article>> All() =>
         ValueTask.FromResult<IReadOnlyList<Article>>(
-            _articles.Values.OrderByDescending(x => x.CreatedAt).ToList());
+            _articles.Values.OrderByDescending(x => x.PublishedAt).ToList());
 
     public ValueTask<Article?> Find(ArticleId id) =>
         ValueTask.FromResult(_articles.TryGetValue(id.Value, out var article) ? article : null);

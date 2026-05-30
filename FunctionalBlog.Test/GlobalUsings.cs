@@ -1,4 +1,3 @@
-global using FunctionalBlog;
 global using FunctionalBlog.Application.Articles;
 global using FunctionalBlog.Application.Identity;
 global using FunctionalBlog.Application.Roles;
@@ -11,7 +10,4 @@ global using FunctionalBlog.Domain.Identity;
 global using FunctionalBlog.Domain.Roles;
 global using FunctionalBlog.Identity;
 global using FunctionalBlog.Roles;
-global using FunctionalBlog.Test;
-global using FunctionalBlog.Test.Articles;
-global using FunctionalBlog.Test.Identity;
-global using FunctionalBlog.Test.Roles;
+global using App = FunctionalBlog.Pipeline.App<FunctionalBlog.Env, FunctionalBlog.Request, FunctionalBlog.Response>;

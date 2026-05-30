@@ -9,5 +9,6 @@
 	<ItemGroup>
 		<ProjectReference Include="..\FunctionalBlog.Application\FunctionalBlog.Application.csproj" />
 		<ProjectReference Include="..\FunctionalBlog.DataAccess\FunctionalBlog.DataAccess.csproj" />
+		<ProjectReference Include="..\FunctionalBlog.Pipeline\FunctionalBlog.Pipeline.csproj" />
 	</ItemGroup>
 </Project>

@@ -79,7 +79,7 @@ public sealed class AdminHandlerTests
     {
         var env = BuildAdminEnv();
         var userId = await env.Users.NextId();
-        await env.Users.Save(User.Create(userId, new Email("user@blog.de"), "hash", [], DateTimeOffset.UtcNow));
+        await env.Users.Save(User.Create(userId, new Email("user@blog.de"), new DisplayName("Testbenutzer"), "hash", [], DateTimeOffset.UtcNow));
 
         var response = await AdminHandlers.UpdateUserRoles(userId.Value)(
             AssignRolesRequest("Admin"))(env);
@@ -95,14 +95,14 @@ public sealed class AdminHandlerTests
         var roleRule = new PermissionRule("Manage", "role");
         var ruleRule = new PermissionRule("Manage", "rule");
         var role = new Role(new RoleId(1), "Admin", [adminRule, roleRule, ruleRule]);
-        var user = User.Create(new UserId(1), new Email("admin@blog.de"), "hash", ["Admin"], DateTimeOffset.UtcNow);
+        var user = User.Create(new UserId(1), new Email("admin@blog.de"), new DisplayName("Admin"), "hash", ["Admin"], DateTimeOffset.UtcNow);
         var principal = new AuthenticatedUser(user, [role]);
         return BuildEnv(principal);
     }
 
     private static Env BuildUserEnv()
     {
-        var user = User.Create(new UserId(2), new Email("user@blog.de"), "hash", [], DateTimeOffset.UtcNow);
+        var user = User.Create(new UserId(2), new Email("user@blog.de"), new DisplayName("Testbenutzer"), "hash", [], DateTimeOffset.UtcNow);
         var principal = new AuthenticatedUser(user, []);
         return BuildEnv(principal);
     }

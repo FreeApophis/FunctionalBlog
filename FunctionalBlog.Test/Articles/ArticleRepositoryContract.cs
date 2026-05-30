@@ -44,11 +44,11 @@ public abstract class ArticleRepositoryContract
     }
 
     [Fact]
-    public async Task All_returns_saved_articles_in_descending_CreatedAt_order()
+    public async Task All_returns_saved_articles_in_descending_PublishedAt_order()
     {
         var repo = CreateRepository();
-        var older = AnArticle(await repo.NextId(), createdAt: new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
-        var newer = AnArticle(await repo.NextId(), createdAt: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var older = AnArticle(await repo.NextId(), publishedAt: new DateTimeOffset(2025, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var newer = AnArticle(await repo.NextId(), publishedAt: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
 
         await repo.Save(older);
         await repo.Save(newer);
@@ -80,10 +80,12 @@ public abstract class ArticleRepositoryContract
         ArticleId id,
         string title = "Titel",
         string text = "Text",
-        DateTimeOffset? createdAt = null) =>
+        DateTimeOffset? publishedAt = null) =>
         Article.Create(
             id,
             new ArticleTitle(title),
+            new ArticleTeaser("Ein kurzer Teaser für den Artikel."),
             new ArticleText(text),
-            createdAt ?? new DateTimeOffset(2026, 5, 29, 12, 0, 0, TimeSpan.Zero));
+            new UserId(1),
+            publishedAt ?? new DateTimeOffset(2026, 5, 29, 12, 0, 0, TimeSpan.Zero));
 }

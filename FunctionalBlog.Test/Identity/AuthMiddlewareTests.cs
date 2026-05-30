@@ -29,7 +29,7 @@ public sealed class AuthMiddlewareTests
     {
         var env = BuildEnv();
         var userId = await env.Users.NextId();
-        var user = User.Create(userId, new Email("test@blog.de"), "hash", [], DateTimeOffset.UtcNow);
+        var user = User.Create(userId, new Email("test@blog.de"), new DisplayName("Testbenutzer"), "hash", [], DateTimeOffset.UtcNow);
         await env.Users.Save(user);
 
         var expired = new Session("tok", userId, DateTimeOffset.UtcNow.AddMinutes(-1));
@@ -47,7 +47,7 @@ public sealed class AuthMiddlewareTests
     {
         var env = BuildEnv();
         var userId = await env.Users.NextId();
-        var user = User.Create(userId, new Email("test@blog.de"), "hash", [], DateTimeOffset.UtcNow);
+        var user = User.Create(userId, new Email("test@blog.de"), new DisplayName("Testbenutzer"), "hash", [], DateTimeOffset.UtcNow);
         await env.Users.Save(user);
 
         var session = new Session("tok", userId, DateTimeOffset.UtcNow.AddDays(30));

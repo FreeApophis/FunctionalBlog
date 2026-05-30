@@ -82,6 +82,7 @@ public sealed class AuthHelperTests
         var user = User.Create(
             new UserId(1),
             new Email("test@blog.de"),
+            new DisplayName("Testbenutzer"),
             "hash",
             [],
             DateTimeOffset.UtcNow);

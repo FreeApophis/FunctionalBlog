@@ -5,20 +5,27 @@ public static class BlogHandlers
     public static App Index => _ => async env =>
     {
         var articles = await env.Articles.All();
-        return Response.Html(BlogViews.Index(articles, env.CurrentUser));
+        var users = await env.Users.All();
+        var authorNames = users.ToDictionary(u => u.Id, u => u.DisplayName.Value);
+        return Response.Html(BlogViews.Index(articles, env.CurrentUser, authorNames));
     };
 
     public static App ShowArticle(ArticleId id) => _ => async env =>
     {
         var article = await env.Articles.Find(id);
 
-        return article is null
-            ? Response.NotFound()
-            : Response.Html(BlogViews.Show(article, env.CurrentUser));
+        if (article is null)
+        {
+            return Response.NotFound();
+        }
+
+        var author = await env.Users.FindById(article.AuthorId);
+        var authorName = author?.DisplayName.Value ?? "Unbekannt";
+        return Response.Html(BlogViews.Show(article, env.CurrentUser, authorName));
     };
 
     public static App NewArticleForm => _ => env =>
-        ValueTask.FromResult(Response.Html(BlogViews.Form(Array.Empty<string>(), string.Empty, string.Empty, env.CurrentUser)));
+        ValueTask.FromResult(Response.Html(BlogViews.Form([], string.Empty, string.Empty, string.Empty, env.CurrentUser)));
 
     public static App CreateArticle => request => async env =>
     {
@@ -26,14 +33,17 @@ public static class BlogHandlers
 
         if (!decoded.IsValid)
         {
-            return Response.Html(BlogViews.Form(decoded.Errors, decoded.Title, decoded.Text, env.CurrentUser), 400);
+            return Response.Html(BlogViews.Form(decoded.Errors, decoded.Title, decoded.Teaser, decoded.Text, env.CurrentUser), 400);
         }
 
+        var authorId = ((AuthenticatedUser)env.CurrentUser).Id;
         var article = Article.Create(
             id: await env.Articles.NextId(),
             title: new ArticleTitle(decoded.Title),
+            teaser: new ArticleTeaser(decoded.Teaser),
             text: new ArticleText(decoded.Text),
-            createdAt: env.Clock.Now);
+            authorId: authorId,
+            publishedAt: env.Clock.Now);
 
         await env.Articles.Save(article);
 

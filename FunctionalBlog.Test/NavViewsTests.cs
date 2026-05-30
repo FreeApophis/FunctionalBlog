@@ -32,13 +32,13 @@ public sealed class NavViewsTests
     }
 
     [Fact]
-    public void Nav_for_authenticated_user_shows_email()
+    public void Nav_for_authenticated_user_shows_display_name()
     {
         var user = BuildAuthUser([]);
 
         var nav = NavViews.Nav(user);
 
-        Assert.Contains("test@blog.de", nav);
+        Assert.Contains("Testbenutzer", nav);
     }
 
     [Fact]
@@ -69,6 +69,7 @@ public sealed class NavViewsTests
         var user = User.Create(
             new UserId(1),
             new Email("test@blog.de"),
+            new DisplayName("Testbenutzer"),
             "hash",
             [],
             DateTimeOffset.UtcNow);

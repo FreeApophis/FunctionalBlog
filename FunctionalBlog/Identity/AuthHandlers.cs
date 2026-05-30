@@ -8,7 +8,7 @@ public static class AuthHandlers
 
     public static App NewRegisterForm => _ => env =>
         ValueTask.FromResult(Response.Html(
-            AuthViews.RegisterForm([], string.Empty, env.CurrentUser)));
+            AuthViews.RegisterForm([], string.Empty, string.Empty, env.CurrentUser)));
 
     public static App Register => request => async env =>
     {
@@ -20,6 +20,7 @@ public static class AuthHandlers
                 AuthViews.RegisterForm(
                     decoded.Errors,
                     request.Form.GetValueOrDefault("email", string.Empty),
+                    request.Form.GetValueOrDefault("displayName", string.Empty),
                     env.CurrentUser),
                 400);
         }
@@ -35,7 +36,7 @@ public static class AuthHandlers
                 ? (IReadOnlyList<string>)[defaultRole.Name]
                 : [];
 
-            existingUser = User.Create(id, decoded.Email!, hash, roleNames, env.Clock.Now);
+            existingUser = User.Create(id, decoded.Email!, new DisplayName(decoded.DisplayName), hash, roleNames, env.Clock.Now);
             await env.Users.Save(existingUser);
         }
 

@@ -59,6 +59,7 @@ public sealed class AuthenticatedUserTests
         var user = User.Create(
             new UserId(1),
             new Email("test@blog.de"),
+            new DisplayName("Testbenutzer"),
             "hash",
             roles.Select(r => r.Name).ToList(),
             new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));

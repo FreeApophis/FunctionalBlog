@@ -8,7 +8,7 @@ public static class AdminViews
     public static string UserList(IReadOnlyList<User> users, IPrincipal principal)
     {
         static string UserRow(User u) =>
-            Html.Link($"/admin/users/{u.Id.Value}", Html.Encode(u.Email.Value)) +
+            Html.Link($"/admin/users/{u.Id.Value}", $"{Html.Encode(u.DisplayName.Value)} ({Html.Encode(u.Email.Value)})") +
             " – " + Html.Encode(string.Join(", ", u.RoleNames));
 
         var body = Html.H1("Benutzer") +

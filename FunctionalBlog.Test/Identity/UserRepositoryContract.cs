@@ -86,6 +86,7 @@ public abstract class UserRepositoryContract
         User.Create(
             id,
             new Email(email),
+            new DisplayName("Testbenutzer"),
             "hash",
             [],
             new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));

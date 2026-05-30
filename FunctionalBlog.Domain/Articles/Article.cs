@@ -3,9 +3,17 @@ namespace FunctionalBlog.Domain.Articles;
 public sealed record Article(
     ArticleId Id,
     ArticleTitle Title,
+    ArticleTeaser Teaser,
     ArticleText Text,
-    DateTimeOffset CreatedAt)
+    UserId AuthorId,
+    DateTimeOffset PublishedAt)
 {
-    public static Article Create(ArticleId id, ArticleTitle title, ArticleText text, DateTimeOffset createdAt) =>
-        new(id, title, text, createdAt);
+    public static Article Create(
+        ArticleId id,
+        ArticleTitle title,
+        ArticleTeaser teaser,
+        ArticleText text,
+        UserId authorId,
+        DateTimeOffset publishedAt) =>
+        new(id, title, teaser, text, authorId, publishedAt);
 }

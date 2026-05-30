@@ -161,7 +161,7 @@ public sealed class AuthHandlerTests
             "/register",
             Empty,
             Empty,
-            new Dictionary<string, string> { ["email"] = email, ["password"] = password, ["confirmation"] = confirmation },
+            new Dictionary<string, string> { ["email"] = email, ["displayName"] = "Testbenutzer", ["password"] = password, ["confirmation"] = confirmation },
             Empty);
 
     private static Request LoginRequest(string email, string password) =>

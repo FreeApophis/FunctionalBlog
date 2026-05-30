@@ -5,7 +5,7 @@ public static class UserSettingsViews
     public static string Settings(AuthenticatedUser user, IReadOnlyList<string> errors, IPrincipal principal)
     {
         var body = Html.H1("Einstellungen") +
-            Html.P($"Angemeldet als: {Html.Encode(user.Email.Value)}") +
+            Html.P($"Angemeldet als: {Html.Encode(user.DisplayName.Value)} ({Html.Encode(user.Email.Value)})") +
             ChangePasswordSection(errors);
         return Layout.Page("Einstellungen", body, principal);
     }

@@ -2,13 +2,14 @@ namespace FunctionalBlog.Articles;
 
 public static class BlogViews
 {
-    public static string Index(IReadOnlyList<Article> articles, IPrincipal principal)
+    public static string Index(IReadOnlyList<Article> articles, IPrincipal principal, IReadOnlyDictionary<UserId, string> authorNames)
     {
-        static string ArticleHtml(Article article)
+        string ArticleHtml(Article article)
         {
+            var authorName = authorNames.TryGetValue(article.AuthorId, out var name) ? name : "Unbekannt";
             var content = Html.H2(Html.Link($"/articles/{article.Id.Value}", article.Title.Value)) +
-                Html.Small($"Erstellt am {article.CreatedAt.LocalDateTime:g}") +
-                Html.P(Preview(article.Text.Value));
+                Html.Small($"Von {authorName} · {article.PublishedAt.LocalDateTime:d}") +
+                Html.P(Html.Encode(article.Teaser.Value));
             return Html.Article(content);
         }
 
@@ -25,17 +26,18 @@ public static class BlogViews
         return Layout.Page("Blog", body, principal);
     }
 
-    public static string Show(Article article, IPrincipal principal)
+    public static string Show(Article article, IPrincipal principal, string authorName)
     {
         var body = Html.P(Html.Link("/", "← Zurück")) +
             Html.H1(article.Title.Value) +
-            Html.Small($"Erstellt am {article.CreatedAt.LocalDateTime:g}") +
+            Html.Small($"Von {authorName} · {article.PublishedAt.LocalDateTime:g}") +
+            Html.P(Html.Encode(article.Teaser.Value)) +
             Html.Div("post-text", Html.Paragraphs(article.Text.Value));
 
         return Layout.Page(article.Title.Value, body, principal);
     }
 
-    public static string Form(IReadOnlyList<string> errors, string title, string text, IPrincipal principal)
+    public static string Form(IReadOnlyList<string> errors, string title, string teaser, string text, IPrincipal principal)
     {
         var errorHtml = errors.Count == 0
             ? string.Empty
@@ -46,6 +48,11 @@ public static class BlogViews
                 <label>
                     Titel
                     <input name="title" value="{Html.Encode(title)}" />
+                </label>
+
+                <label>
+                    Teaser
+                    <textarea name="teaser" rows="3">{Html.Encode(teaser)}</textarea>
                 </label>
 
                 <label>
@@ -64,7 +71,4 @@ public static class BlogViews
 
         return Layout.Page("Neuer Artikel", body, principal);
     }
-
-    private static string Preview(string value) =>
-        value.Length <= 160 ? value : value[..160] + "…";
 }

@@ -17,6 +17,8 @@ public sealed class AuthenticatedUser : IPrincipal
 
     public Email Email => _user.Email;
 
+    public DisplayName DisplayName => _user.DisplayName;
+
     public IReadOnlyList<string> RoleNames => _user.RoleNames;
 
     public bool Can<TAction>(IResource resource)
