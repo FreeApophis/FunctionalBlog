@@ -1,0 +1,126 @@
+namespace FunctionalBlog.Roles;
+
+public static class AdminHandlers
+{
+    public static App UserList => _ => async env =>
+    {
+        var users = await env.Users.All();
+        return Response.Html(AdminViews.UserList(users, env.CurrentUser));
+    };
+
+    public static App UserDetail(int userId) => _ => async env =>
+    {
+        var user = await env.Users.FindById(new UserId(userId));
+
+        if (user is null)
+        {
+            return Response.NotFound();
+        }
+
+        var roles = await env.Roles.All();
+        return Response.Html(AdminViews.UserDetail(user, roles, [], env.CurrentUser));
+    };
+
+    public static App UpdateUserRoles(int userId) => request => async env =>
+    {
+        var user = await env.Users.FindById(new UserId(userId));
+
+        if (user is null)
+        {
+            return Response.NotFound();
+        }
+
+        var decoded = AssignRoleForm.Decode(request);
+        await env.Users.Save(user with { RoleNames = decoded.RoleNames });
+        return Response.Redirect($"/admin/users/{userId}");
+    };
+
+    public static App RoleList => _ => async env =>
+    {
+        var roles = await env.Roles.All();
+        return Response.Html(AdminViews.RoleList(roles, env.CurrentUser));
+    };
+
+    public static App NewRoleForm => _ => env =>
+        ValueTask.FromResult(Response.Html(AdminViews.NewRoleForm([], env.CurrentUser)));
+
+    public static App CreateRole => request => async env =>
+    {
+        var decoded = RoleForm.Decode(request);
+
+        if (!decoded.IsValid)
+        {
+            return Response.Html(AdminViews.NewRoleForm(decoded.Errors, env.CurrentUser), 400);
+        }
+
+        var id = await env.Roles.NextId();
+        await env.Roles.Save(Role.Create(id, decoded.Name));
+        return Response.Redirect("/admin/roles");
+    };
+
+    public static App RoleDetail(int roleId) => _ => async env =>
+    {
+        var role = await env.Roles.FindById(new RoleId(roleId));
+
+        if (role is null)
+        {
+            return Response.NotFound();
+        }
+
+        return Response.Html(AdminViews.RoleDetail(role, [], env.CurrentUser));
+    };
+
+    public static App AddRule(int roleId) => request => async env =>
+    {
+        var role = await env.Roles.FindById(new RoleId(roleId));
+
+        if (role is null)
+        {
+            return Response.NotFound();
+        }
+
+        var decoded = RuleForm.Decode(request);
+
+        if (!decoded.IsValid)
+        {
+            return Response.Html(AdminViews.RoleDetail(role, decoded.Errors, env.CurrentUser), 400);
+        }
+
+        var rule = new PermissionRule(decoded.ActionName, decoded.ResourceKey);
+
+        if (!role.Rules.Contains(rule))
+        {
+            await env.Roles.Save(role.AddRule(rule));
+        }
+
+        return Response.Redirect($"/admin/roles/{roleId}");
+    };
+
+    public static App DeleteRule(int roleId) => request => async env =>
+    {
+        var role = await env.Roles.FindById(new RoleId(roleId));
+
+        if (role is null)
+        {
+            return Response.NotFound();
+        }
+
+        var decoded = RuleForm.Decode(request);
+        var rule = new PermissionRule(decoded.ActionName, decoded.ResourceKey);
+        await env.Roles.Save(role.RemoveRule(rule));
+        return Response.Redirect($"/admin/roles/{roleId}");
+    };
+
+    public static App DeleteRole(int roleId) => _ => async env =>
+    {
+        var role = await env.Roles.FindById(new RoleId(roleId));
+
+        if (role is null)
+        {
+            return Response.NotFound();
+        }
+
+        await env.Roles.Delete(new RoleId(roleId));
+        return Response.Redirect("/admin/roles");
+    };
+}

@@ -6,8 +6,8 @@ public class RouterTests
     public async Task Get_styles_css_returns_a_css_response()
     {
         var app = Router.Create()(NotFoundTerminal);
-        var env = new Env(new InMemoryArticleRepository(), new SystemClock(), new ConsoleLog());
-        var request = new Request("GET", "/styles.css", Empty, Empty, Empty);
+        var env = BuildEnv();
+        var request = new Request("GET", "/styles.css", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -15,6 +15,43 @@ public class RouterTests
         Assert.StartsWith("text/css", response.ContentType);
         Assert.Contains("--bg", response.Body);
     }
+
+    [Fact]
+    public async Task Get_articles_new_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("GET", "/articles/new", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
+    public async Task Post_articles_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("POST", "/articles", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    private static Env BuildEnv() => new(
+        Articles: new InMemoryArticleRepository(),
+        Users: new InMemoryUserRepository(),
+        Roles: new InMemoryRoleRepository(),
+        Sessions: new InMemorySessionStore(),
+        PasswordResets: new InMemoryPasswordResetTokenStore(),
+        PasswordHasher: new Pbkdf2PasswordHasher(),
+        Clock: new SystemClock(),
+        Log: new ConsoleLog(),
+        CurrentUser: Guest.Instance);
 
     private static readonly App NotFoundTerminal = _ => _ => ValueTask.FromResult(Response.NotFound());
     private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();

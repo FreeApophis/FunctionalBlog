@@ -1,3 +1,5 @@
+namespace FunctionalBlog;
+
 public static class Functional
 {
     public static App Compose(params Middleware[] middlewares)

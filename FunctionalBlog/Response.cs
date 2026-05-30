@@ -1,9 +1,16 @@
+namespace FunctionalBlog;
+
 public sealed record Response(
     int Status,
     string ContentType,
     IReadOnlyDictionary<string, string> Headers,
     string Body)
 {
+    public IReadOnlyList<string> SetCookies { get; init; } = Array.Empty<string>();
+
+    public Response WithCookie(string cookieHeader) =>
+        this with { SetCookies = [..SetCookies, cookieHeader] };
+
     public static Response Html(string body, int status = 200) =>
         new(status, "text/html; charset=utf-8", EmptyHeaders, body);
 
@@ -20,8 +27,11 @@ public sealed record Response(
             new Dictionary<string, string> { ["Location"] = location },
             "Redirecting...");
 
+    public static Response Forbidden() =>
+        Html(Layout.Page("403", FunctionalBlog.Html.H1("Keine Berechtigung") + FunctionalBlog.Html.P("Sie haben keine Berechtigung für diese Seite.")), 403);
+
     public static Response NotFound() =>
-        Html(Layout.Page("404", global::Html.H1("Nicht gefunden") + global::Html.P("Diese Seite existiert nicht.")), 404);
+        Html(Layout.Page("404", FunctionalBlog.Html.H1("Nicht gefunden") + FunctionalBlog.Html.P("Diese Seite existiert nicht.")), 404);
 
     private static readonly IReadOnlyDictionary<string, string> EmptyHeaders =
         new Dictionary<string, string>();

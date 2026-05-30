@@ -1,3 +1,5 @@
+namespace FunctionalBlog;
+
 public static class Middlewares
 {
     public static Middleware Recover => next => request => async env =>

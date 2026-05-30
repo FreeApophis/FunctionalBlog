@@ -1,5 +1,7 @@
 using System.Net;
 
+namespace FunctionalBlog;
+
 public static class Html
 {
     public static string Encode(string value) => WebUtility.HtmlEncode(value);

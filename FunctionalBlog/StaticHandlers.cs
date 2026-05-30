@@ -1,3 +1,5 @@
+namespace FunctionalBlog;
+
 public static class StaticHandlers
 {
     private static readonly Lazy<string> StylesContent = new(LoadStyles);

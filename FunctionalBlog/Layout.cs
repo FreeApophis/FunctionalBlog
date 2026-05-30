@@ -1,6 +1,8 @@
+namespace FunctionalBlog;
+
 public static class Layout
 {
-    public static string Page(string title, string body) =>
+    public static string Page(string title, string body, IPrincipal principal) =>
         $$"""
         <!doctype html>
         <html lang="de">
@@ -11,8 +13,12 @@ public static class Layout
             <link rel="stylesheet" href="/styles.css" />
         </head>
         <body>
+            {{NavViews.Nav(principal)}}
             <main>{{body}}</main>
         </body>
         </html>
         """;
+
+    public static string Page(string title, string body) =>
+        Page(title, body, Guest.Instance);
 }
