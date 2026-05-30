@@ -4,14 +4,12 @@ var web = builder.Build();
 var env = new Env(
     Articles: new InMemoryArticleRepository(),
     Clock: new SystemClock(),
-    Log: new ConsoleLog()
-);
+    Log: new ConsoleLog());
 
 App app = Functional.Compose(
     Middlewares.Recover,
     Middlewares.RequestLogging,
-    Router.Create()
-);
+    Router.Create());
 
 web.Run(async http =>
 {

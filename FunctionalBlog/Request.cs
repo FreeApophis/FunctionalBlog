@@ -3,5 +3,4 @@ public sealed record Request(
     string Path,
     IReadOnlyDictionary<string, string> Headers,
     IReadOnlyDictionary<string, string> Query,
-    IReadOnlyDictionary<string, string> Form
-);
+    IReadOnlyDictionary<string, string> Form);

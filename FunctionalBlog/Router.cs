@@ -16,9 +16,8 @@ public static class Router
             ("GET", "/articles/new") => BlogHandlers.NewArticleForm,
             ("POST", "/articles") => BlogHandlers.CreateArticle,
             _ when request.Method == "GET" && TryArticlePath(request.Path, out var id) => BlogHandlers.ShowArticle(id),
-            _ => null
+            _ => null,
         };
-
 
     private static bool TryArticlePath(string path, [NotNullWhen(true)] out ArticleId? id)
     {

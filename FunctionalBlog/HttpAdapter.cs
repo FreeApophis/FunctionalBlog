@@ -17,8 +17,7 @@ public static class HttpAdapter
             Path: http.Request.Path.Value ?? "/",
             Headers: http.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
             Query: http.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),
-            Form: form
-        );
+            Form: form);
     }
 
     public static async ValueTask WriteResponse(HttpContext http, Response response)

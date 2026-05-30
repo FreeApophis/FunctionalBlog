@@ -2,8 +2,8 @@ public static class ArticleForm
 {
     public static DecodedArticleForm Decode(Request request)
     {
-        var title = request.Form.GetValueOrDefault("title", "").Trim();
-        var text = request.Form.GetValueOrDefault("text", "").Trim();
+        var title = request.Form.GetValueOrDefault("title", string.Empty).Trim();
+        var text = request.Form.GetValueOrDefault("text", string.Empty).Trim();
 
         var errors = new List<string>();
 
@@ -21,7 +21,6 @@ public static class ArticleForm
             IsValid: errors.Count == 0,
             Errors: errors,
             Title: title,
-            Text: text
-        );
+            Text: text);
     }
 }

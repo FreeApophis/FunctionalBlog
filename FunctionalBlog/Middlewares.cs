@@ -11,8 +11,7 @@ public static class Middlewares
             env.Log.Error(ex);
             return Response.Html(
                 Layout.Page("Fehler", Html.H1("Interner Fehler") + Html.P("Es ist ein unerwarteter Fehler aufgetreten.")),
-                500
-            );
+                500);
         }
     };
 

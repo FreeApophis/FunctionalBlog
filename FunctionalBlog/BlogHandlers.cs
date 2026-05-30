@@ -16,7 +16,7 @@ public static class BlogHandlers
     };
 
     public static App NewArticleForm => _ => _ =>
-        ValueTask.FromResult(Response.Html(BlogViews.Form(Array.Empty<string>(), "", "")));
+        ValueTask.FromResult(Response.Html(BlogViews.Form(Array.Empty<string>(), string.Empty, string.Empty)));
 
     public static App CreateArticle => request => async env =>
     {
@@ -31,8 +31,7 @@ public static class BlogHandlers
             id: await env.Articles.NextId(),
             title: new ArticleTitle(decoded.Title),
             text: new ArticleText(decoded.Text),
-            createdAt: env.Clock.Now
-        );
+            createdAt: env.Clock.Now);
 
         await env.Articles.Save(article);
 

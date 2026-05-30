@@ -2,8 +2,6 @@ namespace FunctionalBlog.Test;
 
 public abstract class ArticleRepositoryContract
 {
-    protected abstract IArticleRepository CreateRepository();
-
     [Fact]
     public async Task Save_then_Find_returns_the_saved_article()
     {
@@ -75,6 +73,8 @@ public abstract class ArticleRepositoryContract
 
         Assert.Equal(updated, await repo.Find(id));
     }
+
+    protected abstract IArticleRepository CreateRepository();
 
     private static Article AnArticle(
         ArticleId id,
