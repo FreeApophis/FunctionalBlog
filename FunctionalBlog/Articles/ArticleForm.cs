@@ -12,17 +12,17 @@ public static class ArticleForm
 
         if (title.Length < 3)
         {
-            errors.Add("Der Titel muss mindestens 3 Zeichen lang sein.");
+            errors.Add("article.error.title_too_short");
         }
 
         if (teaser.Length < 10)
         {
-            errors.Add("Der Teaser muss mindestens 10 Zeichen lang sein.");
+            errors.Add("article.error.teaser_too_short");
         }
 
         if (text.Length < 10)
         {
-            errors.Add("Der Text muss mindestens 10 Zeichen lang sein.");
+            errors.Add("article.error.text_too_short");
         }
 
         return new DecodedArticleForm(

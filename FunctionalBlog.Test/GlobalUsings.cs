@@ -1,13 +1,18 @@
 global using FunctionalBlog.Application.Articles;
 global using FunctionalBlog.Application.Identity;
 global using FunctionalBlog.Application.Roles;
+global using FunctionalBlog.Application.Translations;
 global using FunctionalBlog.Articles;
 global using FunctionalBlog.DataAccess.Articles;
 global using FunctionalBlog.DataAccess.Identity;
 global using FunctionalBlog.DataAccess.Roles;
+global using FunctionalBlog.DataAccess.Translations;
 global using FunctionalBlog.Domain.Articles;
 global using FunctionalBlog.Domain.Identity;
 global using FunctionalBlog.Domain.Roles;
+global using FunctionalBlog.Domain.Translations;
 global using FunctionalBlog.Identity;
 global using FunctionalBlog.Roles;
+global using FunctionalBlog.Test.Translations;
+global using FunctionalBlog.Translations;
 global using App = FunctionalBlog.Pipeline.App<FunctionalBlog.Env, FunctionalBlog.Request, FunctionalBlog.Response>;

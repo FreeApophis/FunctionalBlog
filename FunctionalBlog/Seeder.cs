@@ -12,6 +12,11 @@ public static class Seeder
         await SeedRoles(env);
         await SeedAdminUser(env);
         await SeedSampleArticles(env);
+
+        if (env.Translations is not null)
+        {
+            await TranslationSeeder.SeedAsync(env.Translations);
+        }
     }
 
     private static async ValueTask SeedRoles(Env env)

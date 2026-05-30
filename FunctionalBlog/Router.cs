@@ -32,12 +32,16 @@ public static class Router
             ("GET", "/admin/roles") => Auth.RequirePermission<Manage>(new RoleResource(), AdminHandlers.RoleList),
             ("GET", "/admin/roles/new") => Auth.RequirePermission<Create>(new RoleResource(), AdminHandlers.NewRoleForm),
             ("POST", "/admin/roles") => Auth.RequirePermission<Create>(new RoleResource(), AdminHandlers.CreateRole),
+            ("POST", "/lang") => TranslationHandlers.SetLanguage,
+            ("GET", "/admin/translations") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.List),
+            ("GET", "/admin/translations/export.json") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.Export),
             _ when request.Method == "GET" && TryArticlePath(request.Path, out var id) => BlogHandlers.ShowArticle(id),
             _ when request.Method == "GET" && TryAdminUsersPath(request.Path) => Auth.RequirePermission<Manage>(new UserResource(), AdminHandlers.UserDetail(ExtractAdminUserId(request.Path))),
             _ when request.Method == "POST" && TryAdminUserRolesPath(request.Path) => Auth.RequirePermission<Manage>(new UserResource(), AdminHandlers.UpdateUserRoles(ExtractAdminUserId(request.Path))),
             _ when request.Method == "GET" && TryAdminRolePath(request.Path) => Auth.RequirePermission<Manage>(new RoleResource(), AdminHandlers.RoleDetail(ExtractAdminRoleId(request.Path))),
             _ when request.Method == "POST" && TryAdminRoleRulesPath(request.Path) => Auth.RequirePermission<Manage>(new RuleResource(), AdminHandlers.AddRule(ExtractAdminRoleId(request.Path))),
             _ when request.Method == "POST" && TryAdminRoleDeletePath(request.Path) => Auth.RequirePermission<Manage>(new RoleResource(), AdminHandlers.DeleteRole(ExtractAdminRoleId(request.Path))),
+            _ when request.Method == "POST" && TryTranslationSavePath(request.Path, out var tKey, out var tLang) => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.Save(tKey, tLang)),
             _ => null,
         };
 
@@ -92,6 +96,30 @@ public static class Router
     {
         var segment = path["/admin/roles/".Length..].Split('/')[0];
         return int.TryParse(segment, out var id) ? id : 0;
+    }
+
+    private static bool TryTranslationSavePath(string path, [NotNullWhen(true)] out string? key, [NotNullWhen(true)] out string? language)
+    {
+        key = null;
+        language = null;
+        const string prefix = "/admin/translations/";
+
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var rest = path[prefix.Length..];
+        var lastSlash = rest.LastIndexOf('/');
+
+        if (lastSlash < 0)
+        {
+            return false;
+        }
+
+        key = rest[..lastSlash];
+        language = rest[(lastSlash + 1)..];
+        return key.Length > 0 && language.Length > 0;
     }
 
     private static readonly App NotFound = _ => _ => ValueTask.FromResult(Response.NotFound());

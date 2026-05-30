@@ -11,8 +11,9 @@ public static class Middlewares
         catch (Exception ex)
         {
             env.Log.Error(ex);
+            var t = env.T;
             return Response.Html(
-                Layout.Page("Fehler", Html.H1("Interner Fehler") + Html.P("Es ist ein unerwarteter Fehler aufgetreten.")),
+                Layout.Page(t("error.title"), Html.H1(t("error.heading")) + Html.P(t("error.message")), Guest.Instance, t),
                 500);
         }
     };

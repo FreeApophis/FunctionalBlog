@@ -3,32 +3,32 @@ namespace FunctionalBlog.Test;
 public sealed class NavViewsTests
 {
     [Fact]
-    public void Nav_for_guest_contains_anmelden_link()
+    public void Nav_for_guest_contains_login_link()
     {
-        var nav = NavViews.Nav(Guest.Instance);
+        var nav = NavViews.Nav(Guest.Instance, NoOp);
 
         Assert.Contains("/login", nav);
-        Assert.Contains("Anmelden", nav);
+        Assert.Contains("nav.login", nav);
     }
 
     [Fact]
-    public void Nav_for_guest_contains_registrieren_link()
+    public void Nav_for_guest_contains_register_link()
     {
-        var nav = NavViews.Nav(Guest.Instance);
+        var nav = NavViews.Nav(Guest.Instance, NoOp);
 
         Assert.Contains("/register", nav);
-        Assert.Contains("Registrieren", nav);
+        Assert.Contains("nav.register", nav);
     }
 
     [Fact]
-    public void Nav_for_authenticated_user_contains_abmelden_form()
+    public void Nav_for_authenticated_user_contains_logout_form()
     {
         var user = BuildAuthUser([]);
 
-        var nav = NavViews.Nav(user);
+        var nav = NavViews.Nav(user, NoOp);
 
         Assert.Contains("/logout", nav);
-        Assert.Contains("Abmelden", nav);
+        Assert.Contains("nav.logout", nav);
     }
 
     [Fact]
@@ -36,7 +36,7 @@ public sealed class NavViewsTests
     {
         var user = BuildAuthUser([]);
 
-        var nav = NavViews.Nav(user);
+        var nav = NavViews.Nav(user, NoOp);
 
         Assert.Contains("Testbenutzer", nav);
     }
@@ -48,10 +48,10 @@ public sealed class NavViewsTests
         var role = new Role(new RoleId(1), "Admin", [rule]);
         var user = BuildAuthUser([role]);
 
-        var nav = NavViews.Nav(user);
+        var nav = NavViews.Nav(user, NoOp);
 
         Assert.Contains("/admin/users", nav);
-        Assert.Contains("Admin", nav);
+        Assert.Contains("nav.admin", nav);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public sealed class NavViewsTests
     {
         var user = BuildAuthUser([]);
 
-        var nav = NavViews.Nav(user);
+        var nav = NavViews.Nav(user, NoOp);
 
         Assert.DoesNotContain("/admin/users", nav);
     }
@@ -75,4 +75,6 @@ public sealed class NavViewsTests
             DateTimeOffset.UtcNow);
         return new AuthenticatedUser(user, roles);
     }
+
+    private static readonly Translate NoOp = key => key;
 }

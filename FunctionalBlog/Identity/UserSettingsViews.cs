@@ -2,36 +2,36 @@ namespace FunctionalBlog.Identity;
 
 public static class UserSettingsViews
 {
-    public static string Settings(AuthenticatedUser user, IReadOnlyList<string> errors, IPrincipal principal)
+    public static string Settings(AuthenticatedUser user, IReadOnlyList<string> errors, IPrincipal principal, Translate t)
     {
-        var body = Html.H1("Einstellungen") +
-            Html.P($"Angemeldet als: {Html.Encode(user.DisplayName.Value)} ({Html.Encode(user.Email.Value)})") +
-            ChangePasswordSection(errors);
-        return Layout.Page("Einstellungen", body, principal);
+        var body = Html.H1(t("settings.title")) +
+            Html.P($"{Html.Encode(t("settings.logged_in_as"))}: {Html.Encode(user.DisplayName.Value)} ({Html.Encode(user.Email.Value)})") +
+            ChangePasswordSection(errors, t);
+        return Layout.Page(t("settings.title"), body, principal, t);
     }
 
-    private static string ChangePasswordSection(IReadOnlyList<string> errors)
+    private static string ChangePasswordSection(IReadOnlyList<string> errors, Translate t)
     {
         var errorHtml = errors.Count == 0
             ? string.Empty
-            : Html.Div("errors", Html.Ul(errors.Select(Html.Encode)));
-        return Html.H2("Passwort ändern") +
+            : Html.Div("errors", Html.Ul(errors.Select(key => t(key))));
+        return Html.H2(t("settings.change_password.title")) +
             errorHtml +
-            """
+            $"""
             <form method="post" action="/settings/password">
                 <label>
-                    Aktuelles Passwort
+                    {Html.Encode(t("settings.change_password.current"))}
                     <input type="password" name="current" />
                 </label>
                 <label>
-                    Neues Passwort
+                    {Html.Encode(t("settings.change_password.new"))}
                     <input type="password" name="password" />
                 </label>
                 <label>
-                    Neues Passwort bestätigen
+                    {Html.Encode(t("settings.change_password.confirm"))}
                     <input type="password" name="confirmation" />
                 </label>
-                <button type="submit">Passwort ändern</button>
+                <button type="submit">{Html.Encode(t("settings.change_password.submit"))}</button>
             </form>
             """;
     }

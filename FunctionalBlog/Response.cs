@@ -33,6 +33,13 @@ public sealed record Response(
     public static Response NotFound() =>
         Html(Layout.Page("404", FunctionalBlog.Html.H1("Nicht gefunden") + FunctionalBlog.Html.P("Diese Seite existiert nicht.")), 404);
 
+    public static Response JsonDownload(string filename, string body) =>
+        new(
+            200,
+            "application/json; charset=utf-8",
+            new Dictionary<string, string> { ["Content-Disposition"] = $"attachment; filename=\"{filename}\"" },
+            body);
+
     private static readonly IReadOnlyDictionary<string, string> EmptyHeaders =
         new Dictionary<string, string>();
 }

@@ -8,7 +8,7 @@ public static class AuthHandlers
 
     public static App NewRegisterForm => _ => env =>
         ValueTask.FromResult(Response.Html(
-            AuthViews.RegisterForm([], string.Empty, string.Empty, env.CurrentUser)));
+            AuthViews.RegisterForm([], string.Empty, string.Empty, env.CurrentUser, env.T)));
 
     public static App Register => request => async env =>
     {
@@ -21,7 +21,8 @@ public static class AuthHandlers
                     decoded.Errors,
                     request.Form.GetValueOrDefault("email", string.Empty),
                     request.Form.GetValueOrDefault("displayName", string.Empty),
-                    env.CurrentUser),
+                    env.CurrentUser,
+                    env.T),
                 400);
         }
 
@@ -47,7 +48,7 @@ public static class AuthHandlers
 
     public static App NewLoginForm => _ => env =>
         ValueTask.FromResult(Response.Html(
-            AuthViews.LoginForm([], string.Empty, env.CurrentUser)));
+            AuthViews.LoginForm([], string.Empty, env.CurrentUser, env.T)));
 
     public static App Login => request => async env =>
     {
@@ -56,7 +57,7 @@ public static class AuthHandlers
         if (!decoded.IsValid)
         {
             return Response.Html(
-                AuthViews.LoginForm(decoded.Errors, decoded.EmailRaw, env.CurrentUser),
+                AuthViews.LoginForm(decoded.Errors, decoded.EmailRaw, env.CurrentUser, env.T),
                 400);
         }
 
@@ -67,9 +68,8 @@ public static class AuthHandlers
 
         if (user is null || !passwordMatch)
         {
-            var errors = new[] { "E-Mail-Adresse oder Passwort ist falsch." };
             return Response.Html(
-                AuthViews.LoginForm(errors, decoded.EmailRaw, env.CurrentUser),
+                AuthViews.LoginForm(["auth.error.invalid_credentials"], decoded.EmailRaw, env.CurrentUser, env.T),
                 401);
         }
 
@@ -93,7 +93,7 @@ public static class AuthHandlers
 
     public static App NewPasswordResetForm => _ => env =>
         ValueTask.FromResult(Response.Html(
-            AuthViews.PasswordResetRequestForm(env.CurrentUser)));
+            AuthViews.PasswordResetRequestForm(env.CurrentUser, env.T)));
 
     public static App RequestPasswordReset => request => async env =>
     {
@@ -109,14 +109,14 @@ public static class AuthHandlers
             env.Log.Info($"[Passwort-Reset] reset-token:{token} für {decoded.EmailRaw}");
         }
 
-        return Response.Html(AuthViews.PasswordResetRequested(env.CurrentUser));
+        return Response.Html(AuthViews.PasswordResetRequested(env.CurrentUser, env.T));
     };
 
     public static App NewPasswordResetConfirmForm => request => env =>
     {
         var token = request.Query.GetValueOrDefault("token", string.Empty);
         return ValueTask.FromResult(Response.Html(
-            AuthViews.PasswordResetConfirmForm([], token, env.CurrentUser)));
+            AuthViews.PasswordResetConfirmForm([], token, env.CurrentUser, env.T)));
     };
 
     public static App ConfirmPasswordReset => request => async env =>
@@ -126,7 +126,7 @@ public static class AuthHandlers
         if (!decoded.IsValid)
         {
             return Response.Html(
-                AuthViews.PasswordResetConfirmForm(decoded.Errors, decoded.Token, env.CurrentUser),
+                AuthViews.PasswordResetConfirmForm(decoded.Errors, decoded.Token, env.CurrentUser, env.T),
                 400);
         }
 
@@ -134,9 +134,8 @@ public static class AuthHandlers
 
         if (resetToken is null || resetToken.Consumed || resetToken.ExpiresAt <= env.Clock.Now)
         {
-            var errors = new[] { "Der Reset-Token ist ungültig oder abgelaufen." };
             return Response.Html(
-                AuthViews.PasswordResetConfirmForm(errors, string.Empty, env.CurrentUser),
+                AuthViews.PasswordResetConfirmForm(["auth.error.reset_token_invalid"], string.Empty, env.CurrentUser, env.T),
                 400);
         }
 

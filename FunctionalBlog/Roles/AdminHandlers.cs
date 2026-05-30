@@ -5,7 +5,7 @@ public static class AdminHandlers
     public static App UserList => _ => async env =>
     {
         var users = await env.Users.All();
-        return Response.Html(AdminViews.UserList(users, env.CurrentUser));
+        return Response.Html(AdminViews.UserList(users, env.CurrentUser, env.T));
     };
 
     public static App UserDetail(int userId) => _ => async env =>
@@ -18,7 +18,7 @@ public static class AdminHandlers
         }
 
         var roles = await env.Roles.All();
-        return Response.Html(AdminViews.UserDetail(user, roles, [], env.CurrentUser));
+        return Response.Html(AdminViews.UserDetail(user, roles, [], env.CurrentUser, env.T));
     };
 
     public static App UpdateUserRoles(int userId) => request => async env =>
@@ -38,11 +38,11 @@ public static class AdminHandlers
     public static App RoleList => _ => async env =>
     {
         var roles = await env.Roles.All();
-        return Response.Html(AdminViews.RoleList(roles, env.CurrentUser));
+        return Response.Html(AdminViews.RoleList(roles, env.CurrentUser, env.T));
     };
 
     public static App NewRoleForm => _ => env =>
-        ValueTask.FromResult(Response.Html(AdminViews.NewRoleForm([], env.CurrentUser)));
+        ValueTask.FromResult(Response.Html(AdminViews.NewRoleForm([], env.CurrentUser, env.T)));
 
     public static App CreateRole => request => async env =>
     {
@@ -50,7 +50,7 @@ public static class AdminHandlers
 
         if (!decoded.IsValid)
         {
-            return Response.Html(AdminViews.NewRoleForm(decoded.Errors, env.CurrentUser), 400);
+            return Response.Html(AdminViews.NewRoleForm(decoded.Errors, env.CurrentUser, env.T), 400);
         }
 
         var id = await env.Roles.NextId();
@@ -67,7 +67,7 @@ public static class AdminHandlers
             return Response.NotFound();
         }
 
-        return Response.Html(AdminViews.RoleDetail(role, [], env.CurrentUser));
+        return Response.Html(AdminViews.RoleDetail(role, [], env.CurrentUser, env.T));
     };
 
     public static App AddRule(int roleId) => request => async env =>
@@ -83,7 +83,7 @@ public static class AdminHandlers
 
         if (!decoded.IsValid)
         {
-            return Response.Html(AdminViews.RoleDetail(role, decoded.Errors, env.CurrentUser), 400);
+            return Response.Html(AdminViews.RoleDetail(role, decoded.Errors, env.CurrentUser, env.T), 400);
         }
 
         var rule = new PermissionRule(decoded.ActionName, decoded.ResourceKey);

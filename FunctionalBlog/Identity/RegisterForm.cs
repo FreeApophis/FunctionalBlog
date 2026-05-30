@@ -14,22 +14,22 @@ public static class RegisterForm
 
         if (email is null)
         {
-            errors.Add("Bitte geben Sie eine gültige E-Mail-Adresse ein.");
+            errors.Add("auth.error.invalid_email");
         }
 
         if (displayName.Length < 2)
         {
-            errors.Add("Der Anzeigename muss mindestens 2 Zeichen lang sein.");
+            errors.Add("auth.error.display_name_too_short");
         }
 
         if (password.Length < 8)
         {
-            errors.Add("Das Passwort muss mindestens 8 Zeichen lang sein.");
+            errors.Add("auth.error.password_too_short");
         }
 
         if (password != confirmation)
         {
-            errors.Add("Die Passwörter stimmen nicht überein.");
+            errors.Add("auth.error.passwords_mismatch");
         }
 
         return new DecodedRegisterForm(

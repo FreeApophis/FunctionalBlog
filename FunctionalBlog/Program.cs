@@ -6,12 +6,17 @@ internal class Program
     {
         var builder = WebApplication.CreateBuilder(args);
         var web = builder.Build();
-        var env = BuildEnv();
+
+        var translations = new InMemoryTranslationRepository();
+        var env = BuildEnv(translations);
 
         await Seeder.SeedAsync(env);
+        var translationCache = await TranslationCache.LoadAsync(translations);
+        env = env with { TranslationCache = translationCache };
 
         App app = Functional.Compose(
             _ => _ => ValueTask.FromResult(Response.NotFound()),
+            LanguageMiddleware.Create(),
             Middlewares.Recover,
             Middlewares.RequestLogging,
             AuthMiddleware.Create(),
@@ -27,7 +32,7 @@ internal class Program
         web.Run();
     }
 
-    private static Env BuildEnv()
+    private static Env BuildEnv(ITranslationRepository translations)
         => new(
             Articles: new InMemoryArticleRepository(),
             Users: new InMemoryUserRepository(),
@@ -37,5 +42,6 @@ internal class Program
             PasswordHasher: new Pbkdf2PasswordHasher(),
             Clock: new SystemClock(),
             Log: new ConsoleLog(),
-            CurrentUser: Guest.Instance);
+            CurrentUser: Guest.Instance,
+            Translations: translations);
 }

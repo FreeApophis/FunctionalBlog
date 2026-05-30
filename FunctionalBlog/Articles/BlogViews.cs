@@ -2,73 +2,73 @@ namespace FunctionalBlog.Articles;
 
 public static class BlogViews
 {
-    public static string Index(IReadOnlyList<Article> articles, IPrincipal principal, IReadOnlyDictionary<UserId, string> authorNames)
+    public static string Index(IReadOnlyList<Article> articles, IPrincipal principal, IReadOnlyDictionary<UserId, string> authorNames, Translate t)
     {
         string ArticleHtml(Article article)
         {
-            var authorName = authorNames.TryGetValue(article.AuthorId, out var name) ? name : "Unbekannt";
+            var authorName = authorNames.TryGetValue(article.AuthorId, out var name) ? name : "?";
             var content = Html.H2(Html.Link($"/articles/{article.Id.Value}", article.Title.Value)) +
-                Html.Small($"Von {authorName} · {article.PublishedAt.LocalDateTime:d}") +
+                Html.Small($"{t("article.by")} {Html.Encode(authorName)} · {article.PublishedAt.LocalDateTime:d}") +
                 Html.P(Html.Encode(article.Teaser.Value));
             return Html.Article(content);
         }
 
         var items = articles.Count == 0
-            ? Html.P("Noch keine Artikel vorhanden.")
+            ? Html.P(t("blog.no_articles"))
             : string.Join(string.Empty, articles.Select(ArticleHtml));
 
-        var body = Html.H1("Blog") +
+        var body = Html.H1(t("blog.title")) +
             (principal.Can<Create>(new ArticleResource())
-                ? Html.P(Html.Link("/articles/new", "Neuen Artikel schreiben"))
+                ? Html.P(Html.Link("/articles/new", t("blog.new_article")))
                 : string.Empty) +
             items;
 
-        return Layout.Page("Blog", body, principal);
+        return Layout.Page(t("blog.title"), body, principal, t);
     }
 
-    public static string Show(Article article, IPrincipal principal, string authorName)
+    public static string Show(Article article, IPrincipal principal, string authorName, Translate t)
     {
-        var body = Html.P(Html.Link("/", "← Zurück")) +
+        var body = Html.P(Html.Link("/", t("common.back"))) +
             Html.H1(article.Title.Value) +
-            Html.Small($"Von {authorName} · {article.PublishedAt.LocalDateTime:g}") +
+            Html.Small($"{t("article.by")} {Html.Encode(authorName)} · {article.PublishedAt.LocalDateTime:g}") +
             Html.P(Html.Encode(article.Teaser.Value)) +
             Html.Div("post-text", Html.Paragraphs(article.Text.Value));
 
-        return Layout.Page(article.Title.Value, body, principal);
+        return Layout.Page(article.Title.Value, body, principal, t);
     }
 
-    public static string Form(IReadOnlyList<string> errors, string title, string teaser, string text, IPrincipal principal)
+    public static string Form(IReadOnlyList<string> errors, string title, string teaser, string text, IPrincipal principal, Translate t)
     {
         var errorHtml = errors.Count == 0
             ? string.Empty
-            : Html.Div("errors", Html.Ul(errors.Select(Html.Encode)));
+            : Html.Div("errors", Html.Ul(errors.Select(key => t(key))));
 
         var form = $"""
             <form method="post" action="/articles">
                 <label>
-                    Titel
+                    {Html.Encode(t("article.field.title"))}
                     <input name="title" value="{Html.Encode(title)}" />
                 </label>
 
                 <label>
-                    Teaser
+                    {Html.Encode(t("article.field.teaser"))}
                     <textarea name="teaser" rows="3">{Html.Encode(teaser)}</textarea>
                 </label>
 
                 <label>
-                    Text
+                    {Html.Encode(t("article.field.text"))}
                     <textarea name="text" rows="10">{Html.Encode(text)}</textarea>
                 </label>
 
-                <button type="submit">Veröffentlichen</button>
+                <button type="submit">{Html.Encode(t("article.submit"))}</button>
             </form>
             """;
 
-        var body = Html.P(Html.Link("/", "← Zurück")) +
-            Html.H1("Neuer Artikel") +
+        var body = Html.P(Html.Link("/", t("common.back"))) +
+            Html.H1(t("article.new_title")) +
             errorHtml +
             form;
 
-        return Layout.Page("Neuer Artikel", body, principal);
+        return Layout.Page(t("article.new_title"), body, principal, t);
     }
 }

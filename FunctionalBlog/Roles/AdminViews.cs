@@ -5,29 +5,26 @@ public static class AdminViews
     private static readonly string[] AllActions = ["View", "Create", "Edit", "Delete", "Manage"];
     private static readonly string[] AllResources = ["article", "user", "role", "rule"];
 
-    public static string UserList(IReadOnlyList<User> users, IPrincipal principal)
+    public static string UserList(IReadOnlyList<User> users, IPrincipal principal, Translate t)
     {
         static string UserRow(User u) =>
             Html.Link($"/admin/users/{u.Id.Value}", $"{Html.Encode(u.DisplayName.Value)} ({Html.Encode(u.Email.Value)})") +
             " – " + Html.Encode(string.Join(", ", u.RoleNames));
 
-        var body = Html.H1("Benutzer") +
-            Html.P(Html.Link("/admin/roles", "Rollen verwalten")) +
+        var body = Html.H1(t("admin.users.title")) +
+            Html.P(Html.Link("/admin/roles", t("admin.users.manage_roles"))) +
+            Html.P(Html.Link("/admin/translations", t("translations.title"))) +
             Html.Ul(users.Select(UserRow));
-        return Layout.Page("Benutzer", body, principal);
+        return Layout.Page(t("admin.users.title"), body, principal, t);
     }
 
-    public static string UserDetail(
-        User user,
-        IReadOnlyList<Role> allRoles,
-        IReadOnlyList<string> errors,
-        IPrincipal principal)
+    public static string UserDetail(User user, IReadOnlyList<Role> allRoles, IReadOnlyList<string> errors, IPrincipal principal, Translate t)
     {
         var errorHtml = errors.Count == 0
             ? string.Empty
             : Html.Div("errors", Html.Ul(errors.Select(Html.Encode)));
 
-        static string Checkbox(Role r, User u)
+        string Checkbox(Role r, User u)
         {
             var checkedAttr = u.RoleNames.Contains(r.Name) ? " checked" : string.Empty;
             return $"<label><input type=\"checkbox\" name=\"role\" value=\"{Html.Encode(r.Name)}\"{checkedAttr} /> {Html.Encode(r.Name)}</label>";
@@ -37,53 +34,53 @@ public static class AdminViews
         var form = $"""
             <form method="post" action="/admin/users/{user.Id.Value}/roles">
                 <fieldset>
-                    <legend>Rollen</legend>
+                    <legend>{Html.Encode(t("admin.users.roles_label"))}</legend>
                     {roleCheckboxes}
                 </fieldset>
-                <button type="submit">Speichern</button>
+                <button type="submit">{Html.Encode(t("admin.users.save"))}</button>
             </form>
             """;
         var body = Html.H1(Html.Encode(user.Email.Value)) +
-            Html.P(Html.Link("/admin/users", "← Zurück")) +
+            Html.P(Html.Link("/admin/users", t("common.back"))) +
             errorHtml +
             form;
-        return Layout.Page($"Benutzer: {user.Email.Value}", body, principal);
+        return Layout.Page($"Benutzer: {user.Email.Value}", body, principal, t);
     }
 
-    public static string RoleList(IReadOnlyList<Role> roles, IPrincipal principal)
+    public static string RoleList(IReadOnlyList<Role> roles, IPrincipal principal, Translate t)
     {
         static string RoleRow(Role r) =>
             Html.Link($"/admin/roles/{r.Id.Value}", Html.Encode(r.Name)) +
-            $" ({r.Rules.Count} Regeln)";
+            $" ({r.Rules.Count})";
 
-        var body = Html.H1("Rollen") +
-            Html.P(Html.Link("/admin/roles/new", "Neue Rolle erstellen")) +
-            Html.P(Html.Link("/admin/users", "Benutzer verwalten")) +
+        var body = Html.H1(t("admin.roles.title")) +
+            Html.P(Html.Link("/admin/roles/new", t("admin.roles.new"))) +
+            Html.P(Html.Link("/admin/users", t("admin.roles.manage_users"))) +
             Html.Ul(roles.Select(RoleRow));
-        return Layout.Page("Rollen", body, principal);
+        return Layout.Page(t("admin.roles.title"), body, principal, t);
     }
 
-    public static string NewRoleForm(IReadOnlyList<string> errors, IPrincipal principal)
+    public static string NewRoleForm(IReadOnlyList<string> errors, IPrincipal principal, Translate t)
     {
         var errorHtml = errors.Count == 0
             ? string.Empty
             : Html.Div("errors", Html.Ul(errors.Select(Html.Encode)));
-        var body = Html.H1("Neue Rolle") +
-            Html.P(Html.Link("/admin/roles", "← Zurück")) +
+        var body = Html.H1(t("admin.roles.new")) +
+            Html.P(Html.Link("/admin/roles", t("common.back"))) +
             errorHtml +
-            """
+            $"""
             <form method="post" action="/admin/roles">
                 <label>
-                    Name
+                    {Html.Encode(t("admin.roles.name"))}
                     <input name="name" />
                 </label>
-                <button type="submit">Erstellen</button>
+                <button type="submit">{Html.Encode(t("admin.roles.create"))}</button>
             </form>
             """;
-        return Layout.Page("Neue Rolle", body, principal);
+        return Layout.Page(t("admin.roles.new"), body, principal, t);
     }
 
-    public static string RoleDetail(Role role, IReadOnlyList<string> errors, IPrincipal principal)
+    public static string RoleDetail(Role role, IReadOnlyList<string> errors, IPrincipal principal, Translate t)
     {
         var errorHtml = errors.Count == 0
             ? string.Empty
@@ -97,42 +94,42 @@ public static class AdminViews
             string.Empty,
             AllResources.Select(r => $"<option value=\"{Html.Encode(r)}\">{Html.Encode(r)}</option>"));
 
-        static string RuleRow(PermissionRule r, int roleId) =>
-            $"{Html.Encode(r.ActionName)} auf {Html.Encode(r.ResourceKey)} " +
-            $"<form method=\"post\" action=\"/admin/roles/{roleId}/rules/delete\" style=\"display:inline\">" +
+        string RuleRow(PermissionRule r) =>
+            $"{Html.Encode(r.ActionName)} → {Html.Encode(r.ResourceKey)} " +
+            $"<form method=\"post\" action=\"/admin/roles/{role.Id.Value}/rules/delete\" style=\"display:inline\">" +
             $"<input type=\"hidden\" name=\"action\" value=\"{Html.Encode(r.ActionName)}\" />" +
             $"<input type=\"hidden\" name=\"resource\" value=\"{Html.Encode(r.ResourceKey)}\" />" +
-            "<button type=\"submit\">Entfernen</button></form>";
+            $"<button type=\"submit\">{Html.Encode(t("admin.roles.remove_rule"))}</button></form>";
 
         var ruleRows = role.Rules.Count == 0
-            ? Html.P("Keine Regeln vorhanden.")
-            : Html.Ul(role.Rules.Select(r => RuleRow(r, role.Id.Value)));
+            ? Html.P(t("admin.roles.no_rules"))
+            : Html.Ul(role.Rules.Select(RuleRow));
 
         var addForm = $"""
             <form method="post" action="/admin/roles/{role.Id.Value}/rules">
                 <label>
-                    Aktion
+                    {Html.Encode(t("admin.roles.action"))}
                     <select name="action">{actionOptions}</select>
                 </label>
                 <label>
-                    Ressource
+                    {Html.Encode(t("admin.roles.resource"))}
                     <select name="resource">{resourceOptions}</select>
                 </label>
-                <button type="submit">Regel hinzufügen</button>
+                <button type="submit">{Html.Encode(t("admin.roles.add_rule"))}</button>
             </form>
             """;
 
         var deleteForm =
             $"<form method=\"post\" action=\"/admin/roles/{role.Id.Value}/delete\">" +
-            "<button type=\"submit\">Rolle löschen</button></form>";
+            $"<button type=\"submit\">{Html.Encode(t("admin.roles.delete"))}</button></form>";
 
         var body = Html.H1(Html.Encode(role.Name)) +
-            Html.P(Html.Link("/admin/roles", "← Zurück")) +
+            Html.P(Html.Link("/admin/roles", t("common.back"))) +
             Html.P(deleteForm) +
-            Html.H2("Regeln") +
+            Html.H2(t("admin.roles.rules")) +
             ruleRows +
             errorHtml +
             addForm;
-        return Layout.Page($"Rolle: {role.Name}", body, principal);
+        return Layout.Page($"Rolle: {role.Name}", body, principal, t);
     }
 }

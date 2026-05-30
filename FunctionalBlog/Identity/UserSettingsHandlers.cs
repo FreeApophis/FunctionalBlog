@@ -6,7 +6,7 @@ public static class UserSettingsHandlers
     {
         var user = (AuthenticatedUser)env.CurrentUser;
         return ValueTask.FromResult(Response.Html(
-            UserSettingsViews.Settings(user, [], env.CurrentUser)));
+            UserSettingsViews.Settings(user, [], env.CurrentUser, env.T)));
     };
 
     public static App ChangePassword => request => async env =>
@@ -17,7 +17,7 @@ public static class UserSettingsHandlers
         if (!decoded.IsValid)
         {
             return Response.Html(
-                UserSettingsViews.Settings(user, decoded.Errors, env.CurrentUser),
+                UserSettingsViews.Settings(user, decoded.Errors, env.CurrentUser, env.T),
                 400);
         }
 
@@ -25,9 +25,8 @@ public static class UserSettingsHandlers
 
         if (stored is null || !env.PasswordHasher.Verify(decoded.CurrentPassword, stored.PasswordHash))
         {
-            var errors = new[] { "Das aktuelle Passwort ist falsch." };
             return Response.Html(
-                UserSettingsViews.Settings(user, errors, env.CurrentUser),
+                UserSettingsViews.Settings(user, ["auth.error.current_password_wrong"], env.CurrentUser, env.T),
                 400);
         }
 
