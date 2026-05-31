@@ -42,6 +42,31 @@ public class RouterTests
         Assert.Equal("/login", response.Headers["Location"]);
     }
 
+    [Fact]
+    public async Task Get_recipes_returns_200_html_response()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("GET", "/recipes", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(200, response.Status);
+        Assert.StartsWith("text/html", response.ContentType);
+    }
+
+    [Fact]
+    public async Task Get_recipe_by_id_returns_404_for_unknown_recipe()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("GET", "/recipes/987654", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(404, response.Status);
+    }
+
     private static Env BuildEnv() => new(
         Articles: new InMemoryArticleRepository(),
         Users: new InMemoryUserRepository(),

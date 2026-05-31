@@ -3,4 +3,8 @@
   <PropertyGroup>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Funcky.DiscriminatedUnion" PrivateAssets="all" />
+  </ItemGroup>
+
 </Project>

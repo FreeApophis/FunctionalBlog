@@ -53,7 +53,7 @@ public static class RecipeViews
             var name = ingredientMap.TryGetValue(ri.IngredientId, out var ing)
                 ? Html.Encode(ing.Name.Value)
                 : "?";
-            return $"<tr><td>{ri.Amount:G29} {Html.Encode(ri.Unit)}</td><td>{name}</td></tr>";
+            return $"<tr><td>{ri.Amount:G29} {Html.Encode(ri.Unit.Abbreviation)}</td><td>{name}</td></tr>";
         }));
         var ingredientTable = recipe.Ingredients.Count > 0
             ? $"<table><tbody>{ingredientRows}</tbody></table>"

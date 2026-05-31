@@ -50,6 +50,67 @@ public sealed class SeederTests
         Assert.Single(users, u => u.Email.Value == "admin@blog.de");
     }
 
+    [Fact]
+    public async Task SeedAsync_creates_sample_ingredients()
+    {
+        var env = BuildEnv();
+
+        await Seeder.SeedAsync(env);
+
+        var ingredients = await env.Ingredients.All();
+        Assert.Contains(ingredients, i => i.Name.Value == "Mehl");
+        Assert.Contains(ingredients, i => i.Name.Value == "Zucker");
+        Assert.Contains(ingredients, i => i.Name.Value == "Butter");
+        Assert.Contains(ingredients, i => i.Name.Value == "Eier");
+        Assert.Contains(ingredients, i => i.Name.Value == "Milch");
+    }
+
+    [Fact]
+    public async Task SeedAsync_creates_sample_recipes()
+    {
+        var env = BuildEnv();
+
+        await Seeder.SeedAsync(env);
+
+        var recipes = await env.Recipes.All();
+        Assert.Contains(recipes, r => r.Name.Value == "Einfacher Rührkuchen");
+        Assert.Contains(recipes, r => r.Name.Value == "Pfannkuchen");
+    }
+
+    [Fact]
+    public async Task SeedAsync_creates_kartoffelgulasch_recipe()
+    {
+        var env = BuildEnv();
+
+        await Seeder.SeedAsync(env);
+
+        var recipes = await env.Recipes.All();
+        Assert.Contains(recipes, r => r.Name.Value == "Kartoffelgulasch");
+    }
+
+    [Fact]
+    public async Task SeedAsync_creates_aelpler_one_pot_recipe()
+    {
+        var env = BuildEnv();
+
+        await Seeder.SeedAsync(env);
+
+        var recipes = await env.Recipes.All();
+        Assert.Contains(recipes, r => r.Name.Value == "Älpler One-Pot");
+    }
+
+    [Fact]
+    public async Task SeedAsync_is_idempotent_for_recipes_when_called_twice()
+    {
+        var env = BuildEnv();
+
+        await Seeder.SeedAsync(env);
+        await Seeder.SeedAsync(env);
+
+        var recipes = await env.Recipes.All();
+        Assert.Single(recipes, r => r.Name.Value == "Pfannkuchen");
+    }
+
     private static Env BuildEnv() => new(
         Articles: new InMemoryArticleRepository(),
         Users: new InMemoryUserRepository(),
