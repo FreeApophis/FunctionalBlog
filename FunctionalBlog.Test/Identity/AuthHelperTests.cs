@@ -75,7 +75,9 @@ public sealed class AuthHelperTests
         PasswordHasher: new Pbkdf2PasswordHasher(),
         Clock: new SystemClock(),
         Log: new ConsoleLog(),
-        CurrentUser: principal);
+        CurrentUser: principal,
+        Recipes: new InMemoryRecipeRepository(),
+        Ingredients: new InMemoryIngredientRepository());
 
     private static AuthenticatedUser AuthUser(IReadOnlyList<Role>? roles = null)
     {

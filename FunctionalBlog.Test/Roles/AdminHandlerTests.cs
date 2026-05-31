@@ -116,7 +116,9 @@ public sealed class AdminHandlerTests
         PasswordHasher: new Pbkdf2PasswordHasher(),
         Clock: new SystemClock(),
         Log: new ConsoleLog(),
-        CurrentUser: principal);
+        CurrentUser: principal,
+        Recipes: new InMemoryRecipeRepository(),
+        Ingredients: new InMemoryIngredientRepository());
 
     private static Request ARequest() =>
         new("GET", "/admin/users", Empty, Empty, Empty, Empty);

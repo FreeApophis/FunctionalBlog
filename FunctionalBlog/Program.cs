@@ -43,5 +43,7 @@ internal class Program
             Clock: new SystemClock(),
             Log: new ConsoleLog(),
             CurrentUser: Guest.Instance,
+            Recipes: new InMemoryRecipeRepository(),
+            Ingredients: new InMemoryIngredientRepository(),
             Translations: translations);
 }

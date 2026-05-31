@@ -51,7 +51,9 @@ public class RouterTests
         PasswordHasher: new Pbkdf2PasswordHasher(),
         Clock: new SystemClock(),
         Log: new ConsoleLog(),
-        CurrentUser: Guest.Instance);
+        CurrentUser: Guest.Instance,
+        Recipes: new InMemoryRecipeRepository(),
+        Ingredients: new InMemoryIngredientRepository());
 
     private static readonly App NotFoundTerminal = _ => _ => ValueTask.FromResult(Response.NotFound());
     private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();

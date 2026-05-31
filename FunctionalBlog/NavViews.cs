@@ -4,7 +4,7 @@ public static class NavViews
 {
     public static string Nav(IPrincipal principal, Translate t)
     {
-        var links = Html.Link("/", t("nav.blog"));
+        var links = Html.Link("/", t("nav.blog")) + " · " + Html.Link("/recipes", t("nav.recipes"));
 
         if (principal is AuthenticatedUser user)
         {

@@ -141,7 +141,9 @@ public sealed class AuthHandlerTests
         PasswordHasher: new Pbkdf2PasswordHasher(),
         Clock: new SystemClock(),
         Log: log ?? new ConsoleLog(),
-        CurrentUser: Guest.Instance);
+        CurrentUser: Guest.Instance,
+        Recipes: new InMemoryRecipeRepository(),
+        Ingredients: new InMemoryIngredientRepository());
 
     private static async Task SeedRoles(Env env)
     {

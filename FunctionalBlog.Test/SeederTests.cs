@@ -59,5 +59,7 @@ public sealed class SeederTests
         PasswordHasher: new Pbkdf2PasswordHasher(),
         Clock: new SystemClock(),
         Log: new ConsoleLog(),
-        CurrentUser: Guest.Instance);
+        CurrentUser: Guest.Instance,
+        Recipes: new InMemoryRecipeRepository(),
+        Ingredients: new InMemoryIngredientRepository());
 }

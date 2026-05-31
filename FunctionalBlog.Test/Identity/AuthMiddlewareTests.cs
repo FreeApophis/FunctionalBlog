@@ -70,7 +70,9 @@ public sealed class AuthMiddlewareTests
         PasswordHasher: new Pbkdf2PasswordHasher(),
         Clock: new SystemClock(),
         Log: new ConsoleLog(),
-        CurrentUser: Guest.Instance);
+        CurrentUser: Guest.Instance,
+        Recipes: new InMemoryRecipeRepository(),
+        Ingredients: new InMemoryIngredientRepository());
 
     private static Request RequestWithCookie(string name, string value) =>
         new("GET", "/", EmptyDict, EmptyDict, EmptyDict, new Dictionary<string, string> { [name] = value });

@@ -10,6 +10,8 @@ public sealed record Env(
     IClock Clock,
     ILog Log,
     IPrincipal CurrentUser,
+    IRecipeRepository Recipes,
+    IIngredientRepository Ingredients,
     ITranslationRepository? Translations = null,
     TranslationCache? TranslationCache = null,
     string Language = Languages.Default)

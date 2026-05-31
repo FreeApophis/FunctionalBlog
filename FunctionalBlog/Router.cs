@@ -15,6 +15,7 @@ public static class Router
         {
             ("GET", "/") => BlogHandlers.Index,
             ("GET", "/styles.css") => StaticHandlers.Styles,
+            ("GET", "/recipes") => RecipeHandlers.Index,
             ("GET", "/articles/new") => Auth.RequirePermission<Create>(new ArticleResource(), BlogHandlers.NewArticleForm),
             ("POST", "/articles") => Auth.RequirePermission<Create>(new ArticleResource(), BlogHandlers.CreateArticle),
             ("GET", "/register") => AuthHandlers.NewRegisterForm,
@@ -35,6 +36,7 @@ public static class Router
             ("POST", "/lang") => TranslationHandlers.SetLanguage,
             ("GET", "/admin/translations") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.List),
             ("GET", "/admin/translations/export.json") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.Export),
+            _ when request.Method == "GET" && TryRecipePath(request.Path, out var recipeId) => RecipeHandlers.ShowRecipe(recipeId),
             _ when request.Method == "GET" && TryArticlePath(request.Path, out var id) => BlogHandlers.ShowArticle(id),
             _ when request.Method == "GET" && TryAdminUsersPath(request.Path) => Auth.RequirePermission<Manage>(new UserResource(), AdminHandlers.UserDetail(ExtractAdminUserId(request.Path))),
             _ when request.Method == "POST" && TryAdminUserRolesPath(request.Path) => Auth.RequirePermission<Manage>(new UserResource(), AdminHandlers.UpdateUserRoles(ExtractAdminUserId(request.Path))),
@@ -44,6 +46,27 @@ public static class Router
             _ when request.Method == "POST" && TryTranslationSavePath(request.Path, out var tKey, out var tLang) => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.Save(tKey, tLang)),
             _ => null,
         };
+
+    private static bool TryRecipePath(string path, [NotNullWhen(true)] out RecipeId? id)
+    {
+        id = default;
+        const string prefix = "/recipes/";
+
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var raw = path[prefix.Length..];
+
+        if (!int.TryParse(raw, out var value))
+        {
+            return false;
+        }
+
+        id = new RecipeId(value);
+        return true;
+    }
 
     private static bool TryArticlePath(string path, [NotNullWhen(true)] out ArticleId? id)
     {

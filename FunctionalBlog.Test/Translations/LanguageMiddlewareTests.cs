@@ -43,7 +43,9 @@ public sealed class LanguageMiddlewareTests
         PasswordHasher: new Pbkdf2PasswordHasher(),
         Clock: new SystemClock(),
         Log: new ConsoleLog(),
-        CurrentUser: Guest.Instance);
+        CurrentUser: Guest.Instance,
+        Recipes: new InMemoryRecipeRepository(),
+        Ingredients: new InMemoryIngredientRepository());
 
     private static Request RequestWithCookie(string name, string value) =>
         new("GET", "/", Empty, Empty, Empty, new Dictionary<string, string> { [name] = value });
