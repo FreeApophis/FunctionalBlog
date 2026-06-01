@@ -57,6 +57,10 @@ public static class TranslationSeeder
         ("common.back",        "en", "← Back"),
         ("common.back",        "it", "← Indietro"),
         ("common.back",        "fr", "← Retour"),
+        ("common.delete",      "de", "Löschen"),
+        ("common.delete",      "en", "Delete"),
+        ("common.delete",      "it", "Elimina"),
+        ("common.delete",      "fr", "Supprimer"),
         ("common.edit",        "de", "Bearbeiten"),
         ("common.edit",        "en", "Edit"),
         ("common.edit",        "it", "Modifica"),
@@ -611,6 +615,10 @@ public static class TranslationSeeder
         ("ingredient.error.fiber_invalid",        "en", "Fiber must be ≥ 0."),
         ("ingredient.error.fiber_invalid",        "it", "Le fibre devono essere ≥ 0."),
         ("ingredient.error.fiber_invalid",        "fr", "Les fibres doivent être ≥ 0."),
+        ("ingredient.error.in_use",               "de", "Diese Zutat wird noch in Rezepten verwendet und kann nicht gelöscht werden."),
+        ("ingredient.error.in_use",               "en", "This ingredient is still used in recipes and cannot be deleted."),
+        ("ingredient.error.in_use",               "it", "Questo ingrediente è ancora utilizzato nelle ricette e non può essere eliminato."),
+        ("ingredient.error.in_use",               "fr", "Cet ingrédient est encore utilisé dans des recettes et ne peut pas être supprimé."),
 
         // Error page
         ("error.title",   "de", "Fehler"),

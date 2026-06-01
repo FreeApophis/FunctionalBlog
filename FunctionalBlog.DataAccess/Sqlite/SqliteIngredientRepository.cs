@@ -59,6 +59,11 @@ public sealed class SqliteIngredientRepository : IIngredientRepository
             });
     }
 
+    public async ValueTask Delete(IngredientId id)
+    {
+        await _connection.ExecuteAsync("DELETE FROM ingredients WHERE id = @id", new { id = id.Value });
+    }
+
     private static Ingredient ToIngredient(IngredientRow row) =>
         Ingredient.Create(
             new IngredientId((int)row.Id),

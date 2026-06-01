@@ -32,7 +32,11 @@ public static class BlogViews
             ? " · " + Html.Link($"/articles/{article.Id.Value}/edit", t("common.edit"))
             : string.Empty;
 
-        var body = Html.P(Html.Link("/", t("common.back")) + editLink) +
+        var deleteForm = principal.Can<Delete>(new ArticleResource())
+            ? $"""<form method="post" action="/articles/{article.Id.Value}/delete" style="display:inline"> · <button type="submit">{Html.Encode(t("common.delete"))}</button></form>"""
+            : string.Empty;
+
+        var body = Html.P(Html.Link("/", t("common.back")) + editLink + deleteForm) +
             Html.H1(article.Title.Value) +
             Html.Small($"{t("article.by")} {Html.Encode(authorName)} · {article.PublishedAt.LocalDateTime:g}") +
             Html.P(Html.Encode(article.Teaser.Value)) +

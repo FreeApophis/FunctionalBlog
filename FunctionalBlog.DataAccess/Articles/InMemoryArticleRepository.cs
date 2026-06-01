@@ -22,4 +22,10 @@ public sealed class InMemoryArticleRepository : IArticleRepository
         _articles[article.Id.Value] = article;
         return ValueTask.CompletedTask;
     }
+
+    public ValueTask Delete(ArticleId id)
+    {
+        _articles.TryRemove(id.Value, out _);
+        return ValueTask.CompletedTask;
+    }
 }

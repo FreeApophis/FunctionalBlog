@@ -9,4 +9,6 @@ public interface IArticleRepository
     ValueTask<ArticleId> NextId();
 
     ValueTask Save(Article article);
+
+    ValueTask Delete(ArticleId id);
 }

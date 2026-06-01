@@ -70,6 +70,19 @@ public static class BlogHandlers
             titleKey: "article.edit_title"));
     };
 
+    public static App DeleteArticle(ArticleId id) => _ => async env =>
+    {
+        var existing = await env.Articles.Find(id);
+
+        if (existing is null)
+        {
+            return Response.NotFound();
+        }
+
+        await env.Articles.Delete(id);
+        return Response.Redirect("/");
+    };
+
     public static App UpdateArticle(ArticleId id) => request => async env =>
     {
         var existing = await env.Articles.Find(id);

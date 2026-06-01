@@ -72,6 +72,26 @@ public abstract class IngredientRepositoryContract
         Assert.Equal(updated, await repo.Find(id));
     }
 
+    [Fact]
+    public async Task Delete_removes_the_ingredient()
+    {
+        var repo = CreateRepository();
+        var id = await repo.NextId();
+        await repo.Save(AnIngredient(id));
+
+        await repo.Delete(id);
+
+        Assert.Null(await repo.Find(id));
+    }
+
+    [Fact]
+    public async Task Delete_is_idempotent_for_unknown_id()
+    {
+        var repo = CreateRepository();
+
+        await repo.Delete(new IngredientId(987_654));
+    }
+
     protected abstract IIngredientRepository CreateRepository();
 
     private static Ingredient AnIngredient(IngredientId id, string name = "Zutat") =>

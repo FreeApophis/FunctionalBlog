@@ -9,4 +9,6 @@ public interface IRecipeRepository
     ValueTask<RecipeId> NextId();
 
     ValueTask Save(Recipe recipe);
+
+    ValueTask Delete(RecipeId id);
 }

@@ -45,8 +45,11 @@ public static class Router
             ("GET", "/admin/translations") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.List),
             ("GET", "/admin/translations/export.json") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.Export),
             _ when request.Method == "GET" && TryArticleEditPath(request.Path, out var articleEditId) => Auth.RequirePermission<Edit>(new ArticleResource(), BlogHandlers.EditArticleForm(articleEditId)),
+            _ when request.Method == "POST" && TryArticleDeletePath(request.Path, out var articleDeleteId) => Auth.RequirePermission<Delete>(new ArticleResource(), BlogHandlers.DeleteArticle(articleDeleteId)),
             _ when request.Method == "POST" && TryArticlePath(request.Path, out var articleUpdateId) => Auth.RequirePermission<Edit>(new ArticleResource(), BlogHandlers.UpdateArticle(articleUpdateId)),
+            _ when request.Method == "POST" && TryRecipeDeletePath(request.Path, out var recipeDeleteId) => Auth.RequirePermission<Delete>(new RecipeResource(), RecipeHandlers.DeleteRecipe(recipeDeleteId)),
             _ when request.Method == "GET" && TryAdminIngredientEditPath(request.Path, out var ingEditId) => Auth.RequirePermission<Edit>(new IngredientResource(), AdminIngredientHandlers.EditForm(ingEditId)),
+            _ when request.Method == "POST" && TryAdminIngredientDeletePath(request.Path, out var ingDeleteId) => Auth.RequirePermission<Manage>(new IngredientResource(), AdminIngredientHandlers.Delete(ingDeleteId)),
             _ when request.Method == "POST" && TryAdminIngredientPath(request.Path, out var ingUpdateId) => Auth.RequirePermission<Edit>(new IngredientResource(), AdminIngredientHandlers.Update(ingUpdateId)),
             _ when request.Method == "GET" && TryRecipeEditPath(request.Path, out var editId) => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.EditRecipeForm(editId)),
             _ when request.Method == "POST" && TryRecipePath(request.Path, out var updateId) => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.UpdateRecipe(updateId)),
@@ -203,6 +206,75 @@ public static class Router
         key = rest[..lastSlash];
         language = rest[(lastSlash + 1)..];
         return key.Length > 0 && language.Length > 0;
+    }
+
+    private static bool TryArticleDeletePath(string path, [NotNullWhen(true)] out ArticleId? id)
+    {
+        id = default;
+        const string prefix = "/articles/";
+        const string suffix = "/delete";
+
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+            !path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var raw = path[prefix.Length..^suffix.Length];
+
+        if (!int.TryParse(raw, out var value))
+        {
+            return false;
+        }
+
+        id = new ArticleId(value);
+        return true;
+    }
+
+    private static bool TryRecipeDeletePath(string path, [NotNullWhen(true)] out RecipeId? id)
+    {
+        id = default;
+        const string prefix = "/recipes/";
+        const string suffix = "/delete";
+
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+            !path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var raw = path[prefix.Length..^suffix.Length];
+
+        if (!int.TryParse(raw, out var value))
+        {
+            return false;
+        }
+
+        id = new RecipeId(value);
+        return true;
+    }
+
+    private static bool TryAdminIngredientDeletePath(string path, [NotNullWhen(true)] out IngredientId? id)
+    {
+        id = default;
+        const string prefix = "/admin/ingredients/";
+        const string suffix = "/delete";
+
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+            !path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var raw = path[prefix.Length..^suffix.Length];
+
+        if (!int.TryParse(raw, out var value))
+        {
+            return false;
+        }
+
+        id = new IngredientId(value);
+        return true;
     }
 
     private static bool TryAdminIngredientPath(string path, [NotNullWhen(true)] out IngredientId? id)

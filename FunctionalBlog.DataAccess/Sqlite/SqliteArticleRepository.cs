@@ -53,6 +53,11 @@ public sealed class SqliteArticleRepository : IArticleRepository
             });
     }
 
+    public async ValueTask Delete(ArticleId id)
+    {
+        await _connection.ExecuteAsync("DELETE FROM articles WHERE id = @id", new { id = id.Value });
+    }
+
     private static Article ToArticle(ArticleRow row) =>
         Article.Create(
             new ArticleId((int)row.Id),

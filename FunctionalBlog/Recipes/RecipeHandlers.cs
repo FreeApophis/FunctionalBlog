@@ -218,6 +218,19 @@ public static class RecipeHandlers
         return ValueTask.FromResult(Response.Html(RecipeViews.StepSection(steps, env.T)));
     };
 
+    public static App DeleteRecipe(RecipeId id) => _ => async env =>
+    {
+        var existing = await env.Recipes.Find(id);
+
+        if (existing is null)
+        {
+            return Response.NotFound();
+        }
+
+        await env.Recipes.Delete(id);
+        return Response.Redirect("/recipes");
+    };
+
     public static App EditRecipeForm(RecipeId id) => _ => async env =>
     {
         var recipe = await env.Recipes.Find(id);

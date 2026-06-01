@@ -12,10 +12,10 @@ public sealed class SqliteTestBase : IDisposable
     public SqliteTestBase()
     {
         _dbPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid():N}.db");
-        DatabaseMigrator.Migrate($"Data Source={_dbPath}");
-        SqliteConnection.ClearAllPools();
+        var cs = $"Data Source={_dbPath};Pooling=False";
+        DatabaseMigrator.Migrate(cs);
 
-        var connection = new SqliteConnection($"Data Source={_dbPath}");
+        var connection = new SqliteConnection(cs);
         connection.Open();
         using var cmd = connection.CreateCommand();
         cmd.CommandText = "PRAGMA foreign_keys=ON;";
@@ -27,7 +27,6 @@ public sealed class SqliteTestBase : IDisposable
     {
         Connection.Close();
         Connection.Dispose();
-        SqliteConnection.ClearAllPools();
 
         foreach (var path in new[] { _dbPath, _dbPath + "-wal", _dbPath + "-shm" })
         {

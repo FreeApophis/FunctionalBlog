@@ -22,4 +22,10 @@ public sealed class InMemoryRecipeRepository : IRecipeRepository
         _recipes[recipe.Id.Value] = recipe;
         return ValueTask.CompletedTask;
     }
+
+    public ValueTask Delete(RecipeId id)
+    {
+        _recipes.TryRemove(id.Value, out _);
+        return ValueTask.CompletedTask;
+    }
 }

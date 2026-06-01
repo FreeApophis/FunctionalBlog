@@ -76,7 +76,11 @@ public static class RecipeViews
             ? " · " + Html.Link($"/recipes/{recipe.Id.Value}/edit", t("recipe.edit_link"))
             : string.Empty;
 
-        var body = Html.P(Html.Link("/recipes", t("common.back")) + editLink) +
+        var deleteForm = principal.Can<Delete>(new RecipeResource())
+            ? $"""<form method="post" action="/recipes/{recipe.Id.Value}/delete" style="display:inline"> · <button type="submit">{Html.Encode(t("common.delete"))}</button></form>"""
+            : string.Empty;
+
+        var body = Html.P(Html.Link("/recipes", t("common.back")) + editLink + deleteForm) +
             Html.H1(recipe.Name.Value) +
             meta +
             tags +

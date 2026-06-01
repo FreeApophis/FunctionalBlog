@@ -72,6 +72,26 @@ public abstract class RecipeRepositoryContract
         Assert.Equal(updated, await repo.Find(id));
     }
 
+    [Fact]
+    public async Task Delete_removes_the_recipe()
+    {
+        var repo = CreateRepository();
+        var id = await repo.NextId();
+        await repo.Save(ARecipe(id));
+
+        await repo.Delete(id);
+
+        Assert.Null(await repo.Find(id));
+    }
+
+    [Fact]
+    public async Task Delete_is_idempotent_for_unknown_id()
+    {
+        var repo = CreateRepository();
+
+        await repo.Delete(new RecipeId(987_654));
+    }
+
     protected abstract IRecipeRepository CreateRepository();
 
     private static Recipe ARecipe(RecipeId id, string name = "Rezept") =>

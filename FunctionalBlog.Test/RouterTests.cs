@@ -186,6 +186,45 @@ public class RouterTests
     }
 
     [Fact]
+    public async Task Post_delete_article_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("POST", "/articles/1/delete", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
+    public async Task Post_delete_recipe_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("POST", "/recipes/1/delete", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
+    public async Task Post_delete_ingredient_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("POST", "/admin/ingredients/1/delete", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
     public async Task Get_admin_ingredients_redirects_guest_to_login()
     {
         var app = Router.Create()(NotFoundTerminal);

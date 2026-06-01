@@ -4,10 +4,29 @@ namespace FunctionalBlog.Ingredients;
 
 public static class AdminIngredientHandlers
 {
-    public static App List => _ => async env =>
+    public static App List => request => async env =>
     {
         var ingredients = await env.Ingredients.All();
-        return Response.Html(AdminIngredientViews.List(ingredients, env.CurrentUser, env.T));
+        var error = request.Query.GetValueOrDefault("error", string.Empty);
+        return Response.Html(AdminIngredientViews.List(ingredients, env.CurrentUser, env.T, error));
+    };
+
+    public static App Delete(IngredientId id) => _ => async env =>
+    {
+        var recipes = await env.Recipes.All();
+        if (recipes.Any(r => r.Ingredients.Any(i => i.IngredientId.Value == id.Value)))
+        {
+            return Response.Redirect("/admin/ingredients?error=in-use");
+        }
+
+        var existing = await env.Ingredients.Find(id);
+        if (existing is null)
+        {
+            return Response.NotFound();
+        }
+
+        await env.Ingredients.Delete(id);
+        return Response.Redirect("/admin/ingredients");
     };
 
     public static App NewForm => _ => env =>

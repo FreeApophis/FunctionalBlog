@@ -22,4 +22,10 @@ public sealed class InMemoryIngredientRepository : IIngredientRepository
         _ingredients[ingredient.Id.Value] = ingredient;
         return ValueTask.CompletedTask;
     }
+
+    public ValueTask Delete(IngredientId id)
+    {
+        _ingredients.TryRemove(id.Value, out _);
+        return ValueTask.CompletedTask;
+    }
 }

@@ -165,6 +165,11 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
         transaction.Commit();
     }
 
+    public async ValueTask Delete(RecipeId id)
+    {
+        await _connection.ExecuteAsync("DELETE FROM recipes WHERE id = @id", new { id = id.Value });
+    }
+
     private static Recipe BuildRecipe(
         RecipeRow row,
         IReadOnlyList<StepRow> steps,

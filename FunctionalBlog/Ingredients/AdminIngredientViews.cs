@@ -2,11 +2,18 @@ namespace FunctionalBlog.Ingredients;
 
 public static class AdminIngredientViews
 {
-    public static string List(IReadOnlyList<Ingredient> ingredients, IPrincipal principal, Translate t)
+    public static string List(IReadOnlyList<Ingredient> ingredients, IPrincipal principal, Translate t, string error = "")
     {
-        string Row(Ingredient ing) =>
-            $"<tr><td>{Html.Encode(ing.Name.Value)}</td><td>{Html.Encode(ing.Description)}</td>" +
-            $"<td>{Html.Link($"/admin/ingredients/{ing.Id.Value}/edit", t("common.edit"))}</td></tr>";
+        string Row(Ingredient ing)
+        {
+            var deleteForm = $"""<form method="post" action="/admin/ingredients/{ing.Id.Value}/delete" style="display:inline"><button type="submit">{Html.Encode(t("common.delete"))}</button></form>""";
+            return $"<tr><td>{Html.Encode(ing.Name.Value)}</td><td>{Html.Encode(ing.Description)}</td>" +
+                $"<td>{Html.Link($"/admin/ingredients/{ing.Id.Value}/edit", t("common.edit"))} {deleteForm}</td></tr>";
+        }
+
+        var errorHtml = error == "in-use"
+            ? Html.Div("errors", Html.P(t("ingredient.error.in_use")))
+            : string.Empty;
 
         var table = $"""
             <table>
@@ -18,6 +25,7 @@ public static class AdminIngredientViews
         var body = Html.H1(t("ingredient.list_title")) +
             Html.P(Html.Link("/admin/ingredients/new", t("ingredient.new_ingredient"))) +
             Html.P(Html.Link("/admin/users", "← Admin")) +
+            errorHtml +
             (ingredients.Count == 0 ? Html.P(t("ingredient.no_ingredients")) : table);
 
         return Layout.Page(t("ingredient.list_title"), body, principal, t);

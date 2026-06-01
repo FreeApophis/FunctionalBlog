@@ -9,4 +9,6 @@ public interface IIngredientRepository
     ValueTask<IngredientId> NextId();
 
     ValueTask Save(Ingredient ingredient);
+
+    ValueTask Delete(IngredientId id);
 }
