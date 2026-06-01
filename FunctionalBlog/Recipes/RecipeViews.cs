@@ -46,10 +46,7 @@ public static class RecipeViews
             : string.Empty;
 
         var steps = recipe.PreparationSteps.Count > 0
-            ? "<ol>" + string.Concat(
-                recipe.PreparationSteps
-                    .OrderBy(s => s.SortOrder)
-                    .Select(s => $"<li>{Html.Encode(s.Text)}</li>")) + "</ol>"
+            ? Html.Ol(recipe.PreparationSteps.OrderBy(s => s.SortOrder).Select(s => Html.Encode(s.Text)))
             : Html.P(t("recipe.no_steps"));
 
         var ingredientRows = string.Concat(recipe.Ingredients.Select(ri =>

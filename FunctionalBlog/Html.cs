@@ -8,7 +8,7 @@ public static class Html
 
     public static string H1(string value) => $"<h1>{Encode(value)}</h1>";
 
-    public static string H2(string value) => $"<h2>{value}</h2>";
+    public static string H2(string value) => $"<h2>{Encode(value)}</h2>";
 
     public static string P(string value) => $"<p>{value}</p>";
 
@@ -20,8 +20,11 @@ public static class Html
 
     public static string Div(string cssClass, string body) => $"<div class=\"{Encode(cssClass)}\">{body}</div>";
 
-    public static string Ul(IEnumerable<string> encodedItems) =>
-        "<ul>" + string.Join(string.Empty, encodedItems.Select(x => $"<li>{x}</li>")) + "</ul>";
+    public static string Ul(IEnumerable<string> items) =>
+        "<ul>" + string.Join(string.Empty, items.Select(x => $"<li>{x}</li>")) + "</ul>";
+
+    public static string Ol(IEnumerable<string> items) =>
+        "<ol>" + string.Join(string.Empty, items.Select(x => $"<li>{x}</li>")) + "</ol>";
 
     public static string Paragraphs(string text) =>
         string.Join(string.Empty, text
