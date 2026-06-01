@@ -28,7 +28,11 @@ public static class BlogViews
 
     public static string Show(Article article, IPrincipal principal, string authorName, Translate t)
     {
-        var body = Html.P(Html.Link("/", t("common.back"))) +
+        var editLink = principal.Can<Edit>(new ArticleResource())
+            ? " · " + Html.Link($"/articles/{article.Id.Value}/edit", t("common.edit"))
+            : string.Empty;
+
+        var body = Html.P(Html.Link("/", t("common.back")) + editLink) +
             Html.H1(article.Title.Value) +
             Html.Small($"{t("article.by")} {Html.Encode(authorName)} · {article.PublishedAt.LocalDateTime:g}") +
             Html.P(Html.Encode(article.Teaser.Value)) +
@@ -37,14 +41,22 @@ public static class BlogViews
         return Layout.Page(article.Title.Value, body, principal, t);
     }
 
-    public static string Form(IReadOnlyList<string> errors, string title, string teaser, string text, IPrincipal principal, Translate t)
+    public static string Form(
+        IReadOnlyList<string> errors,
+        string title,
+        string teaser,
+        string text,
+        IPrincipal principal,
+        Translate t,
+        string formAction = "/articles",
+        string titleKey = "article.new_title")
     {
         var errorHtml = errors.Count == 0
             ? string.Empty
             : Html.Div("errors", Html.Ul(errors.Select(key => t(key))));
 
         var form = $"""
-            <form method="post" action="/articles">
+            <form method="post" action="{Html.Encode(formAction)}">
                 <label>
                     {Html.Encode(t("article.field.title"))}
                     <input name="title" value="{Html.Encode(title)}" />
@@ -65,10 +77,10 @@ public static class BlogViews
             """;
 
         var body = Html.P(Html.Link("/", t("common.back"))) +
-            Html.H1(t("article.new_title")) +
+            Html.H1(t(titleKey)) +
             errorHtml +
             form;
 
-        return Layout.Page(t("article.new_title"), body, principal, t);
+        return Layout.Page(t(titleKey), body, principal, t);
     }
 }

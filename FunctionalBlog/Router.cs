@@ -44,6 +44,8 @@ public static class Router
             ("POST", "/lang") => TranslationHandlers.SetLanguage,
             ("GET", "/admin/translations") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.List),
             ("GET", "/admin/translations/export.json") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.Export),
+            _ when request.Method == "GET" && TryArticleEditPath(request.Path, out var articleEditId) => Auth.RequirePermission<Edit>(new ArticleResource(), BlogHandlers.EditArticleForm(articleEditId)),
+            _ when request.Method == "POST" && TryArticlePath(request.Path, out var articleUpdateId) => Auth.RequirePermission<Edit>(new ArticleResource(), BlogHandlers.UpdateArticle(articleUpdateId)),
             _ when request.Method == "GET" && TryAdminIngredientEditPath(request.Path, out var ingEditId) => Auth.RequirePermission<Edit>(new IngredientResource(), AdminIngredientHandlers.EditForm(ingEditId)),
             _ when request.Method == "POST" && TryAdminIngredientPath(request.Path, out var ingUpdateId) => Auth.RequirePermission<Edit>(new IngredientResource(), AdminIngredientHandlers.Update(ingUpdateId)),
             _ when request.Method == "GET" && TryRecipeEditPath(request.Path, out var editId) => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.EditRecipeForm(editId)),
@@ -114,6 +116,29 @@ public static class Router
         }
 
         var raw = path[prefix.Length..];
+
+        if (!int.TryParse(raw, out var value))
+        {
+            return false;
+        }
+
+        id = new ArticleId(value);
+        return true;
+    }
+
+    private static bool TryArticleEditPath(string path, [NotNullWhen(true)] out ArticleId? id)
+    {
+        id = default;
+        const string prefix = "/articles/";
+        const string suffix = "/edit";
+
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+            !path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var raw = path[prefix.Length..^suffix.Length];
 
         if (!int.TryParse(raw, out var value))
         {

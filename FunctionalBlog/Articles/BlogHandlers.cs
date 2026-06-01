@@ -49,4 +49,63 @@ public static class BlogHandlers
 
         return Response.Redirect($"/articles/{article.Id.Value}");
     };
+
+    public static App EditArticleForm(ArticleId id) => _ => async env =>
+    {
+        var article = await env.Articles.Find(id);
+
+        if (article is null)
+        {
+            return Response.NotFound();
+        }
+
+        return Response.Html(BlogViews.Form(
+            [],
+            article.Title.Value,
+            article.Teaser.Value,
+            article.Text.Value,
+            env.CurrentUser,
+            env.T,
+            formAction: $"/articles/{id.Value}",
+            titleKey: "article.edit_title"));
+    };
+
+    public static App UpdateArticle(ArticleId id) => request => async env =>
+    {
+        var existing = await env.Articles.Find(id);
+
+        if (existing is null)
+        {
+            return Response.NotFound();
+        }
+
+        var decoded = ArticleForm.Decode(request);
+
+        if (!decoded.IsValid)
+        {
+            return Response.Html(
+                BlogViews.Form(
+                    decoded.Errors,
+                    decoded.Title,
+                    decoded.Teaser,
+                    decoded.Text,
+                    env.CurrentUser,
+                    env.T,
+                    formAction: $"/articles/{id.Value}",
+                    titleKey: "article.edit_title"),
+                400);
+        }
+
+        var updated = Article.Create(
+            id: id,
+            title: new ArticleTitle(decoded.Title),
+            teaser: new ArticleTeaser(decoded.Teaser),
+            text: new ArticleText(decoded.Text),
+            authorId: existing.AuthorId,
+            publishedAt: existing.PublishedAt);
+
+        await env.Articles.Save(updated);
+
+        return Response.Redirect($"/articles/{id.Value}");
+    };
 }

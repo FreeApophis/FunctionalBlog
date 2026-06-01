@@ -160,6 +160,32 @@ public class RouterTests
     }
 
     [Fact]
+    public async Task Get_article_edit_form_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("GET", "/articles/1/edit", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
+    public async Task Post_article_update_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("POST", "/articles/1", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
     public async Task Get_admin_ingredients_redirects_guest_to_login()
     {
         var app = Router.Create()(NotFoundTerminal);
