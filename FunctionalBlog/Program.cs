@@ -2,13 +2,18 @@ namespace FunctionalBlog;
 
 internal class Program
 {
+    private const string ConnectionString = "Data Source=blog.db";
+
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         var web = builder.Build();
 
-        var translations = new InMemoryTranslationRepository();
-        var env = BuildEnv(translations);
+        DatabaseMigrator.Migrate(ConnectionString);
+        using var connection = SqliteConnectionFactory.Create(ConnectionString);
+
+        var translations = new SqliteTranslationRepository(connection);
+        var env = BuildEnv(connection, translations);
 
         await Seeder.SeedAsync(env);
         var translationCache = await TranslationCache.LoadAsync(translations);
@@ -32,18 +37,18 @@ internal class Program
         web.Run();
     }
 
-    private static Env BuildEnv(ITranslationRepository translations)
+    private static Env BuildEnv(System.Data.IDbConnection connection, ITranslationRepository translations)
         => new(
-            Articles: new InMemoryArticleRepository(),
-            Users: new InMemoryUserRepository(),
-            Roles: new InMemoryRoleRepository(),
-            Sessions: new InMemorySessionStore(),
-            PasswordResets: new InMemoryPasswordResetTokenStore(),
+            Articles: new SqliteArticleRepository(connection),
+            Users: new SqliteUserRepository(connection),
+            Roles: new SqliteRoleRepository(connection),
+            Sessions: new SqliteSessionStore(connection),
+            PasswordResets: new SqlitePasswordResetTokenStore(connection),
             PasswordHasher: new Pbkdf2PasswordHasher(),
             Clock: new SystemClock(),
             Log: new ConsoleLog(),
             CurrentUser: Guest.Instance,
-            Recipes: new InMemoryRecipeRepository(),
-            Ingredients: new InMemoryIngredientRepository(),
+            Recipes: new SqliteRecipeRepository(connection),
+            Ingredients: new SqliteIngredientRepository(connection),
             Translations: translations);
 }

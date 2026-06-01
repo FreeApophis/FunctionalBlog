@@ -26,4 +26,20 @@ public sealed record Recipe(
         IReadOnlyList<string> images,
         IReadOnlyList<RecipeHint> hints) =>
         new(id, name, description, preparationSteps, authorId, difficulty, tags, portions, ingredients, images, hints);
+
+    public bool Equals(Recipe? other) =>
+        other is not null &&
+        Id == other.Id &&
+        Name == other.Name &&
+        Description == other.Description &&
+        PreparationSteps.SequenceEqual(other.PreparationSteps) &&
+        AuthorId == other.AuthorId &&
+        Difficulty == other.Difficulty &&
+        Tags.SequenceEqual(other.Tags) &&
+        Portions == other.Portions &&
+        Ingredients.SequenceEqual(other.Ingredients) &&
+        Images.SequenceEqual(other.Images) &&
+        Hints.SequenceEqual(other.Hints);
+
+    public override int GetHashCode() => Id.GetHashCode();
 }

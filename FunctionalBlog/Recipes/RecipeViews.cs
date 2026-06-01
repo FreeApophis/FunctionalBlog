@@ -72,7 +72,11 @@ public static class RecipeViews
             $"{t(DifficultyKey(recipe.Difficulty))} · " +
             $"{recipe.Portions} {t("recipe.portions")}");
 
-        var body = Html.P(Html.Link("/recipes", t("common.back"))) +
+        var editLink = principal.Can<Edit>(new RecipeResource())
+            ? " · " + Html.Link($"/recipes/{recipe.Id.Value}/edit", t("recipe.edit_link"))
+            : string.Empty;
+
+        var body = Html.P(Html.Link("/recipes", t("common.back")) + editLink) +
             Html.H1(recipe.Name.Value) +
             meta +
             tags +
@@ -99,7 +103,9 @@ public static class RecipeViews
         IReadOnlyList<string> steps,
         IReadOnlyList<Ingredient> availableIngredients,
         IPrincipal principal,
-        Translate t)
+        Translate t,
+        string formAction = "/recipes",
+        string titleKey = "recipe.new_title")
     {
         var errorHtml = errors.Count == 0
             ? string.Empty
@@ -112,7 +118,7 @@ public static class RecipeViews
         }));
 
         var form = $"""
-            <form method="post" action="/recipes">
+            <form method="post" action="{Html.Encode(formAction)}">
                 <button type="submit" hidden></button>
                 <label>
                     {Html.Encode(t("recipe.field.name"))}
@@ -145,11 +151,11 @@ public static class RecipeViews
             """;
 
         var body = Html.P(Html.Link("/recipes", t("common.back"))) +
-            Html.H1(t("recipe.new_title")) +
+            Html.H1(t(titleKey)) +
             errorHtml +
             form;
 
-        return Layout.Page(t("recipe.new_title"), body, principal, t);
+        return Layout.Page(t(titleKey), body, principal, t);
     }
 
     public static string IngredientSection(

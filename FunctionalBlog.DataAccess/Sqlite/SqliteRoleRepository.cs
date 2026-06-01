@@ -1,0 +1,108 @@
+using System.Data;
+using Dapper;
+
+namespace FunctionalBlog.DataAccess.Sqlite;
+
+public sealed class SqliteRoleRepository : IRoleRepository
+{
+    private readonly IDbConnection _connection;
+    private int _nextId = -1;
+
+    public SqliteRoleRepository(IDbConnection connection) => _connection = connection;
+
+    public async ValueTask<IReadOnlyList<Role>> All()
+    {
+        var rows = (await _connection.QueryAsync<RoleRow>(
+            "SELECT id AS Id, name AS Name FROM roles")).ToList();
+        if (rows.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = rows.Select(r => r.Id).ToList();
+        var ruleLookup = (await _connection.QueryAsync<RuleRow>(
+            "SELECT role_id AS RoleId, action_name AS ActionName, resource_key AS ResourceKey FROM permission_rules WHERE role_id IN @ids",
+            new { ids })).ToLookup(r => r.RoleId);
+
+        return rows.Select(r => ToRole(r, ruleLookup[r.Id].ToList())).ToList();
+    }
+
+    public async ValueTask<Role?> FindById(RoleId id)
+    {
+        var row = await _connection.QuerySingleOrDefaultAsync<RoleRow>(
+            "SELECT id AS Id, name AS Name FROM roles WHERE id = @id",
+            new { id = id.Value });
+        if (row is null)
+        {
+            return null;
+        }
+
+        var rules = (await _connection.QueryAsync<RuleRow>(
+            "SELECT role_id AS RoleId, action_name AS ActionName, resource_key AS ResourceKey FROM permission_rules WHERE role_id = @id",
+            new { id = id.Value })).ToList();
+        return ToRole(row, rules);
+    }
+
+    public async ValueTask<Role?> FindByName(string name)
+    {
+        var row = await _connection.QuerySingleOrDefaultAsync<RoleRow>(
+            "SELECT id AS Id, name AS Name FROM roles WHERE name = @name",
+            new { name });
+        if (row is null)
+        {
+            return null;
+        }
+
+        var rules = (await _connection.QueryAsync<RuleRow>(
+            "SELECT role_id AS RoleId, action_name AS ActionName, resource_key AS ResourceKey FROM permission_rules WHERE role_id = @id",
+            new { id = row.Id })).ToList();
+        return ToRole(row, rules);
+    }
+
+    public async ValueTask<RoleId> NextId()
+    {
+        if (_nextId < 0)
+        {
+            _nextId = await _connection.ExecuteScalarAsync<int>("SELECT COALESCE(MAX(id), 0) FROM roles");
+        }
+
+        return new RoleId(++_nextId);
+    }
+
+    public async ValueTask Save(Role role)
+    {
+        await _connection.ExecuteAsync(
+            """
+            INSERT INTO roles (id, name)
+            VALUES (@Id, @Name)
+            ON CONFLICT(id) DO UPDATE SET name = excluded.name
+            """,
+            new { Id = role.Id.Value, role.Name });
+
+        await _connection.ExecuteAsync(
+            "DELETE FROM permission_rules WHERE role_id = @id",
+            new { id = role.Id.Value });
+
+        if (role.Rules.Count > 0)
+        {
+            await _connection.ExecuteAsync(
+                "INSERT INTO permission_rules (role_id, action_name, resource_key) VALUES (@RoleId, @ActionName, @ResourceKey)",
+                role.Rules.Select(r => new { RoleId = role.Id.Value, r.ActionName, r.ResourceKey }));
+        }
+    }
+
+    public async ValueTask Delete(RoleId id)
+    {
+        await _connection.ExecuteAsync("DELETE FROM roles WHERE id = @id", new { id = id.Value });
+    }
+
+    private static Role ToRole(RoleRow row, IReadOnlyList<RuleRow> rules)
+    {
+        var role = Role.Create(new RoleId((int)row.Id), row.Name);
+        return rules.Aggregate(role, (r, rule) => r.AddRule(new PermissionRule(rule.ActionName, rule.ResourceKey)));
+    }
+
+    private sealed record RoleRow(long Id, string Name);
+
+    private sealed record RuleRow(long RoleId, string ActionName, string ResourceKey);
+}

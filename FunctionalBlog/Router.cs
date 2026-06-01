@@ -41,6 +41,8 @@ public static class Router
             ("POST", "/lang") => TranslationHandlers.SetLanguage,
             ("GET", "/admin/translations") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.List),
             ("GET", "/admin/translations/export.json") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.Export),
+            _ when request.Method == "GET" && TryRecipeEditPath(request.Path, out var editId) => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.EditRecipeForm(editId)),
+            _ when request.Method == "POST" && TryRecipePath(request.Path, out var updateId) => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.UpdateRecipe(updateId)),
             _ when request.Method == "GET" && TryRecipePath(request.Path, out var recipeId) => RecipeHandlers.ShowRecipe(recipeId),
             _ when request.Method == "GET" && TryArticlePath(request.Path, out var id) => BlogHandlers.ShowArticle(id),
             _ when request.Method == "GET" && TryAdminUsersPath(request.Path) => Auth.RequirePermission<Manage>(new UserResource(), AdminHandlers.UserDetail(ExtractAdminUserId(request.Path))),
@@ -63,6 +65,29 @@ public static class Router
         }
 
         var raw = path[prefix.Length..];
+
+        if (!int.TryParse(raw, out var value))
+        {
+            return false;
+        }
+
+        id = new RecipeId(value);
+        return true;
+    }
+
+    private static bool TryRecipeEditPath(string path, [NotNullWhen(true)] out RecipeId? id)
+    {
+        id = default;
+        const string prefix = "/recipes/";
+        const string suffix = "/edit";
+
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+            !path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var raw = path[prefix.Length..^suffix.Length];
 
         if (!int.TryParse(raw, out var value))
         {

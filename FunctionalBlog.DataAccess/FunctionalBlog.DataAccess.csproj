@@ -7,6 +7,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="dbup-sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Sqlite\Migrations\0001_initial_schema.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FunctionalBlog.Application\FunctionalBlog.Application.csproj" />
   </ItemGroup>
 
