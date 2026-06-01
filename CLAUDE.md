@@ -20,7 +20,7 @@ This project follows **Test-Driven Development**. For every change to production
 
 1. Write a failing test in `FunctionalBlog.Test/` that captures the desired behavior.
 2. Run `dotnet test` and confirm it fails for the expected reason.
-3. Write the minimum production code in the project that owns the change (`FunctionalBlog.Domain`, `FunctionalBlog.Application`, `FunctionalBlog.DataAccess`, or `FunctionalBlog`) to make it pass.
+3. Write the minimum production code in the project that owns the change (`FunctionalBlog.Domain`, `FunctionalBlog.Application`, `FunctionalBlog.DataAccess.InMemory`, `FunctionalBlog.DataAccess.Sqlite`, or `FunctionalBlog`) to make it pass.
 4. Run `dotnet test` again and confirm all tests pass.
 5. Refactor while keeping tests green.
 
@@ -30,13 +30,14 @@ When adding a new `IArticleRepository` implementation, derive its tests from `Ar
 
 ## Architecture
 
-The solution is split into five projects with a strict dependency direction (Domain ← Application ← DataAccess ← Web ← Test):
+The solution is split into six projects with a strict dependency direction (Domain ← Application ← DataAccess.* ← Web ← Test):
 
 - **`FunctionalBlog.Domain`** — entities and value objects. No project references. Pure domain.
 - **`FunctionalBlog.Application`** — repository contracts. References Domain.
-- **`FunctionalBlog.DataAccess`** — repository implementations. References Application. `InMemoryArticleRepository` is the only impl today; a SQL/EF impl will join it later.
-- **`FunctionalBlog`** (Web) — handlers, views, the functional pipeline, and the ASP.NET bootstrap. References Application and DataAccess.
-- **`FunctionalBlog.Test`** — xunit. References Web; sees Domain/Application/DataAccess transitively.
+- **`FunctionalBlog.DataAccess.InMemory`** — in-memory repository implementations for use in tests. References Application.
+- **`FunctionalBlog.DataAccess.Sqlite`** — SQLite repository implementations for production, plus `Pbkdf2PasswordHasher` and `TranslationSeeder`. References Application. Uses Dapper and dbup-sqlite.
+- **`FunctionalBlog`** (Web) — handlers, views, the functional pipeline, and the ASP.NET bootstrap. References Application and DataAccess.Sqlite.
+- **`FunctionalBlog.Test`** — xunit. References Web (gets DataAccess.Sqlite transitively) and DataAccess.InMemory directly.
 
 The Web project demonstrates functional programming principles in .NET 10. The core abstraction is a curried, reader-style pipeline expressed with delegates:
 
@@ -59,7 +60,8 @@ A handler is invoked as `app(request)(env)` — request first, then environment.
 - **`Article` / `ArticleId` / `ArticleTitle` / `ArticleText`** (Domain) — domain model.
 - **`IArticleRepository`** (Application) — repository contract. Behavioral spec lives in `FunctionalBlog.Test/ArticleRepositoryContract.cs`.
 - **`ArticleForm` / `DecodedArticleForm`** (Web) — HTTP form decoding/validation. Stays with the Web project because it's a presentation/transport concern, not a domain rule.
-- **`InMemoryArticleRepository`** (DataAccess) — the only storage implementation today. Pre-seeded with one sample article on construction (a fixture quirk, not part of the contract).
+- **`InMemoryArticleRepository`** (DataAccess.InMemory) — in-memory storage for tests. Pre-seeded with one sample article on construction (a fixture quirk, not part of the contract).
+- **`SqliteArticleRepository`** (DataAccess.Sqlite) — production SQLite storage using Dapper.
 - **`BlogViews`** / **`Layout`** / **`Html`** (Web) — server-rendered HTML with XSS protection via `WebUtility.HtmlEncode`. CSS lives in `wwwroot/styles.css`, embedded into the Web assembly.
 - **`HttpAdapter`** (Web) — adapts ASP.NET Core's `HttpContext` to/from the domain `Request`/`Response`.
 - **`SystemClock`** / **`ConsoleLog`** (Web) — concrete `IClock` / `ILog` implementations wired up in `Program.cs`.
@@ -76,7 +78,9 @@ One public type per file; no namespaces (relies on the implicit global namespace
 
 **`FunctionalBlog.Application/`**: `IArticleRepository.cs`
 
-**`FunctionalBlog.DataAccess/`**: `InMemoryArticleRepository.cs`
+**`FunctionalBlog.DataAccess.InMemory/`**: `InMemory*` repository implementations grouped by domain area (`Articles/`, `Identity/`, `Recipes/`, `Roles/`, `Translations/`).
+
+**`FunctionalBlog.DataAccess.Sqlite/`**: `Sqlite*` repository implementations, `DatabaseMigrator`, `DapperTypeHandlers`, `SqliteConnectionFactory`, `Pbkdf2PasswordHasher` (`Identity/`), `TranslationSeeder` (`Translations/`), and `Migrations/0001_initial_schema.sql` (embedded resource).
 
 **`FunctionalBlog/`** (Web), grouped by role:
 

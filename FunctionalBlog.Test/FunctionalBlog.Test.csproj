@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FunctionalBlog\FunctionalBlog.csproj" />
+    <ProjectReference Include="..\FunctionalBlog.DataAccess.InMemory\FunctionalBlog.DataAccess.InMemory.csproj" />
   </ItemGroup>
 
 </Project>
