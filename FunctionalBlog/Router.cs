@@ -15,7 +15,12 @@ public static class Router
         {
             ("GET", "/") => BlogHandlers.Index,
             ("GET", "/styles.css") => StaticHandlers.Styles,
+            ("GET", "/htmx.min.js") => StaticHandlers.HtmxScript,
             ("GET", "/recipes") => RecipeHandlers.Index,
+            ("GET", "/recipes/new") => Auth.RequirePermission<Create>(new RecipeResource(), RecipeHandlers.NewRecipeForm),
+            ("POST", "/recipes") => Auth.RequirePermission<Create>(new RecipeResource(), RecipeHandlers.CreateRecipe),
+            ("POST", "/recipes/form/ingredients") => Auth.RequirePermission<Create>(new RecipeResource(), RecipeHandlers.IngredientsSection),
+            ("POST", "/recipes/form/steps") => Auth.RequirePermission<Create>(new RecipeResource(), RecipeHandlers.StepsSection),
             ("GET", "/articles/new") => Auth.RequirePermission<Create>(new ArticleResource(), BlogHandlers.NewArticleForm),
             ("POST", "/articles") => Auth.RequirePermission<Create>(new ArticleResource(), BlogHandlers.CreateArticle),
             ("GET", "/register") => AuthHandlers.NewRegisterForm,

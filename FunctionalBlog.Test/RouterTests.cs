@@ -3,6 +3,20 @@ namespace FunctionalBlog.Test;
 public class RouterTests
 {
     [Fact]
+    public async Task Get_htmx_min_js_returns_a_javascript_response()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("GET", "/htmx.min.js", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(200, response.Status);
+        Assert.StartsWith("application/javascript", response.ContentType);
+        Assert.Contains("htmx", response.Body);
+    }
+
+    [Fact]
     public async Task Get_styles_css_returns_a_css_response()
     {
         var app = Router.Create()(NotFoundTerminal);
@@ -65,6 +79,58 @@ public class RouterTests
         var response = await app(request)(env);
 
         Assert.Equal(404, response.Status);
+    }
+
+    [Fact]
+    public async Task Get_recipes_new_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("GET", "/recipes/new", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
+    public async Task Post_recipes_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("POST", "/recipes", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
+    public async Task Post_recipes_form_ingredients_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("POST", "/recipes/form/ingredients", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
+    public async Task Post_recipes_form_steps_redirects_guest_to_login()
+    {
+        var app = Router.Create()(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request("POST", "/recipes/form/steps", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
     }
 
     private static Env BuildEnv() => new(

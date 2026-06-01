@@ -43,7 +43,11 @@ public static class Seeder
                 .AddRule(new PermissionRule("Edit", "article"))
                 .AddRule(new PermissionRule("Delete", "article"))
                 .AddRule(new PermissionRule("Create", "role"))
-                .AddRule(new PermissionRule("View", "article"));
+                .AddRule(new PermissionRule("View", "article"))
+                .AddRule(new PermissionRule("Create", "recipe"))
+                .AddRule(new PermissionRule("Edit", "recipe"))
+                .AddRule(new PermissionRule("Delete", "recipe"))
+                .AddRule(new PermissionRule("Manage", "recipe"));
             await env.Roles.Save(role);
         }
     }

@@ -20,6 +20,9 @@ public sealed record Response(
     public static Response Css(string body, int status = 200) =>
         new(status, "text/css; charset=utf-8", EmptyHeaders, body);
 
+    public static Response Js(string body, int status = 200) =>
+        new(status, "application/javascript; charset=utf-8", EmptyHeaders, body);
+
     public static Response Redirect(string location) =>
         new(
             303,

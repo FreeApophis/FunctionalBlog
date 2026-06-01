@@ -13,6 +13,7 @@ public static class Layout
             <meta name="viewport" content="width=device-width, initial-scale=1" />
             <title>{{Html.Encode(title)}}</title>
             <link rel="stylesheet" href="/styles.css" />
+            <script src="/htmx.min.js" defer></script>
         </head>
         <body>
             {{NavViews.Nav(principal, translate)}}
