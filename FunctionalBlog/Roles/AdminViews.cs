@@ -13,6 +13,7 @@ public static class AdminViews
 
         var body = Html.H1(t("admin.users.title")) +
             Html.P(Html.Link("/admin/roles", t("admin.users.manage_roles"))) +
+            Html.P(Html.Link("/admin/ingredients", t("ingredient.list_title"))) +
             Html.P(Html.Link("/admin/translations", t("translations.title"))) +
             Html.Ul(users.Select(UserRow));
         return Layout.Page(t("admin.users.title"), body, principal, t);

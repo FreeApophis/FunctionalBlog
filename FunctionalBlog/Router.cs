@@ -34,6 +34,9 @@ public static class Router
             ("POST", "/password-reset/confirm") => AuthHandlers.ConfirmPasswordReset,
             ("GET", "/settings") => Auth.RequireAuth(UserSettingsHandlers.Settings),
             ("POST", "/settings/password") => Auth.RequireAuth(UserSettingsHandlers.ChangePassword),
+            ("GET", "/admin/ingredients") => Auth.RequirePermission<Manage>(new IngredientResource(), AdminIngredientHandlers.List),
+            ("GET", "/admin/ingredients/new") => Auth.RequirePermission<Create>(new IngredientResource(), AdminIngredientHandlers.NewForm),
+            ("POST", "/admin/ingredients") => Auth.RequirePermission<Create>(new IngredientResource(), AdminIngredientHandlers.Create),
             ("GET", "/admin/users") => Auth.RequirePermission<Manage>(new UserResource(), AdminHandlers.UserList),
             ("GET", "/admin/roles") => Auth.RequirePermission<Manage>(new RoleResource(), AdminHandlers.RoleList),
             ("GET", "/admin/roles/new") => Auth.RequirePermission<Create>(new RoleResource(), AdminHandlers.NewRoleForm),
@@ -41,6 +44,8 @@ public static class Router
             ("POST", "/lang") => TranslationHandlers.SetLanguage,
             ("GET", "/admin/translations") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.List),
             ("GET", "/admin/translations/export.json") => Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.Export),
+            _ when request.Method == "GET" && TryAdminIngredientEditPath(request.Path, out var ingEditId) => Auth.RequirePermission<Edit>(new IngredientResource(), AdminIngredientHandlers.EditForm(ingEditId)),
+            _ when request.Method == "POST" && TryAdminIngredientPath(request.Path, out var ingUpdateId) => Auth.RequirePermission<Edit>(new IngredientResource(), AdminIngredientHandlers.Update(ingUpdateId)),
             _ when request.Method == "GET" && TryRecipeEditPath(request.Path, out var editId) => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.EditRecipeForm(editId)),
             _ when request.Method == "POST" && TryRecipePath(request.Path, out var updateId) => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.UpdateRecipe(updateId)),
             _ when request.Method == "GET" && TryRecipePath(request.Path, out var recipeId) => RecipeHandlers.ShowRecipe(recipeId),
@@ -173,6 +178,50 @@ public static class Router
         key = rest[..lastSlash];
         language = rest[(lastSlash + 1)..];
         return key.Length > 0 && language.Length > 0;
+    }
+
+    private static bool TryAdminIngredientPath(string path, [NotNullWhen(true)] out IngredientId? id)
+    {
+        id = default;
+        const string prefix = "/admin/ingredients/";
+
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var raw = path[prefix.Length..];
+
+        if (!int.TryParse(raw, out var value))
+        {
+            return false;
+        }
+
+        id = new IngredientId(value);
+        return true;
+    }
+
+    private static bool TryAdminIngredientEditPath(string path, [NotNullWhen(true)] out IngredientId? id)
+    {
+        id = default;
+        const string prefix = "/admin/ingredients/";
+        const string suffix = "/edit";
+
+        if (!path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ||
+            !path.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var raw = path[prefix.Length..^suffix.Length];
+
+        if (!int.TryParse(raw, out var value))
+        {
+            return false;
+        }
+
+        id = new IngredientId(value);
+        return true;
     }
 
     private static readonly App NotFound = _ => _ => ValueTask.FromResult(Response.NotFound());
