@@ -1,3 +1,6 @@
+global using FunctionalBlog.Application.Articles;
+global using FunctionalBlog.Application.Recipes;
+global using FunctionalBlog.Application.Search;
 global using FunctionalBlog.Domain.Articles;
 global using FunctionalBlog.Domain.Identity;
 global using FunctionalBlog.Domain.Recipes;

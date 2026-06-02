@@ -2,15 +2,22 @@ namespace FunctionalBlog;
 
 internal class Program
 {
-    private const string ConnectionString = "Data Source=blog.db";
-
     public static async Task Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
         var web = builder.Build();
 
-        DatabaseMigrator.Migrate(ConnectionString);
-        using var connection = SqliteConnectionFactory.Create(ConnectionString);
+        var dataDir = Environment.GetEnvironmentVariable("DATA_DIR") ?? "./data";
+        var dbPath = Path.Combine(dataDir, "database", "blog.db");
+        var indexPath = Path.Combine(dataDir, "full-text-search");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
+        Directory.CreateDirectory(Path.Combine(dataDir, "config"));
+
+        var connectionString = $"Data Source={dbPath}";
+
+        DatabaseMigrator.Migrate(connectionString);
+        using var connection = SqliteConnectionFactory.Create(connectionString);
 
         var translations = new SqliteTranslationRepository(connection);
         var env = BuildEnv(connection, translations);
@@ -18,6 +25,10 @@ internal class Program
         await Seeder.SeedAsync(env);
         var translationCache = await TranslationCache.LoadAsync(translations);
         env = env with { TranslationCache = translationCache };
+
+        using var search = new Search.LeanCorpusSearchIndex(indexPath);
+        await search.RebuildAsync(env.Articles, env.Recipes, env.Ingredients);
+        env = env with { Search = search };
 
         App app = Functional.Compose(
             _ => _ => ValueTask.FromResult(Response.NotFound()),

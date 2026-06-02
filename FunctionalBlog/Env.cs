@@ -14,6 +14,7 @@ public sealed record Env(
     IIngredientRepository Ingredients,
     ITranslationRepository? Translations = null,
     TranslationCache? TranslationCache = null,
+    ISearchIndex? Search = null,
     string Language = Languages.Default)
 {
     public Translate T =>

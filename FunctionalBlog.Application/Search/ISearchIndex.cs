@@ -1,0 +1,21 @@
+namespace FunctionalBlog.Application.Search;
+
+public interface ISearchIndex
+{
+    void IndexArticle(Article article);
+
+    void IndexRecipe(Recipe recipe);
+
+    void IndexIngredient(Ingredient ingredient);
+
+    void DeleteDocument(string type, int id);
+
+    IReadOnlyList<SearchResult> Search(string query, int topN = 20);
+
+    IReadOnlyList<string> Suggestions(string query);
+
+    ValueTask RebuildAsync(
+        IArticleRepository articles,
+        IRecipeRepository recipes,
+        IIngredientRepository ingredients);
+}

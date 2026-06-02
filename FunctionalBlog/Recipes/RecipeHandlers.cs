@@ -172,6 +172,7 @@ public static class RecipeHandlers
             hints: hints);
 
         await env.Recipes.Save(recipe);
+        env.Search?.IndexRecipe(recipe);
 
         return Response.Redirect($"/recipes/{recipe.Id.Value}");
     };
@@ -223,6 +224,7 @@ public static class RecipeHandlers
         }
 
         await env.Recipes.Delete(id);
+        env.Search?.DeleteDocument("recipe", id.Value);
         return Response.Redirect("/recipes");
     };
 
@@ -400,6 +402,7 @@ public static class RecipeHandlers
             hints: hints);
 
         await env.Recipes.Save(updated);
+        env.Search?.IndexRecipe(updated);
 
         return Response.Redirect($"/recipes/{id.Value}");
     };

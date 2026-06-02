@@ -2,6 +2,7 @@ global using FunctionalBlog.Application.Articles;
 global using FunctionalBlog.Application.Identity;
 global using FunctionalBlog.Application.Recipes;
 global using FunctionalBlog.Application.Roles;
+global using FunctionalBlog.Application.Search;
 global using FunctionalBlog.Application.Translations;
 global using FunctionalBlog.Articles;
 global using FunctionalBlog.DataAccess.Identity;

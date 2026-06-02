@@ -1,5 +1,3 @@
-using Funcky;
-
 namespace FunctionalBlog.Test;
 
 public sealed class SeederTests

@@ -49,6 +49,7 @@ public static class BlogHandlers
                     publishedAt: env.Clock.Now);
 
                 await env.Articles.Save(article);
+                env.Search?.IndexArticle(article);
 
                 return Response.Redirect($"/articles/{article.Id.Value}");
             });
@@ -76,6 +77,7 @@ public static class BlogHandlers
         if ((await env.Articles.Find(id)) is [var article])
         {
             await env.Articles.Delete(id);
+            env.Search?.DeleteDocument("article", article.Id.Value);
             return Response.Redirect("/");
         }
 
@@ -112,6 +114,7 @@ public static class BlogHandlers
                     publishedAt: existing.PublishedAt);
 
                 await env.Articles.Save(updated);
+                env.Search?.IndexArticle(updated);
 
                 return Response.Redirect($"/articles/{id.Value}");
             });

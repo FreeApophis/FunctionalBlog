@@ -4,14 +4,16 @@ public static class TranslationSeeder
 {
     public static async ValueTask SeedAsync(ITranslationRepository repo)
     {
-        if ((await repo.All()).Count > 0)
-        {
-            return;
-        }
+        var existing = (await repo.All())
+            .Select(t => (t.Key, t.Language))
+            .ToHashSet();
 
         foreach (var (key, lang, text) in Seeds)
         {
-            await repo.Save(key, lang, null, text);
+            if (!existing.Contains((key, lang)))
+            {
+                await repo.Save(key, lang, null, text);
+            }
         }
     }
 
@@ -51,6 +53,36 @@ public static class TranslationSeeder
         ("nav.language",       "en", "Language"),
         ("nav.language",       "it", "Lingua"),
         ("nav.language",       "fr", "Langue"),
+        ("nav.search",         "de", "Suchen"),
+        ("nav.search",         "en", "Search"),
+        ("nav.search",         "it", "Cerca"),
+        ("nav.search",         "fr", "Rechercher"),
+
+        // Search
+        ("search.title",       "de", "Suche"),
+        ("search.title",       "en", "Search"),
+        ("search.title",       "it", "Ricerca"),
+        ("search.title",       "fr", "Recherche"),
+        ("search.prompt",      "de", "Suchbegriff eingeben"),
+        ("search.prompt",      "en", "Enter a search term"),
+        ("search.prompt",      "it", "Inserisci un termine di ricerca"),
+        ("search.prompt",      "fr", "Entrez un terme de recherche"),
+        ("search.submit",      "de", "Suchen"),
+        ("search.submit",      "en", "Search"),
+        ("search.submit",      "it", "Cerca"),
+        ("search.submit",      "fr", "Rechercher"),
+        ("search.no_results",  "de", "Keine Ergebnisse gefunden."),
+        ("search.no_results",  "en", "No results found."),
+        ("search.no_results",  "it", "Nessun risultato trovato."),
+        ("search.no_results",  "fr", "Aucun résultat trouvé."),
+        ("search.results_for", "de", "Ergebnisse für"),
+        ("search.results_for", "en", "results for"),
+        ("search.results_for", "it", "risultati per"),
+        ("search.results_for", "fr", "résultats pour"),
+        ("search.did_you_mean","de", "Meinten Sie"),
+        ("search.did_you_mean","en", "Did you mean"),
+        ("search.did_you_mean","it", "Forse cercavi"),
+        ("search.did_you_mean","fr", "Vouliez-vous dire"),
 
         // Common
         ("common.back",        "de", "← Zurück"),

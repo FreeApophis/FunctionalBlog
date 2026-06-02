@@ -22,9 +22,16 @@ public static class NavViews
         }
 
         links += Html.Raw(" · ") + LanguageSelector(t);
+        links += Html.Raw(" ") + SearchBox(t);
 
         return $"<nav>{links.Render()}</nav>";
     }
+
+    private static HtmlString SearchBox(Translate t) =>
+        Html.Raw("""<form action="/search" method="get" class="search-form">""") +
+        Html.Input("q") +
+        Html.Button(t("nav.search")) +
+        Html.Raw("</form>");
 
     private static HtmlString LanguageSelector(Translate t)
     {

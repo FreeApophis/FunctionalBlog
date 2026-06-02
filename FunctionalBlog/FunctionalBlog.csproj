@@ -10,6 +10,7 @@
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Funcky.DiscriminatedUnion" PrivateAssets="all" />
+		<PackageReference Include="LeanCorpus" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\FunctionalBlog.Application\FunctionalBlog.Application.csproj" />

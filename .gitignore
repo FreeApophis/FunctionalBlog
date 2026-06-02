@@ -22,6 +22,8 @@ build/
 **/packages/*
 # except build/, which is used as an MSBuild target.
 !**/packages/build/
+
 # Uncomment if necessary however generally it will be regenerated when needed
 #!**/packages/repositories.config
-/FunctionalBlog/blog.db
+
+/FunctionalBlog/data

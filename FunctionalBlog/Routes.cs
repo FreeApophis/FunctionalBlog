@@ -3,6 +3,7 @@ namespace FunctionalBlog;
 public static class Routes
 {
     public static RouteTable Build() => RouteTable.Empty
+        .Get("/search", Search.SearchHandlers.Search)
         .Get("/styles.css", StaticHandlers.Styles)
         .Get("/htmx.min.js", StaticHandlers.HtmxScript)
         .Get("/", BlogHandlers.Index)

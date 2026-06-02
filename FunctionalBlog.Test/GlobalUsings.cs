@@ -18,6 +18,7 @@ global using FunctionalBlog.Identity;
 global using FunctionalBlog.Ingredients;
 global using FunctionalBlog.Recipes;
 global using FunctionalBlog.Roles;
+global using FunctionalBlog.Search;
 global using FunctionalBlog.Test.Articles;
 global using FunctionalBlog.Test.Identity;
 global using FunctionalBlog.Test.Recipes;

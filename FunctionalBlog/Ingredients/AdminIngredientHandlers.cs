@@ -22,6 +22,7 @@ public static class AdminIngredientHandlers
         if ((await env.Ingredients.Find(id)) is [var ingredient])
         {
             await env.Ingredients.Delete(id);
+            env.Search?.DeleteDocument("ingredient", id.Value);
             return Response.Redirect("/admin/ingredients");
         }
 
@@ -71,6 +72,7 @@ public static class AdminIngredientHandlers
 
         var ingredient = BuildIngredient(await env.Ingredients.NextId(), decoded);
         await env.Ingredients.Save(ingredient);
+        env.Search?.IndexIngredient(ingredient);
         return Response.Redirect("/admin/ingredients");
     };
 
@@ -130,6 +132,7 @@ public static class AdminIngredientHandlers
 
             var updated = BuildIngredient(id, decoded);
             await env.Ingredients.Save(updated);
+            env.Search?.IndexIngredient(updated);
             return Response.Redirect("/admin/ingredients");
         }
 
