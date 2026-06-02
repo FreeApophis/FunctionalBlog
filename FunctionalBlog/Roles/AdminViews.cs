@@ -25,22 +25,13 @@ public static class AdminViews
             ? string.Empty
             : Html.Div("errors", Html.Ul(errors.Select(Html.Encode)));
 
-        string Checkbox(Role r, User u)
-        {
-            var checkedAttr = u.RoleNames.Contains(r.Name) ? " checked" : string.Empty;
-            return $"<label><input type=\"checkbox\" name=\"role\" value=\"{Html.Encode(r.Name)}\"{checkedAttr} /> {Html.Encode(r.Name)}</label>";
-        }
+        string CheckboxHtml(Role r) =>
+            Html.Label(Html.InputCheckbox("role", r.Name, user.RoleNames.Contains(r.Name)) + " " + Html.Encode(r.Name));
 
-        var roleCheckboxes = string.Join(string.Empty, allRoles.Select(r => Checkbox(r, user)));
-        var form = $"""
-            <form method="post" action="/admin/users/{user.Id.Value}/roles">
-                <fieldset>
-                    <legend>{Html.Encode(t("admin.users.roles_label"))}</legend>
-                    {roleCheckboxes}
-                </fieldset>
-                <button type="submit">{Html.Encode(t("admin.users.save"))}</button>
-            </form>
-            """;
+        var roleCheckboxes = string.Concat(allRoles.Select(CheckboxHtml));
+        var formBody = Html.Fieldset(t("admin.users.roles_label"), roleCheckboxes) + Html.Button(t("admin.users.save"));
+        var form = Html.Form($"/admin/users/{user.Id.Value}/roles", formBody);
+
         var body = Html.H1(Html.Encode(user.Email.Value)) +
             Html.P(Html.Link("/admin/users", t("common.back"))) +
             errorHtml +
@@ -66,18 +57,12 @@ public static class AdminViews
         var errorHtml = errors.Count == 0
             ? string.Empty
             : Html.Div("errors", Html.Ul(errors.Select(Html.Encode)));
+
+        var formBody = Html.Label(Html.Encode(t("admin.roles.name")) + Html.Input("name")) + Html.Button(t("admin.roles.create"));
         var body = Html.H1(t("admin.roles.new")) +
             Html.P(Html.Link("/admin/roles", t("common.back"))) +
             errorHtml +
-            $"""
-            <form method="post" action="/admin/roles">
-                <label>
-                    {Html.Encode(t("admin.roles.name"))}
-                    <input name="name" />
-                </label>
-                <button type="submit">{Html.Encode(t("admin.roles.create"))}</button>
-            </form>
-            """;
+            Html.Form("/admin/roles", formBody);
         return Layout.Page(t("admin.roles.new"), body, principal, t);
     }
 
@@ -95,34 +80,26 @@ public static class AdminViews
             string.Empty,
             AllResources.Select(r => $"<option value=\"{Html.Encode(r)}\">{Html.Encode(r)}</option>"));
 
-        string RuleRow(PermissionRule r) =>
-            $"{Html.Encode(r.ActionName)} → {Html.Encode(r.ResourceKey)} " +
-            $"<form method=\"post\" action=\"/admin/roles/{role.Id.Value}/rules/delete\" style=\"display:inline\">" +
-            $"<input type=\"hidden\" name=\"action\" value=\"{Html.Encode(r.ActionName)}\" />" +
-            $"<input type=\"hidden\" name=\"resource\" value=\"{Html.Encode(r.ResourceKey)}\" />" +
-            $"<button type=\"submit\">{Html.Encode(t("admin.roles.remove_rule"))}</button></form>";
+        string RuleRow(PermissionRule r)
+        {
+            var ruleFormBody =
+                Html.InputHidden("action", r.ActionName) +
+                Html.InputHidden("resource", r.ResourceKey) +
+                Html.Button(t("admin.roles.remove_rule"));
+            return Html.Encode(r.ActionName) + " → " + Html.Encode(r.ResourceKey) + " " +
+                Html.Form($"/admin/roles/{role.Id.Value}/rules/delete", ruleFormBody, style: "display:inline");
+        }
 
         var ruleRows = role.Rules.Count == 0
             ? Html.P(t("admin.roles.no_rules"))
             : Html.Ul(role.Rules.Select(RuleRow));
 
-        var addForm = $"""
-            <form method="post" action="/admin/roles/{role.Id.Value}/rules">
-                <label>
-                    {Html.Encode(t("admin.roles.action"))}
-                    <select name="action">{actionOptions}</select>
-                </label>
-                <label>
-                    {Html.Encode(t("admin.roles.resource"))}
-                    <select name="resource">{resourceOptions}</select>
-                </label>
-                <button type="submit">{Html.Encode(t("admin.roles.add_rule"))}</button>
-            </form>
-            """;
-
-        var deleteForm =
-            $"<form method=\"post\" action=\"/admin/roles/{role.Id.Value}/delete\">" +
-            $"<button type=\"submit\">{Html.Encode(t("admin.roles.delete"))}</button></form>";
+        var addFormBody =
+            Html.Label(Html.Encode(t("admin.roles.action")) + $"""<select name="action">{actionOptions}</select>""") +
+            Html.Label(Html.Encode(t("admin.roles.resource")) + $"""<select name="resource">{resourceOptions}</select>""") +
+            Html.Button(t("admin.roles.add_rule"));
+        var addForm = Html.Form($"/admin/roles/{role.Id.Value}/rules", addFormBody);
+        var deleteForm = Html.Form($"/admin/roles/{role.Id.Value}/delete", Html.Button(t("admin.roles.delete")));
 
         var body = Html.H1(Html.Encode(role.Name)) +
             Html.P(Html.Link("/admin/roles", t("common.back"))) +

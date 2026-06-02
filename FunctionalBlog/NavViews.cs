@@ -9,10 +9,7 @@ public static class NavViews
         if (principal is AuthenticatedUser user)
         {
             var settingsLink = Html.Link("/settings", t("nav.settings"));
-            var logoutForm =
-                """<form method="post" action="/logout" style="display:inline">""" +
-                $"""<button type="submit">{Html.Encode(t("nav.logout"))}</button>""" +
-                "</form>";
+            var logoutForm = Html.Form("/logout", Html.Button(t("nav.logout")), style: "display:inline");
             var adminLink = principal.Can<Manage>(new UserResource())
                 ? " · " + Html.Link("/admin/users", t("nav.admin"))
                 : string.Empty;
@@ -34,12 +31,7 @@ public static class NavViews
         var options = string.Join(string.Empty, Languages.Supported.Select(lang =>
             $"<option value=\"{Html.Encode(lang)}\">{Html.Encode(Languages.Names[lang])}</option>"));
 
-        return $"""
-            <form method="post" action="/lang" class="lang-form">
-                <label>{Html.Encode(t("nav.language"))}:
-                    <select name="lang" onchange="this.form.submit()">{options}</select>
-                </label>
-            </form>
-            """;
+        var selector = Html.Label(Html.Encode(t("nav.language")) + $""":<select name="lang" onchange="this.form.submit()">{options}</select>""");
+        return Html.Form("/lang", selector, cssClass: "lang-form");
     }
 }

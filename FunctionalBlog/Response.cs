@@ -6,7 +6,7 @@ public sealed record Response(
     IReadOnlyDictionary<string, string> Headers,
     string Body)
 {
-    public IReadOnlyList<string> SetCookies { get; init; } = Array.Empty<string>();
+    public IReadOnlyList<string> SetCookies { get; init; } = [];
 
     public Response WithCookie(string cookieHeader) =>
         this with { SetCookies = [..SetCookies, cookieHeader] };

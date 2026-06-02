@@ -33,7 +33,7 @@ public static class BlogViews
             : string.Empty;
 
         var deleteForm = principal.Can<Delete>(new ArticleResource())
-            ? $"""<form method="post" action="/articles/{article.Id.Value}/delete" style="display:inline"> · <button type="submit">{Html.Encode(t("common.delete"))}</button></form>"""
+            ? Html.Form($"/articles/{article.Id.Value}/delete", " · " + Html.Button(t("common.delete")), style: "display:inline")
             : string.Empty;
 
         var body = Html.P(Html.Link("/", t("common.back")) + editLink + deleteForm) +
@@ -59,26 +59,12 @@ public static class BlogViews
             ? string.Empty
             : Html.Div("errors", Html.Ul(errors.Select(key => t(key))));
 
-        var form = $"""
-            <form method="post" action="{Html.Encode(formAction)}">
-                <label>
-                    {Html.Encode(t("article.field.title"))}
-                    <input name="title" value="{Html.Encode(title)}" />
-                </label>
-
-                <label>
-                    {Html.Encode(t("article.field.teaser"))}
-                    <textarea name="teaser" rows="3">{Html.Encode(teaser)}</textarea>
-                </label>
-
-                <label>
-                    {Html.Encode(t("article.field.text"))}
-                    <textarea name="text" rows="10">{Html.Encode(text)}</textarea>
-                </label>
-
-                <button type="submit">{Html.Encode(t("article.submit"))}</button>
-            </form>
-            """;
+        var formBody =
+            Html.Label(Html.Encode(t("article.field.title")) + Html.Input("title", title)) +
+            Html.Label(Html.Encode(t("article.field.teaser")) + $"""<textarea name="teaser" rows="3">{Html.Encode(teaser)}</textarea>""") +
+            Html.Label(Html.Encode(t("article.field.text")) + $"""<textarea name="text" rows="10">{Html.Encode(text)}</textarea>""") +
+            Html.Button(t("article.submit"));
+        var form = Html.Form(formAction, formBody);
 
         var body = Html.P(Html.Link("/", t("common.back"))) +
             Html.H1(t(titleKey)) +

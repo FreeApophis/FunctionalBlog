@@ -15,24 +15,13 @@ public static class UserSettingsViews
         var errorHtml = errors.Count == 0
             ? string.Empty
             : Html.Div("errors", Html.Ul(errors.Select(key => t(key))));
+        var formBody =
+            Html.Label(Html.Encode(t("settings.change_password.current")) + Html.InputPassword("current")) +
+            Html.Label(Html.Encode(t("settings.change_password.new")) + Html.InputPassword("password")) +
+            Html.Label(Html.Encode(t("settings.change_password.confirm")) + Html.InputPassword("confirmation")) +
+            Html.Button(t("settings.change_password.submit"));
         return Html.H2(t("settings.change_password.title")) +
             errorHtml +
-            $"""
-            <form method="post" action="/settings/password">
-                <label>
-                    {Html.Encode(t("settings.change_password.current"))}
-                    <input type="password" name="current" />
-                </label>
-                <label>
-                    {Html.Encode(t("settings.change_password.new"))}
-                    <input type="password" name="password" />
-                </label>
-                <label>
-                    {Html.Encode(t("settings.change_password.confirm"))}
-                    <input type="password" name="confirmation" />
-                </label>
-                <button type="submit">{Html.Encode(t("settings.change_password.submit"))}</button>
-            </form>
-            """;
+            Html.Form("/settings/password", formBody);
     }
 }

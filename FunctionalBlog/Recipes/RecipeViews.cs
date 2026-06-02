@@ -51,13 +51,11 @@ public static class RecipeViews
 
         var ingredientRows = string.Concat(recipe.Ingredients.Select(ri =>
         {
-            var name = ingredientMap.TryGetValue(ri.IngredientId, out var ing)
-                ? Html.Encode(ing.Name.Value)
-                : "?";
-            return $"<tr><td>{ri.Amount:G29} {Html.Encode(ri.Unit.Abbreviation)}</td><td>{name}</td></tr>";
+            var name = ingredientMap.TryGetValue(ri.IngredientId, out var ing) ? Html.Encode(ing.Name.Value) : "?";
+            return Html.Tr(Html.Td($"{ri.Amount:G29} {Html.Encode(ri.Unit.Abbreviation)}") + Html.Td(name));
         }));
         var ingredientTable = recipe.Ingredients.Count > 0
-            ? $"<table><tbody>{ingredientRows}</tbody></table>"
+            ? Html.Table(Html.Tbody(ingredientRows))
             : string.Empty;
 
         var hints = recipe.Hints.Count > 0
@@ -74,7 +72,7 @@ public static class RecipeViews
             : string.Empty;
 
         var deleteForm = principal.Can<Delete>(new RecipeResource())
-            ? $"""<form method="post" action="/recipes/{recipe.Id.Value}/delete" style="display:inline"> · <button type="submit">{Html.Encode(t("common.delete"))}</button></form>"""
+            ? Html.Form($"/recipes/{recipe.Id.Value}/delete", " · " + Html.Button(t("common.delete")), style: "display:inline")
             : string.Empty;
 
         var body = Html.P(Html.Link("/recipes", t("common.back")) + editLink + deleteForm) +
@@ -118,38 +116,18 @@ public static class RecipeViews
             return $"""<option value="{(int)d}"{selected}>{Html.Encode(t(DifficultyKey(d)))}</option>""";
         }));
 
-        var form = $"""
-            <form method="post" action="{Html.Encode(formAction)}">
-                <button type="submit" hidden></button>
-                <label>
-                    {Html.Encode(t("recipe.field.name"))}
-                    <input name="name" value="{Html.Encode(name)}" />
-                </label>
-                <label>
-                    {Html.Encode(t("recipe.field.description"))}
-                    <textarea name="description" rows="3">{Html.Encode(description)}</textarea>
-                </label>
-                <label>
-                    {Html.Encode(t("recipe.field.portions"))}
-                    <input name="portions" type="number" min="1" value="{Html.Encode(portions)}" />
-                </label>
-                <label>
-                    {Html.Encode(t("recipe.field.difficulty"))}
-                    <select name="difficulty">{difficultyOptions}</select>
-                </label>
-                <label>
-                    {Html.Encode(t("recipe.field.tags"))}
-                    <input name="tags" value="{Html.Encode(tags)}" />
-                </label>
-                {IngredientSection(ingredients, availableIngredients, t)}
-                {StepSection(steps, t)}
-                <label>
-                    {Html.Encode(t("recipe.field.hints"))}
-                    <textarea name="hints" rows="4">{Html.Encode(hints)}</textarea>
-                </label>
-                <button type="submit">{Html.Encode(t("recipe.submit"))}</button>
-            </form>
-            """;
+        var formBody =
+            """<button type="submit" hidden></button>""" +
+            Html.Label(Html.Encode(t("recipe.field.name")) + Html.Input("name", name)) +
+            Html.Label(Html.Encode(t("recipe.field.description")) + $"""<textarea name="description" rows="3">{Html.Encode(description)}</textarea>""") +
+            Html.Label(Html.Encode(t("recipe.field.portions")) + Html.InputNumber("portions", portions, min: "1")) +
+            Html.Label(Html.Encode(t("recipe.field.difficulty")) + $"""<select name="difficulty">{difficultyOptions}</select>""") +
+            Html.Label(Html.Encode(t("recipe.field.tags")) + Html.Input("tags", tags)) +
+            IngredientSection(ingredients, availableIngredients, t) +
+            StepSection(steps, t) +
+            Html.Label(Html.Encode(t("recipe.field.hints")) + $"""<textarea name="hints" rows="4">{Html.Encode(hints)}</textarea>""") +
+            Html.Button(t("recipe.submit"));
+        var form = Html.Form(formAction, formBody);
 
         var body = Html.P(Html.Link("/recipes", t("common.back"))) +
             Html.H1(t(titleKey)) +
@@ -182,7 +160,7 @@ public static class RecipeViews
             return $"""
                 <div class="ingredient-row" id="ingredient-row-{i}">
                     <select name="ingredient_id_{i}">{idOptions}</select>
-                    <input name="ingredient_amount_{i}" type="number" step="any" min="0" value="{Html.Encode(amount)}" />
+                    {Html.InputNumber($"ingredient_amount_{i}", amount, step: "any")}
                     <select name="ingredient_unit_{i}">{unitOptions}</select>
                     <button type="submit" name="action" value="remove-ingredient-{i}"
                             hx-post="/recipes/form/ingredients"
@@ -219,9 +197,7 @@ public static class RecipeViews
             var label = Html.Encode($"{t("recipe.field.step")} {i + 1}");
             return $"""
                 <div class="step-row" id="step-row-{i}">
-                    <label>{label}
-                        <textarea name="step_{i}" rows="2">{Html.Encode(text)}</textarea>
-                    </label>
+                    {Html.Label(label + $"<textarea name=\"step_{i}\" rows=\"2\">{Html.Encode(text)}</textarea>")}
                     <button type="submit" name="action" value="remove-step-{i}"
                             hx-post="/recipes/form/steps"
                             hx-target="#steps-section"

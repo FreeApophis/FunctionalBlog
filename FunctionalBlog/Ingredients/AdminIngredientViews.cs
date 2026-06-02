@@ -6,21 +6,23 @@ public static class AdminIngredientViews
     {
         string Row(Ingredient ing)
         {
-            var deleteForm = $"""<form method="post" action="/admin/ingredients/{ing.Id.Value}/delete" style="display:inline"><button type="submit">{Html.Encode(t("common.delete"))}</button></form>""";
-            return $"<tr><td>{Html.Encode(ing.Name.Value)}</td><td>{Html.Encode(ing.Description)}</td>" +
-                $"<td>{Html.Link($"/admin/ingredients/{ing.Id.Value}/edit", t("common.edit"))} {deleteForm}</td></tr>";
+            var deleteForm = Html.Form($"/admin/ingredients/{ing.Id.Value}/delete", Html.Button(t("common.delete")), style: "display:inline");
+            return Html.Tr(
+                Html.Td(Html.Encode(ing.Name.Value)) +
+                Html.Td(Html.Encode(ing.Description)) +
+                Html.Td(Html.Link($"/admin/ingredients/{ing.Id.Value}/edit", t("common.edit")) + " " + deleteForm));
         }
 
         var errorHtml = error == "in-use"
             ? Html.Div("errors", Html.P(t("ingredient.error.in_use")))
             : string.Empty;
 
-        var table = $"""
-            <table>
-                <thead><tr><th>{Html.Encode(t("ingredient.field.name"))}</th><th>{Html.Encode(t("ingredient.field.description"))}</th><th></th></tr></thead>
-                <tbody>{string.Concat(ingredients.Select(Row))}</tbody>
-            </table>
-            """;
+        var table = Html.Table(
+            Html.Thead(Html.Tr(
+                Html.Th(t("ingredient.field.name")) +
+                Html.Th(t("ingredient.field.description")) +
+                Html.Th(string.Empty))) +
+            Html.Tbody(string.Concat(ingredients.Select(Row))));
 
         var body = Html.H1(t("ingredient.list_title")) +
             Html.P(Html.Link("/admin/ingredients/new", t("ingredient.new_ingredient"))) +
@@ -54,38 +56,22 @@ public static class AdminIngredientViews
             : Html.Div("errors", Html.Ul(errors.Select(key => t(key))));
 
         static string NumberField(string labelKey, string fieldName, string value, Translate translate, string step = "any", string min = "0") =>
-            $"""
-            <label>
-                {Html.Encode(translate(labelKey))}
-                <input name="{fieldName}" type="number" step="{step}" min="{min}" value="{Html.Encode(value)}" />
-            </label>
-            """;
+            Html.Label(Html.Encode(translate(labelKey)) + Html.InputNumber(fieldName, value, min: min, step: step));
 
-        var form = $"""
-            <form method="post" action="{Html.Encode(formAction)}">
-                <label>
-                    {Html.Encode(t("ingredient.field.name"))}
-                    <input name="name" value="{Html.Encode(name)}" />
-                </label>
-                <label>
-                    {Html.Encode(t("ingredient.field.description"))}
-                    <textarea name="description" rows="2">{Html.Encode(description)}</textarea>
-                </label>
-                <label>
-                    {Html.Encode(t("ingredient.field.image"))}
-                    <input name="image" value="{Html.Encode(image)}" />
-                </label>
-                {NumberField("ingredient.field.density", "density", density, t, step: "0.001", min: "0.001")}
-                {NumberField("ingredient.field.piece_count", "piece_count", pieceCount, t)}
-                {NumberField("ingredient.field.calorific_value", "calorific_value", calorificValue, t)}
-                {NumberField("ingredient.field.protein", "protein", protein, t)}
-                {NumberField("ingredient.field.fat", "fat", fat, t)}
-                {NumberField("ingredient.field.carbohydrates", "carbohydrates", carbohydrates, t)}
-                {NumberField("ingredient.field.sugar", "sugar", sugar, t)}
-                {NumberField("ingredient.field.fiber", "fiber", fiber, t)}
-                <button type="submit">{Html.Encode(t("ingredient.submit"))}</button>
-            </form>
-            """;
+        var formBody =
+            Html.Label(Html.Encode(t("ingredient.field.name")) + Html.Input("name", name)) +
+            Html.Label(Html.Encode(t("ingredient.field.description")) + $"""<textarea name="description" rows="2">{Html.Encode(description)}</textarea>""") +
+            Html.Label(Html.Encode(t("ingredient.field.image")) + Html.Input("image", image)) +
+            NumberField("ingredient.field.density", "density", density, t, step: "0.001", min: "0.001") +
+            NumberField("ingredient.field.piece_count", "piece_count", pieceCount, t) +
+            NumberField("ingredient.field.calorific_value", "calorific_value", calorificValue, t) +
+            NumberField("ingredient.field.protein", "protein", protein, t) +
+            NumberField("ingredient.field.fat", "fat", fat, t) +
+            NumberField("ingredient.field.carbohydrates", "carbohydrates", carbohydrates, t) +
+            NumberField("ingredient.field.sugar", "sugar", sugar, t) +
+            NumberField("ingredient.field.fiber", "fiber", fiber, t) +
+            Html.Button(t("ingredient.submit"));
+        var form = Html.Form(formAction, formBody);
 
         var body = Html.P(Html.Link("/admin/ingredients", t("ingredient.list_title"))) +
             Html.H1(t(titleKey)) +
