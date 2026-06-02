@@ -76,8 +76,7 @@ public static class AdminIngredientHandlers
 
     public static App EditForm(IngredientId id) => _ => async env =>
     {
-        var ingredient = (await env.Ingredients.Find(id)).Match(none: () => default(Ingredient), some: i => i);
-        if (ingredient is null)
+        if ((await env.Ingredients.Find(id)) is not [var ingredient])
         {
             return Response.NotFound();
         }

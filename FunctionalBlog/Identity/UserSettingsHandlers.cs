@@ -21,8 +21,7 @@ public static class UserSettingsHandlers
                 400);
         }
 
-        var stored = (await env.Users.FindById(user.Id)).Match(none: () => default(User), some: u => u);
-        if (stored is null || !env.PasswordHasher.Verify(decoded.CurrentPassword, stored.PasswordHash))
+        if ((await env.Users.FindById(user.Id)) is not [var stored] || !env.PasswordHasher.Verify(decoded.CurrentPassword, stored.PasswordHash))
         {
             return Response.Html(
                 UserSettingsViews.Settings(user, ["auth.error.current_password_wrong"], env.CurrentUser, env.T),

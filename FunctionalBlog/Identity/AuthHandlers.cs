@@ -71,8 +71,7 @@ public static class AuthHandlers
         var hashToVerify = userOption.Match(none: () => DummyHash, some: u => u.PasswordHash);
         var passwordMatch = env.PasswordHasher.Verify(decoded.Password, hashToVerify);
 
-        var user = userOption.Match(none: () => default(User), some: u => u);
-        if (user is null || !passwordMatch)
+        if (userOption is not [var user] || !passwordMatch)
         {
             return Response.Html(
                 AuthViews.LoginForm(["auth.error.invalid_credentials"], decoded.EmailRaw, env.CurrentUser, env.T),

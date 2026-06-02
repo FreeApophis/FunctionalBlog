@@ -15,14 +15,12 @@ public static class AuthMiddleware
             return Guest.Instance;
         }
 
-        var session = (await env.Sessions.Find(token)).Match(none: () => default(Session), some: s => s);
-        if (session is null || session.ExpiresAt <= env.Clock.Now)
+        if ((await env.Sessions.Find(token)) is not [var session] || session.ExpiresAt <= env.Clock.Now)
         {
             return Guest.Instance;
         }
 
-        var user = (await env.Users.FindById(session.UserId)).Match(none: () => default(User), some: u => u);
-        if (user is null)
+        if ((await env.Users.FindById(session.UserId)) is not [var user])
         {
             return Guest.Instance;
         }

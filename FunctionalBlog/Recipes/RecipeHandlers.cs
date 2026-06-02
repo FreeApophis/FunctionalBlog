@@ -261,9 +261,7 @@ public static class RecipeHandlers
 
     public static App UpdateRecipe(RecipeId id) => request => async env =>
     {
-        var existingOption = await env.Recipes.Find(id);
-        var existing = existingOption.Match(none: () => default(Recipe), some: r => r);
-        if (existing is null)
+        if ((await env.Recipes.Find(id)) is not [var existing])
         {
             return Response.NotFound();
         }
