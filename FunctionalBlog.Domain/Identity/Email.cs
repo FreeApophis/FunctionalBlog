@@ -2,7 +2,7 @@ namespace FunctionalBlog.Domain.Identity;
 
 public sealed record Email(string Value)
 {
-    public static Option<Email> Parse(string raw)
+    public static Option<Email> ParseOrNone(string raw)
     {
         var normalized = raw.Trim().ToLowerInvariant();
         var at = normalized.IndexOf('@');

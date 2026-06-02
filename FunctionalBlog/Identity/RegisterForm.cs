@@ -10,7 +10,7 @@ public static class RegisterForm
         var confirmation = request.Form.GetValueOrDefault("confirmation", string.Empty);
 
         var errors = new List<string>();
-        var email = Email.Parse(emailRaw);
+        var email = Email.ParseOrNone(emailRaw);
 
         if (email is [])
         {

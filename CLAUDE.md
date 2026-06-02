@@ -75,7 +75,6 @@ All "find" methods on repositories return `Option<T>`, not `T?`. **Never escape 
 ```csharp
 Option.Some(value)          // wrap a known value
 Option<T>.None              // empty
-Email.Parse("a@b.com")      // parsing methods already return Option<T>
 dict.GetValueOrNone("key")  // Funcky extension — replaces TryGetValue
 sequence.FirstOrNone(pred)  // Funcky LINQ extension — replaces FirstOrDefault
 ```

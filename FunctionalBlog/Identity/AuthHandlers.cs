@@ -64,7 +64,7 @@ public static class AuthHandlers
                 400);
         }
 
-        var emailOption = Email.Parse(decoded.EmailRaw);
+        var emailOption = Email.ParseOrNone(decoded.EmailRaw);
         var userOption = await emailOption.Match(
             none: () => Task.FromResult(Option<User>.None),
             some: async email => await env.Users.FindByEmail(email));
@@ -101,7 +101,7 @@ public static class AuthHandlers
     {
         var decoded = PasswordResetRequestForm.Decode(request);
 
-        var userOption = await Email.Parse(decoded.EmailRaw)
+        var userOption = await Email.ParseOrNone(decoded.EmailRaw)
             .Match(
                 none: () => Task.FromResult(Option<User>.None),
                 some: async email => await env.Users.FindByEmail(email));

@@ -58,7 +58,7 @@ public static class Seeder
 
     private static async ValueTask SeedAdminUser(Env env)
     {
-        if (Email.Parse(AdminEmail) is [var email] && (await env.Users.FindByEmail(email)) is [])
+        if (Email.ParseOrNone(AdminEmail) is [var email] && (await env.Users.FindByEmail(email)) is [])
         {
             var id = await env.Users.NextId();
             var hash = env.PasswordHasher.Hash(AdminPassword);
@@ -74,7 +74,7 @@ public static class Seeder
             return;
         }
 
-        var adminEmail = Email.Parse(AdminEmail).GetOrElse(new Email("invalid"));
+        var adminEmail = Email.ParseOrNone(AdminEmail).GetOrElse(new Email("invalid"));
 
         if ((await env.Users.FindByEmail(adminEmail)) is [var admin])
         {
@@ -428,7 +428,7 @@ public static class Seeder
             return;
         }
 
-        var adminEmail = Email.Parse(AdminEmail).GetOrElse(new Email("invalid"));
+        var adminEmail = Email.ParseOrNone(AdminEmail).GetOrElse(new Email("invalid"));
         if ((await env.Users.FindByEmail(adminEmail)) is [var admin])
         {
             var ingredients = (await env.Ingredients.All()).ToDictionary(i => i.Name.Value, i => i.Id);
