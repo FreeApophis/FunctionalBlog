@@ -3,74 +3,79 @@ namespace FunctionalBlog.Test.Identity;
 public sealed class RegisterFormTests
 {
     [Fact]
-    public void Valid_form_is_valid()
+    public void Valid_form_returns_success_with_typed_fields()
     {
-        var form = Decode("user@blog.de", "Maximilian", "geheim123", "geheim123");
+        var form = ValidatedAssert.IsSuccess(Decode("user@blog.de", "Maximilian", "geheim123", "geheim123"));
 
-        Assert.True(form.IsValid);
-        Assert.Empty(form.Errors);
+        Assert.Equal(new Email("user@blog.de"), form.Email);
+        Assert.Equal(new DisplayName("Maximilian"), form.DisplayName);
+        Assert.Equal("geheim123", form.Password);
     }
 
     [Fact]
-    public void Missing_email_adds_error()
+    public void Missing_email_returns_failure()
     {
-        var form = Decode(string.Empty, "Maximilian", "geheim123", "geheim123");
+        var errors = ValidatedAssert.IsFailure(Decode(string.Empty, "Maximilian", "geheim123", "geheim123"));
 
-        Assert.False(form.IsValid);
-        Assert.NotEmpty(form.Errors);
+        Assert.Contains("auth.error.invalid_email", errors);
     }
 
     [Fact]
-    public void Invalid_email_format_adds_error()
+    public void Invalid_email_format_returns_failure()
     {
-        var form = Decode("notanemail", "Maximilian", "geheim123", "geheim123");
+        var errors = ValidatedAssert.IsFailure(Decode("notanemail", "Maximilian", "geheim123", "geheim123"));
 
-        Assert.False(form.IsValid);
-        Assert.NotEmpty(form.Errors);
+        Assert.Contains("auth.error.invalid_email", errors);
     }
 
     [Fact]
-    public void Missing_display_name_adds_error()
+    public void Short_display_name_returns_failure()
     {
-        var form = Decode("user@blog.de", string.Empty, "geheim123", "geheim123");
+        var errors = ValidatedAssert.IsFailure(Decode("user@blog.de", "X", "geheim123", "geheim123"));
 
-        Assert.False(form.IsValid);
-        Assert.NotEmpty(form.Errors);
+        Assert.Contains("auth.error.display_name_too_short", errors);
     }
 
     [Fact]
-    public void Display_name_shorter_than_2_characters_adds_error()
+    public void Short_password_returns_failure()
     {
-        var form = Decode("user@blog.de", "X", "geheim123", "geheim123");
+        var errors = ValidatedAssert.IsFailure(Decode("user@blog.de", "Maximilian", "kurz", "kurz"));
 
-        Assert.False(form.IsValid);
-        Assert.NotEmpty(form.Errors);
+        Assert.Contains("auth.error.password_too_short", errors);
     }
 
     [Fact]
-    public void Password_shorter_than_8_characters_adds_error()
+    public void Mismatched_passwords_return_failure()
     {
-        var form = Decode("user@blog.de", "Maximilian", "kurz", "kurz");
+        var errors = ValidatedAssert.IsFailure(Decode("user@blog.de", "Maximilian", "geheim123", "anders456"));
 
-        Assert.False(form.IsValid);
-        Assert.NotEmpty(form.Errors);
+        Assert.Contains("auth.error.passwords_mismatch", errors);
     }
 
     [Fact]
-    public void Mismatched_password_confirmation_adds_error()
+    public void All_invalid_fields_accumulate_all_errors()
     {
-        var form = Decode("user@blog.de", "Maximilian", "geheim123", "anders456");
+        var errors = ValidatedAssert.IsFailure(Decode("bad", "X", "kurz", "anders"));
 
-        Assert.False(form.IsValid);
-        Assert.NotEmpty(form.Errors);
+        Assert.Contains("auth.error.invalid_email", errors);
+        Assert.Contains("auth.error.display_name_too_short", errors);
+        Assert.Contains("auth.error.password_too_short", errors);
+        Assert.Contains("auth.error.passwords_mismatch", errors);
     }
 
-    private static DecodedRegisterForm Decode(string email, string displayName, string password, string confirmation) =>
+    private static Validated<IReadOnlyList<string>, RegisterForm.Valid> Decode(
+        string email, string displayName, string password, string confirmation) =>
         RegisterForm.Decode(new Request(
             HttpMethod.Post,
             "/register",
             new Dictionary<string, string>(),
             new Dictionary<string, string>(),
-            new Dictionary<string, string> { ["email"] = email, ["displayName"] = displayName, ["password"] = password, ["confirmation"] = confirmation },
+            new Dictionary<string, string>
+            {
+                ["email"] = email,
+                ["displayName"] = displayName,
+                ["password"] = password,
+                ["confirmation"] = confirmation,
+            },
             new Dictionary<string, string>()));
 }

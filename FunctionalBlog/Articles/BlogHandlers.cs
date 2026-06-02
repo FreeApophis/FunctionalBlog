@@ -28,41 +28,44 @@ public static class BlogHandlers
         ValueTask.FromResult(Response.Html(BlogViews.Form([], string.Empty, string.Empty, string.Empty, env.CurrentUser, env.T)));
 
     public static App CreateArticle => request => async env =>
-    {
-        var decoded = ArticleForm.Decode(request);
+        await ArticleForm.Decode(request).Match(
+            failure: f => Task.FromResult(Response.Html(
+                BlogViews.Form(
+                    f.Error,
+                    request.Form.GetValueOrNone("title").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("teaser").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("text").GetOrElse(string.Empty),
+                    env.CurrentUser,
+                    env.T),
+                400)),
+            success: async s =>
+            {
+                var article = Article.Create(
+                    id: await env.Articles.NextId(),
+                    title: s.Value.Title,
+                    teaser: s.Value.Teaser,
+                    text: s.Value.Text,
+                    authorId: ((AuthenticatedUser)env.CurrentUser).Id,
+                    publishedAt: env.Clock.Now);
 
-        if (!decoded.IsValid)
-        {
-            return Response.Html(BlogViews.Form(decoded.Errors, decoded.Title, decoded.Teaser, decoded.Text, env.CurrentUser, env.T), 400);
-        }
+                await env.Articles.Save(article);
 
-        var authorId = ((AuthenticatedUser)env.CurrentUser).Id;
-        var article = Article.Create(
-            id: await env.Articles.NextId(),
-            title: new ArticleTitle(decoded.Title),
-            teaser: new ArticleTeaser(decoded.Teaser),
-            text: new ArticleText(decoded.Text),
-            authorId: authorId,
-            publishedAt: env.Clock.Now);
-
-        await env.Articles.Save(article);
-
-        return Response.Redirect($"/articles/{article.Id.Value}");
-    };
+                return Response.Redirect($"/articles/{article.Id.Value}");
+            });
 
     public static App EditArticleForm(ArticleId id) => _ => async env =>
     {
         if ((await env.Articles.Find(id)) is [var article])
         {
             return Response.Html(BlogViews.Form(
-            [],
-            article.Title.Value,
-            article.Teaser.Value,
-            article.Text.Value,
-            env.CurrentUser,
-            env.T,
-            formAction: $"/articles/{id.Value}",
-            titleKey: "article.edit_title"));
+                [],
+                article.Title.Value,
+                article.Teaser.Value,
+                article.Text.Value,
+                env.CurrentUser,
+                env.T,
+                formAction: $"/articles/{id.Value}",
+                titleKey: "article.edit_title"));
         }
 
         return Response.NotFound();
@@ -81,38 +84,36 @@ public static class BlogHandlers
 
     public static App UpdateArticle(ArticleId id) => request => async env =>
     {
-        if ((await env.Articles.Find(id)) is [var existing])
+        if ((await env.Articles.Find(id)) is not [var existing])
         {
-            var decoded = ArticleForm.Decode(request);
-
-            if (!decoded.IsValid)
-            {
-                return Response.Html(
-                    BlogViews.Form(
-                        decoded.Errors,
-                        decoded.Title,
-                        decoded.Teaser,
-                        decoded.Text,
-                        env.CurrentUser,
-                        env.T,
-                        formAction: $"/articles/{id.Value}",
-                        titleKey: "article.edit_title"),
-                    400);
-            }
-
-            var updated = Article.Create(
-                id: id,
-                title: new ArticleTitle(decoded.Title),
-                teaser: new ArticleTeaser(decoded.Teaser),
-                text: new ArticleText(decoded.Text),
-                authorId: existing.AuthorId,
-                publishedAt: existing.PublishedAt);
-
-            await env.Articles.Save(updated);
-
-            return Response.Redirect($"/articles/{id.Value}");
+            return Response.NotFound();
         }
 
-        return Response.NotFound();
+        return await ArticleForm.Decode(request).Match(
+            failure: f => Task.FromResult(Response.Html(
+                BlogViews.Form(
+                    f.Error,
+                    request.Form.GetValueOrNone("title").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("teaser").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("text").GetOrElse(string.Empty),
+                    env.CurrentUser,
+                    env.T,
+                    formAction: $"/articles/{id.Value}",
+                    titleKey: "article.edit_title"),
+                400)),
+            success: async s =>
+            {
+                var updated = Article.Create(
+                    id: id,
+                    title: s.Value.Title,
+                    teaser: s.Value.Teaser,
+                    text: s.Value.Text,
+                    authorId: existing.AuthorId,
+                    publishedAt: existing.PublishedAt);
+
+                await env.Articles.Save(updated);
+
+                return Response.Redirect($"/articles/{id.Value}");
+            });
     };
 }

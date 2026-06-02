@@ -59,7 +59,8 @@ A handler is invoked as `app(request)(env)` — request first, then environment.
 - **`Middlewares`** (Web) — `Recover` (catches exceptions, logs, returns a 500 HTML page) and `RequestLogging` (times the inner app and logs method/path/status/elapsed).
 - **`Article` / `ArticleId` / `ArticleTitle` / `ArticleText`** (Domain) — domain model.
 - **`IArticleRepository`** (Application) — repository contract. Behavioral spec lives in `FunctionalBlog.Test/ArticleRepositoryContract.cs`.
-- **`ArticleForm` / `DecodedArticleForm`** (Web) — HTTP form decoding/validation. Stays with the Web project because it's a presentation/transport concern, not a domain rule.
+- **`ArticleForm`** (Web) — HTTP form decoding/validation returning `Validated<IReadOnlyList<string>, ArticleForm.Valid>`. Stays with the Web project because it's a presentation/transport concern, not a domain rule.
+- **`Validated<TFailure, TSuccess>`** (Web) — applicative-functor discriminated union for form validation. `Failure(TFailure Error)` accumulates all field errors; `Success(TSuccess Value)` carries the fully-typed valid form.
 - **`InMemoryArticleRepository`** (DataAccess.InMemory) — in-memory storage for tests. Pre-seeded with one sample article on construction (a fixture quirk, not part of the contract).
 - **`SqliteArticleRepository`** (DataAccess.Sqlite) — production SQLite storage using Dapper.
 - **`BlogViews`** / **`Layout`** / **`Html`** (Web) — server-rendered HTML with XSS protection via `WebUtility.HtmlEncode`. CSS lives in `wwwroot/styles.css`, embedded into the Web assembly.
@@ -160,6 +161,104 @@ if (option is not [var x]) return Response.NotFound();
 // use x here
 ```
 
+## Form validation with `Validated<TFailure, TSuccess>`
+
+Form decoders return `Validated<IReadOnlyList<string>, TValid>` — an applicative functor that accumulates **all** field errors independently rather than short-circuiting on the first. The failure type carries a list of translation-key error strings; the success type is a strongly-typed record with domain value objects.
+
+### Defining a form decoder
+
+Each field is a pure function returning `Validated<IReadOnlyList<string>, TField>`. Compose them with `.Apply` following the blog-post pattern (https://blog.ploeh.dk/2023/10/30/a-c-port-of-validation-with-partial-round-trip/):
+
+```csharp
+public static class ArticleForm
+{
+    public sealed record Valid(ArticleTitle Title, ArticleTeaser Teaser, ArticleText Text);
+
+    public static Validated<IReadOnlyList<string>, Valid> Decode(Request request)
+    {
+        var title = request.Form.GetValueOrNone("title").GetOrElse(string.Empty).Trim();
+        var teaser = request.Form.GetValueOrNone("teaser").GetOrElse(string.Empty).Trim();
+        var text  = request.Form.GetValueOrNone("text").GetOrElse(string.Empty).Trim();
+
+        Func<ArticleTitle, ArticleTeaser, ArticleText, Valid> create =
+            (t, te, tx) => new Valid(t, te, tx);
+
+        return create
+            .Apply(TryParseTitle(title), Combine)
+            .Apply(TryParseTeaser(teaser), Combine)
+            .Apply(TryParseText(text), Combine);
+    }
+
+    private static Validated<IReadOnlyList<string>, ArticleTitle> TryParseTitle(string raw) =>
+        raw.Length >= 3
+            ? Validated.Succeed<IReadOnlyList<string>, ArticleTitle>(new ArticleTitle(raw))
+            : Validated.Fail<IReadOnlyList<string>, ArticleTitle>(["article.error.title_too_short"]);
+
+    private static IReadOnlyList<string> Combine(IReadOnlyList<string> a, IReadOnlyList<string> b) => [..a, ..b];
+}
+```
+
+### Compound field validators (multiple checks on one field)
+
+Use a proof-witness `Func<bool, bool, TField>` that always returns the field value — the booleans are just accumulation vessels:
+
+```csharp
+private static Validated<IReadOnlyList<string>, string> TryParsePassword(string password, string confirmation)
+{
+    Func<bool, bool, string> alwaysPassword = (_, _) => password;
+
+    return alwaysPassword
+        .Apply(CheckPasswordLength(password), Combine)
+        .Apply(CheckPasswordMatch(password, confirmation), Combine);
+}
+```
+
+### Lifting Option validators into Validated
+
+Use the list pattern to convert `Option<T>` to `Validated`:
+
+```csharp
+private static Validated<IReadOnlyList<string>, Email> TryParseEmail(string raw) =>
+    Email.ParseOrNone(raw) switch
+    {
+        [var email] => Validated.Succeed<IReadOnlyList<string>, Email>(email),
+        []          => Validated.Fail<IReadOnlyList<string>, Email>(["auth.error.invalid_email"]),
+    };
+```
+
+### Consuming in handlers
+
+Use `Match` with `Task`-returning lambdas. Raw form values for re-rendering come from `request.Form`; typed domain values come from `s.Value`:
+
+```csharp
+public static App CreateArticle => request => async env =>
+    await ArticleForm.Decode(request).Match(
+        failure: f => Task.FromResult(Response.Html(
+            BlogViews.Form(
+                f.Error,
+                request.Form.GetValueOrNone("title").GetOrElse(string.Empty),
+                ...),
+            400)),
+        success: async s =>
+        {
+            var article = Article.Create(title: s.Value.Title, ...);
+            await env.Articles.Save(article);
+            return Response.Redirect($"/articles/{article.Id.Value}");
+        });
+```
+
+### Testing
+
+Use `ValidatedAssert.IsSuccess` / `ValidatedAssert.IsFailure` (in `FunctionalBlog.Test/ValidatedAssert.cs`):
+
+```csharp
+var form = ValidatedAssert.IsSuccess(ArticleForm.Decode(validRequest));
+Assert.Equal(new ArticleTitle("Guter Titel"), form.Title);
+
+var errors = ValidatedAssert.IsFailure(ArticleForm.Decode(invalidRequest));
+Assert.Contains("article.error.title_too_short", errors);
+```
+
 ### UI language
 
 All user-facing text (form validation messages, article content, page labels) is in **German**.
@@ -182,7 +281,7 @@ One public type per file; no namespaces (relies on the implicit global namespace
 2. HTTP model: `Request.cs`, `Response.cs`, `Env.cs`
 3. Pipeline: `Middlewares.cs`, `Router.cs`
 4. Application: `BlogHandlers.cs`, `StaticHandlers.cs`
-5. Form: `ArticleForm.cs`, `DecodedArticleForm.cs`
+5. Form: `ArticleForm.cs`, `RegisterForm.cs`, and other `*Form.cs` files — each exposes a `Valid` nested record and returns `Validated<IReadOnlyList<string>, TValid>`
 6. Views: `BlogViews.cs`, `Layout.cs`, `Html.cs`, `wwwroot/styles.css`
 7. Infrastructure: `IClock.cs`, `SystemClock.cs`, `ILog.cs`, `ConsoleLog.cs`, `HttpAdapter.cs`
 8. Bootstrap: `Program.cs`

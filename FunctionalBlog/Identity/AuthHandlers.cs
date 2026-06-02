@@ -12,42 +12,31 @@ public static class AuthHandlers
             AuthViews.RegisterForm([], string.Empty, string.Empty, env.CurrentUser, env.T)));
 
     public static App Register => request => async env =>
-    {
-        var decoded = RegisterForm.Decode(request);
-
-        if (!decoded.IsValid)
-        {
-            return Response.Html(
+        await RegisterForm.Decode(request).Match(
+            failure: f => Task.FromResult(Response.Html(
                 AuthViews.RegisterForm(
-                    decoded.Errors,
+                    f.Error,
                     request.Form.GetValueOrNone("email").GetOrElse(string.Empty),
                     request.Form.GetValueOrNone("displayName").GetOrElse(string.Empty),
                     env.CurrentUser,
                     env.T),
-                400);
-        }
-
-        if (decoded.Email is [var regEmail])
-        {
-            if ((await env.Users.FindByEmail(regEmail)) is not [var existingUser])
+                400)),
+            success: async s =>
             {
-                var id = await env.Users.NextId();
-                var hash = env.PasswordHasher.Hash(decoded.Password);
-                var roleNames = (await env.Roles.FindByName("Benutzer")).Select(role => role.Name).ToEnumerable().ToImmutableList();
+                if ((await env.Users.FindByEmail(s.Value.Email)) is not [var existingUser])
+                {
+                    var id = await env.Users.NextId();
+                    var hash = env.PasswordHasher.Hash(s.Value.Password);
+                    var roleNames = (await env.Roles.FindByName("Benutzer")).Select(role => role.Name).ToEnumerable().ToImmutableList();
 
-                existingUser = User.Create(id, regEmail!, new DisplayName(decoded.DisplayName), hash, roleNames, env.Clock.Now);
-                await env.Users.Save(existingUser);
-            }
+                    existingUser = User.Create(id, s.Value.Email, s.Value.DisplayName, hash, roleNames, env.Clock.Now);
+                    await env.Users.Save(existingUser);
+                }
 
-            var session = NewSession(existingUser.Id, env.Clock.Now);
-            await env.Sessions.Save(session);
-            return RedirectWithSession("/", session, env.Clock.Now);
-        }
-
-        return Response.Html(
-            AuthViews.RegisterForm(decoded.Errors, request.Form.GetValueOrNone("email").GetOrElse(string.Empty), request.Form.GetValueOrNone("displayName").GetOrElse(string.Empty), env.CurrentUser, env.T),
-            400);
-    };
+                var session = NewSession(existingUser.Id, env.Clock.Now);
+                await env.Sessions.Save(session);
+                return RedirectWithSession("/", session, env.Clock.Now);
+            });
 
     public static App NewLoginForm => _ => env =>
         ValueTask.FromResult(Response.Html(
