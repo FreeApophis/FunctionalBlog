@@ -14,11 +14,11 @@ public abstract class PasswordResetTokenStoreContract
     }
 
     [Fact]
-    public async Task Find_returns_null_for_an_unknown_token()
+    public async Task Find_returns_none_for_an_unknown_token()
     {
         var store = CreateStore();
 
-        Assert.Equal(Option<PasswordResetToken>.None, await store.Find("unknown"));
+        FunctionalAssert.None(await store.Find("unknown"));
     }
 
     [Fact]

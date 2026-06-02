@@ -14,11 +14,11 @@ public abstract class UserRepositoryContract
     }
 
     [Fact]
-    public async Task FindById_returns_null_for_an_unknown_id()
+    public async Task FindById_returns_none_for_an_unknown_id()
     {
         var repo = CreateRepository();
 
-        Assert.Equal(Option<User>.None, await repo.FindById(new UserId(987_654)));
+        FunctionalAssert.None(await repo.FindById(new UserId(987_654)));
     }
 
     [Fact]
@@ -33,11 +33,11 @@ public abstract class UserRepositoryContract
     }
 
     [Fact]
-    public async Task FindByEmail_returns_null_for_an_unknown_email()
+    public async Task FindByEmail_returns_none_for_an_unknown_email()
     {
         var repo = CreateRepository();
 
-        Assert.Equal(Option<User>.None, await repo.FindByEmail(new Email("nobody@example.com")));
+        FunctionalAssert.None(await repo.FindByEmail(new Email("nobody@example.com")));
     }
 
     [Fact]

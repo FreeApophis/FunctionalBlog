@@ -22,7 +22,8 @@ public sealed class SqliteArticleRepository : IArticleRepository
         var row = await _connection.QuerySingleOrDefaultAsync<ArticleRow>(
             "SELECT id AS Id, title AS Title, teaser AS Teaser, text AS Text, author_id AS AuthorId, published_at AS PublishedAt FROM articles WHERE id = @id",
             new { id = id.Value });
-        return row is null ? Option<Article>.None : Option.Some(ToArticle(row));
+
+        return Option.FromNullable(row).Select(ToArticle);
     }
 
     public async ValueTask<ArticleId> NextId()

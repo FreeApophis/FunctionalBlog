@@ -13,7 +13,7 @@ public sealed class InMemorySessionStore : ISessionStore
     }
 
     public ValueTask<Option<Session>> Find(string token) =>
-        ValueTask.FromResult(_sessions.TryGetValue(token, out var session) ? Option.Some(session) : Option<Session>.None);
+        ValueTask.FromResult(_sessions.GetValueOrNone(token));
 
     public ValueTask Delete(string token)
     {

@@ -13,7 +13,7 @@ public sealed class InMemoryPasswordResetTokenStore : IPasswordResetTokenStore
     }
 
     public ValueTask<Option<PasswordResetToken>> Find(string token) =>
-        ValueTask.FromResult(_tokens.TryGetValue(token, out var t) ? Option.Some(t) : Option<PasswordResetToken>.None);
+        ValueTask.FromResult(_tokens.GetValueOrNone(token));
 
     public ValueTask Consume(string token)
     {

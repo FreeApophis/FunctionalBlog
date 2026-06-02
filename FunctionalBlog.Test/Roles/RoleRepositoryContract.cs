@@ -14,11 +14,11 @@ public abstract class RoleRepositoryContract
     }
 
     [Fact]
-    public async Task FindById_returns_null_for_an_unknown_id()
+    public async Task FindById_returns_none_for_an_unknown_id()
     {
         var repo = CreateRepository();
 
-        Assert.Equal(Option<Role>.None, await repo.FindById(new RoleId(987_654)));
+        FunctionalAssert.None(await repo.FindById(new RoleId(987_654)));
     }
 
     [Fact]
@@ -33,11 +33,11 @@ public abstract class RoleRepositoryContract
     }
 
     [Fact]
-    public async Task FindByName_returns_null_for_an_unknown_name()
+    public async Task FindByName_returns_none_for_an_unknown_name()
     {
         var repo = CreateRepository();
 
-        Assert.Equal(Option<Role>.None, await repo.FindByName("Unbekannt"));
+        FunctionalAssert.None(await repo.FindByName("Unbekannt"));
     }
 
     [Fact]

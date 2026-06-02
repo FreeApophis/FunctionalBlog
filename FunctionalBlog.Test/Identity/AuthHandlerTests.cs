@@ -80,7 +80,7 @@ public sealed class AuthHandlerTests
         Assert.Equal(303, response.Status);
         Assert.NotEmpty(response.SetCookies);
         Assert.Contains("Max-Age=0", response.SetCookies[0]);
-        Assert.Equal(Option<Session>.None, await env.Sessions.Find(token));
+        FunctionalAssert.None(await env.Sessions.Find(token));
     }
 
     [Fact]

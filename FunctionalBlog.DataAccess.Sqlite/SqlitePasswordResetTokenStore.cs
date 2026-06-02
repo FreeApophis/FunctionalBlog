@@ -21,7 +21,7 @@ public sealed class SqlitePasswordResetTokenStore : IPasswordResetTokenStore
         var row = await _connection.QuerySingleOrDefaultAsync<TokenRow>(
             "SELECT token AS Token, user_id AS UserId, expires_at AS ExpiresAt, consumed AS Consumed FROM password_reset_tokens WHERE token = @token",
             new { token });
-        return row is null ? Option<PasswordResetToken>.None : Option.Some(new PasswordResetToken(row.Token, new UserId((int)row.UserId), row.ExpiresAt, row.Consumed != 0L));
+        return Option.FromNullable(row).Select(r => new PasswordResetToken(r.Token, new UserId((int)r.UserId), r.ExpiresAt, r.Consumed != 0L));
     }
 
     public async ValueTask Consume(string token)

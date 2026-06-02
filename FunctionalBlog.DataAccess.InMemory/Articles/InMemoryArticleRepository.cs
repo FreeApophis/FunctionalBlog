@@ -12,7 +12,7 @@ public sealed class InMemoryArticleRepository : IArticleRepository
             _articles.Values.OrderByDescending(x => x.PublishedAt).ToList());
 
     public ValueTask<Option<Article>> Find(ArticleId id) =>
-        ValueTask.FromResult(_articles.TryGetValue(id.Value, out var article) ? Option.Some(article) : Option<Article>.None);
+        ValueTask.FromResult(_articles.GetValueOrNone(id.Value));
 
     public ValueTask<ArticleId> NextId() =>
         ValueTask.FromResult(new ArticleId(Interlocked.Increment(ref _nextId)));

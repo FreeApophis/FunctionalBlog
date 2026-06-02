@@ -15,11 +15,11 @@ public abstract class IngredientRepositoryContract
     }
 
     [Fact]
-    public async Task Find_returns_null_for_an_unknown_id()
+    public async Task Find_returns_none_for_an_unknown_id()
     {
         var repo = CreateRepository();
 
-        Assert.Equal(Option<Ingredient>.None, await repo.Find(new IngredientId(987_654)));
+        FunctionalAssert.None(await repo.Find(new IngredientId(987_654)));
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public abstract class IngredientRepositoryContract
 
         var id = await repo.NextId();
 
-        Assert.Equal(Option<Ingredient>.None, await repo.Find(id));
+        FunctionalAssert.None(await repo.Find(id));
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public abstract class IngredientRepositoryContract
 
         await repo.Delete(id);
 
-        Assert.Equal(Option<Ingredient>.None, await repo.Find(id));
+        FunctionalAssert.None(await repo.Find(id));
     }
 
     [Fact]

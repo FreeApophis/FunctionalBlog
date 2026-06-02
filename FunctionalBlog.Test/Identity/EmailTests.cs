@@ -15,26 +15,26 @@ public sealed class EmailTests
     }
 
     [Fact]
-    public void Parse_returns_null_for_missing_at_sign()
+    public void Parse_returns_none_for_missing_at_sign()
     {
-        Assert.Equal(Option<Email>.None, Email.ParseOrNone("notanemail"));
+        FunctionalAssert.None(Email.ParseOrNone("notanemail"));
     }
 
     [Fact]
-    public void Parse_returns_null_for_empty_local_part()
+    public void Parse_returns_none_for_empty_local_part()
     {
-        Assert.Equal(Option<Email>.None, Email.ParseOrNone("@example.com"));
+        FunctionalAssert.None(Email.ParseOrNone("@example.com"));
     }
 
     [Fact]
-    public void Parse_returns_null_for_missing_dot_in_domain()
+    public void Parse_returns_none_for_missing_dot_in_domain()
     {
-        Assert.Equal(Option<Email>.None, Email.ParseOrNone("user@example"));
+        FunctionalAssert.None(Email.ParseOrNone("user@example"));
     }
 
     [Fact]
-    public void Parse_returns_null_for_empty_string()
+    public void Parse_returns_none_for_empty_string()
     {
-        Assert.Equal(Option<Email>.None, Email.ParseOrNone(string.Empty));
+        FunctionalAssert.None(Email.ParseOrNone(string.Empty));
     }
 }

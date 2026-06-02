@@ -12,7 +12,7 @@ public sealed class InMemoryRecipeRepository : IRecipeRepository
             _recipes.Values.OrderBy(x => x.Name.Value).ToList());
 
     public ValueTask<Option<Recipe>> Find(RecipeId id) =>
-        ValueTask.FromResult(_recipes.TryGetValue(id.Value, out var recipe) ? Option.Some(recipe) : Option<Recipe>.None);
+        ValueTask.FromResult(_recipes.GetValueOrNone(id.Value));
 
     public ValueTask<RecipeId> NextId() =>
         ValueTask.FromResult(new RecipeId(Interlocked.Increment(ref _nextId)));

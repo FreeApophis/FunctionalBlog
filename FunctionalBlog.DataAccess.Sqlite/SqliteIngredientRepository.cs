@@ -22,7 +22,8 @@ public sealed class SqliteIngredientRepository : IIngredientRepository
         var row = await _connection.QuerySingleOrDefaultAsync<IngredientRow>(
             "SELECT id AS Id, name AS Name, image AS Image, description AS Description, density AS Density, piece_count AS PieceCount, calorific_value AS CalorificValue, protein AS Protein, fat AS Fat, carbohydrates AS Carbohydrates, sugar AS Sugar, fiber AS Fiber FROM ingredients WHERE id = @id",
             new { id = id.Value });
-        return row is null ? Option<Ingredient>.None : Option.Some(ToIngredient(row));
+
+        return Option.FromNullable(row).Select(ToIngredient);
     }
 
     public async ValueTask<IngredientId> NextId()

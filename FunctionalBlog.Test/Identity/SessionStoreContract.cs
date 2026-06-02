@@ -14,11 +14,11 @@ public abstract class SessionStoreContract
     }
 
     [Fact]
-    public async Task Find_returns_null_for_an_unknown_token()
+    public async Task Find_returns_none_for_an_unknown_token()
     {
         var store = CreateStore();
 
-        Assert.Equal(Option<Session>.None, await store.Find("unknown"));
+        FunctionalAssert.None(await store.Find("unknown"));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public abstract class SessionStoreContract
         await store.Save(session);
         await store.Delete("tok2");
 
-        Assert.Equal(Option<Session>.None, await store.Find("tok2"));
+        FunctionalAssert.None(await store.Find("tok2"));
     }
 
     protected abstract ISessionStore CreateStore();

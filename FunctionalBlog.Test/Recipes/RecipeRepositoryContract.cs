@@ -15,11 +15,11 @@ public abstract class RecipeRepositoryContract
     }
 
     [Fact]
-    public async Task Find_returns_null_for_an_unknown_id()
+    public async Task Find_returns_none_for_an_unknown_id()
     {
         var repo = CreateRepository();
 
-        Assert.Equal(Option<Recipe>.None, await repo.Find(new RecipeId(987_654)));
+        FunctionalAssert.None(await repo.Find(new RecipeId(987_654)));
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public abstract class RecipeRepositoryContract
 
         var id = await repo.NextId();
 
-        Assert.Equal(Option<Recipe>.None, await repo.Find(id));
+        FunctionalAssert.None(await repo.Find(id));
     }
 
     [Fact]

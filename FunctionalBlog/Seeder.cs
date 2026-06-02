@@ -23,7 +23,7 @@ public static class Seeder
 
     private static async ValueTask SeedRoles(Env env)
     {
-        if ((await env.Roles.FindByName(DefaultRoleName)) == Option<Role>.None)
+        if ((await env.Roles.FindByName(DefaultRoleName)) is [])
         {
             var id = await env.Roles.NextId();
             var role = Role.Create(id, DefaultRoleName)
@@ -31,7 +31,7 @@ public static class Seeder
             await env.Roles.Save(role);
         }
 
-        if ((await env.Roles.FindByName(AdminRoleName)) == Option<Role>.None)
+        if ((await env.Roles.FindByName(AdminRoleName)) is [])
         {
             var id = await env.Roles.NextId();
             var role = Role.Create(id, AdminRoleName)

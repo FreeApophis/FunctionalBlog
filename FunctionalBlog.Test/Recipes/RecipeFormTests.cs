@@ -177,12 +177,12 @@ public sealed class RecipeFormTests
     [Fact]
     public void ParseUnit_returns_correct_units()
     {
-        Assert.Equal(Option.Some<FunctionalBlog.Domain.Recipes.Unit>(WeightUnit.Gram), RecipeForm.ParseUnit("g"));
-        Assert.Equal(Option.Some<FunctionalBlog.Domain.Recipes.Unit>(WeightUnit.Kilogram), RecipeForm.ParseUnit("kg"));
-        Assert.Equal(Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Milliliter), RecipeForm.ParseUnit("ml"));
-        Assert.Equal(Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Tablespoon), RecipeForm.ParseUnit("EL"));
-        Assert.Equal(Option.Some<FunctionalBlog.Domain.Recipes.Unit>(PieceUnit.Piece), RecipeForm.ParseUnit("Stück"));
-        Assert.Equal(Option<FunctionalBlog.Domain.Recipes.Unit>.None, RecipeForm.ParseUnit("unknown"));
+        Assert.Equal(Option.Some<Domain.Recipes.Unit>(WeightUnit.Gram), RecipeForm.ParseUnit("g"));
+        Assert.Equal(Option.Some<Domain.Recipes.Unit>(WeightUnit.Kilogram), RecipeForm.ParseUnit("kg"));
+        Assert.Equal(Option.Some<Domain.Recipes.Unit>(VolumeUnit.Milliliter), RecipeForm.ParseUnit("ml"));
+        Assert.Equal(Option.Some<Domain.Recipes.Unit>(VolumeUnit.Tablespoon), RecipeForm.ParseUnit("EL"));
+        Assert.Equal(Option.Some<Domain.Recipes.Unit>(PieceUnit.Piece), RecipeForm.ParseUnit("Stück"));
+        FunctionalAssert.None(RecipeForm.ParseUnit("unknown"));
     }
 
     private static Request Build(

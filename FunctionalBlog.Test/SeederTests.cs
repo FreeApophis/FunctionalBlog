@@ -11,7 +11,7 @@ public sealed class SeederTests
 
         await Seeder.SeedAsync(env);
 
-        Assert.NotEqual(Option<User>.None, await env.Users.FindByEmail(new Email("admin@blog.de")));
+        FunctionalAssert.Some(await env.Users.FindByEmail(new Email("admin@blog.de")));
     }
 
     [Fact]
@@ -35,7 +35,7 @@ public sealed class SeederTests
 
         await Seeder.SeedAsync(env);
 
-        Assert.NotEqual(Option<Role>.None, await env.Roles.FindByName("Benutzer"));
+        FunctionalAssert.Some(await env.Roles.FindByName("Benutzer"));
     }
 
     [Fact]

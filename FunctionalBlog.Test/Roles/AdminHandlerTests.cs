@@ -32,7 +32,7 @@ public sealed class AdminHandlerTests
 
         Assert.Equal(303, response.Status);
         Assert.Equal("/admin/roles", response.Headers["Location"]);
-        Assert.NotEqual(Option<Role>.None, await env.Roles.FindByName("Autor"));
+        FunctionalAssert.Some(await env.Roles.FindByName("Autor"));
     }
 
     [Fact]
