@@ -6,7 +6,10 @@ public static class BlogViews
     {
         HtmlString ArticleHtml(Article article)
         {
-            var authorName = authorNames.TryGetValue(article.AuthorId, out var name) ? name : "?";
+            var authorName = authorNames
+                .GetValueOrNone(article.AuthorId)
+                .GetOrElse("?");
+
             var content = Html.H2(Html.Link($"/articles/{article.Id.Value}", article.Title.Value)) +
                 Html.Small($"{t("article.by")} {authorName} · {article.PublishedAt.LocalDateTime:d}") +
                 Html.P(Html.Text(article.Teaser.Value));

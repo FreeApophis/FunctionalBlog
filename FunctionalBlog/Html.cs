@@ -26,10 +26,11 @@ public static class Html
 
     public static HtmlString Button(string text) => new HtmlString.Safe($"<button type=\"submit\">{Encode(text)}</button>");
 
-    public static HtmlString Form(string action, HtmlString body, string? cssClass = null, string? style = null)
+    public static HtmlString Form(string action, HtmlString body, Option<string> cssClass = default, Option<string> style = default)
     {
-        var classAttr = cssClass is null ? string.Empty : $" class=\"{Encode(cssClass)}\"";
-        var styleAttr = style is null ? string.Empty : $" style=\"{Encode(style)}\"";
+        var classAttr = cssClass.Match(none: string.Empty, some: c => $" class=\"{Encode(c)}\"");
+        var styleAttr = style.Match(none: string.Empty, some: s => $" style=\"{Encode(s)}\"");
+
         return new HtmlString.Safe($"""<form method="post" action="{Encode(action)}"{classAttr}{styleAttr}>{body.Render()}</form>""");
     }
 
@@ -38,15 +39,17 @@ public static class Html
 
     public static HtmlString Label(HtmlString body) => new HtmlString.Safe($"<label>{body.Render()}</label>");
 
-    public static HtmlString Input(string name, string value = "", string? style = null)
+    public static HtmlString Input(string name, string value = "", Option<string> style = default)
     {
-        var styleAttr = style is null ? string.Empty : $" style=\"{Encode(style)}\"";
+        var styleAttr = style.Match(none: string.Empty, some: s => $" style=\"{Encode(s)}\"");
+
         return new HtmlString.Safe($"""<input name="{Encode(name)}" value="{Encode(value)}"{styleAttr} />""");
     }
 
-    public static HtmlString InputNumber(string name, string value, string min = "0", string? step = null)
+    public static HtmlString InputNumber(string name, string value, string min = "0", Option<string> step = default)
     {
-        var stepAttr = step is null ? string.Empty : $" step=\"{Encode(step)}\"";
+        var stepAttr = step.Match(none: string.Empty, some: s => $" step=\"{Encode(s)}\"");
+
         return new HtmlString.Safe($"""<input name="{Encode(name)}" type="number"{stepAttr} min="{Encode(min)}" value="{Encode(value)}" />""");
     }
 

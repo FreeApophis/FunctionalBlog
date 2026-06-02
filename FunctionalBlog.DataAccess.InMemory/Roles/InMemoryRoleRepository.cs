@@ -11,13 +11,10 @@ public sealed class InMemoryRoleRepository : IRoleRepository
         ValueTask.FromResult<IReadOnlyList<Role>>(_roles.Values.ToList());
 
     public ValueTask<Option<Role>> FindById(RoleId id) =>
-        ValueTask.FromResult(_roles.TryGetValue(id.Value, out var role) ? Option.Some(role) : Option<Role>.None);
+        ValueTask.FromResult(_roles.GetValueOrNone(id.Value));
 
     public ValueTask<Option<Role>> FindByName(string name)
-    {
-        var role = _roles.Values.FirstOrDefault(r => r.Name == name);
-        return ValueTask.FromResult(role is not null ? Option.Some(role) : Option<Role>.None);
-    }
+        => ValueTask.FromResult(_roles.Values.FirstOrNone(r => r.Name == name));
 
     public ValueTask<RoleId> NextId() =>
         ValueTask.FromResult(new RoleId(Interlocked.Increment(ref _nextId)));

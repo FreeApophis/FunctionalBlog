@@ -1,9 +1,3 @@
-global using Funcky;
-global using FunctionalBlog.Application.Articles;
-global using FunctionalBlog.Application.Identity;
-global using FunctionalBlog.Application.Recipes;
-global using FunctionalBlog.Application.Roles;
-global using FunctionalBlog.Application.Translations;
 global using FunctionalBlog.Domain.Articles;
 global using FunctionalBlog.Domain.Identity;
 global using FunctionalBlog.Domain.Recipes;

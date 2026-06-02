@@ -66,6 +66,101 @@ A handler is invoked as `app(request)(env)` — request first, then environment.
 - **`HttpAdapter`** (Web) — adapts ASP.NET Core's `HttpContext` to/from the domain `Request`/`Response`.
 - **`SystemClock`** / **`ConsoleLog`** (Web) — concrete `IClock` / `ILog` implementations wired up in `Program.cs`.
 
+## Functional style with Funcky `Option<T>`
+
+All "find" methods on repositories return `Option<T>`, not `T?`. **Never escape the monadic space** by extracting to a nullable. Stay inside `Option<T>` using the tools below.
+
+### Creating Option values
+
+```csharp
+Option.Some(value)          // wrap a known value
+Option<T>.None              // empty
+Email.Parse("a@b.com")      // parsing methods already return Option<T>
+dict.GetValueOrNone("key")  // Funcky extension — replaces TryGetValue
+sequence.FirstOrNone(pred)  // Funcky LINQ extension — replaces FirstOrDefault
+```
+
+### List pattern matching — the idiomatic `if` for Option
+
+`Option<T>` implements the list pattern, so use C# pattern matching instead of `TryGetValue` or `.Match(none: () => default!, ...)`:
+
+```csharp
+// Guard: act only when Some, skip when None
+if (option is [var value])
+{
+    // use value
+}
+
+// Early return when None
+if (option is not [var value])
+{
+    return Response.NotFound();
+}
+// use value
+
+// Both branches
+if (option is [var value])
+    DoSomething(value);
+else
+    HandleMissing();
+```
+
+### Staying in monadic space
+
+```csharp
+option.Select(x => x.Name)            // map: Option<T> → Option<U>
+option.SelectMany(x => Find(x.Id))    // flatMap / bind: Option<T> → Option<U>
+option.GetOrElse("fallback")          // extract with default (only at edges)
+option.Match(none: ..., some: ...)    // bifurcate (prefer list pattern for guards)
+option.ToEnumerable()                 // Option<T> → IEnumerable<T> (0 or 1 items)
+```
+
+### Async pattern
+
+When the `some` branch needs an async call, use `Match` with `Task`-returning lambdas:
+
+```csharp
+var userOption = await emailOption.Match(
+    none: () => Task.FromResult(Option<User>.None),
+    some: async email => await env.Users.FindByEmail(email));
+```
+
+### Pipeline example from the codebase
+
+```csharp
+// AuthHandlers.Register — stays entirely in Option space
+if (decoded.Email is [var regEmail])
+{
+    if ((await env.Users.FindByEmail(regEmail)) is not [var existingUser])
+    {
+        // user not found — create one
+        var roleNames = (await env.Roles.FindByName("Benutzer"))
+            .Select(role => role.Name)
+            .ToEnumerable()
+            .ToImmutableList();
+        existingUser = User.Create(...);
+        await env.Users.Save(existingUser);
+    }
+    // existingUser is guaranteed non-null here
+    ...
+}
+```
+
+### What NOT to do
+
+```csharp
+// BAD — escapes monadic space, brings nullability back in
+var x = option.Match(none: () => default(T), some: v => v);
+if (x is null) return Response.NotFound();
+
+// BAD — TryGetValue is banned by the Funcky analyzer (λ0001)
+if (!option.TryGetValue(out var x)) return Response.NotFound();
+
+// GOOD — list pattern keeps everything in Option
+if (option is not [var x]) return Response.NotFound();
+// use x here
+```
+
 ### UI language
 
 All user-facing text (form validation messages, article content, page labels) is in **German**.

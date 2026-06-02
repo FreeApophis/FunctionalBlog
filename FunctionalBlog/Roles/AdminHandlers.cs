@@ -10,27 +10,25 @@ public static class AdminHandlers
 
     public static App UserDetail(int userId) => _ => async env =>
     {
-        var user = (await env.Users.FindById(new UserId(userId))).Match(none: () => default(User), some: u => u);
-        if (user is null)
+        if ((await env.Users.FindById(new UserId(userId))) is [var user])
         {
-            return Response.NotFound();
+            var roles = await env.Roles.All();
+            return Response.Html(AdminViews.UserDetail(user, roles, [], env.CurrentUser, env.T));
         }
 
-        var roles = await env.Roles.All();
-        return Response.Html(AdminViews.UserDetail(user, roles, [], env.CurrentUser, env.T));
+        return Response.NotFound();
     };
 
     public static App UpdateUserRoles(int userId) => request => async env =>
     {
-        var user = (await env.Users.FindById(new UserId(userId))).Match(none: () => default(User), some: u => u);
-        if (user is null)
+        if ((await env.Users.FindById(new UserId(userId))) is [var user])
         {
-            return Response.NotFound();
+            var decoded = AssignRoleForm.Decode(request);
+            await env.Users.Save(user with { RoleNames = decoded.RoleNames });
+            return Response.Redirect($"/admin/users/{userId}");
         }
 
-        var decoded = AssignRoleForm.Decode(request);
-        await env.Users.Save(user with { RoleNames = decoded.RoleNames });
-        return Response.Redirect($"/admin/users/{userId}");
+        return Response.NotFound();
     };
 
     public static App RoleList => _ => async env =>
@@ -58,13 +56,12 @@ public static class AdminHandlers
 
     public static App RoleDetail(int roleId) => _ => async env =>
     {
-        var role = (await env.Roles.FindById(new RoleId(roleId))).Match(none: () => default(Role), some: r => r);
-        if (role is null)
+        if ((await env.Roles.FindById(new RoleId(roleId))) is [var role])
         {
-            return Response.NotFound();
+            return Response.Html(AdminViews.RoleDetail(role, [], env.CurrentUser, env.T));
         }
 
-        return Response.Html(AdminViews.RoleDetail(role, [], env.CurrentUser, env.T));
+        return Response.NotFound();
     };
 
     public static App AddRule(int roleId) => request => async env =>
@@ -102,12 +99,12 @@ public static class AdminHandlers
 
     public static App DeleteRole(int roleId) => _ => async env =>
     {
-        if ((await env.Roles.FindById(new RoleId(roleId))) == Option<Role>.None)
+        if ((await env.Roles.FindById(new RoleId(roleId))) is [var role])
         {
-            return Response.NotFound();
+            await env.Roles.Delete(new RoleId(roleId));
+            return Response.Redirect("/admin/roles");
         }
 
-        await env.Roles.Delete(new RoleId(roleId));
-        return Response.Redirect("/admin/roles");
+        return Response.NotFound();
     };
 }

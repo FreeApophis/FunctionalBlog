@@ -10,14 +10,13 @@ public sealed class TestLog : ILog
 
     public string ExtractResetToken()
     {
-        var line = _messages.FirstOrDefault(m => m.Contains("reset-token:"));
-        if (line is null)
+        if (_messages.FirstOrNone(m => m.Contains("reset-token:")) is [var line])
         {
-            throw new InvalidOperationException("No reset token found in log messages.");
+            var marker = "reset-token:";
+            var start = line.IndexOf(marker, StringComparison.Ordinal) + marker.Length;
+            return line[start..].Trim().Split(' ')[0];
         }
 
-        var marker = "reset-token:";
-        var start = line.IndexOf(marker, StringComparison.Ordinal) + marker.Length;
-        return line[start..].Trim().Split(' ')[0];
+        throw new InvalidOperationException("No reset token found in log messages.");
     }
 }

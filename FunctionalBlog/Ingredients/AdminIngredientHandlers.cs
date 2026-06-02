@@ -19,13 +19,13 @@ public static class AdminIngredientHandlers
             return Response.Redirect("/admin/ingredients?error=in-use");
         }
 
-        if ((await env.Ingredients.Find(id)) == Option<Ingredient>.None)
+        if ((await env.Ingredients.Find(id)) is [var ingredient])
         {
-            return Response.NotFound();
+            await env.Ingredients.Delete(id);
+            return Response.Redirect("/admin/ingredients");
         }
 
-        await env.Ingredients.Delete(id);
-        return Response.Redirect("/admin/ingredients");
+        return Response.NotFound();
     };
 
     public static App NewForm => _ => env =>
@@ -103,38 +103,38 @@ public static class AdminIngredientHandlers
 
     public static App Update(IngredientId id) => request => async env =>
     {
-        if ((await env.Ingredients.Find(id)) == Option<Ingredient>.None)
+        if ((await env.Ingredients.Find(id)) is [var ingredient])
         {
-            return Response.NotFound();
+            var decoded = IngredientForm.Decode(request);
+            if (!decoded.IsValid)
+            {
+                return Response.Html(
+                    AdminIngredientViews.Form(
+                        decoded.Errors,
+                        decoded.Name,
+                        decoded.Description,
+                        decoded.Image,
+                        decoded.Density,
+                        decoded.PieceCount,
+                        decoded.CalorificValue,
+                        decoded.Protein,
+                        decoded.Fat,
+                        decoded.Carbohydrates,
+                        decoded.Sugar,
+                        decoded.Fiber,
+                        env.CurrentUser,
+                        env.T,
+                        formAction: $"/admin/ingredients/{id.Value}",
+                        titleKey: "ingredient.edit_title"),
+                    400);
+            }
+
+            var updated = BuildIngredient(id, decoded);
+            await env.Ingredients.Save(updated);
+            return Response.Redirect("/admin/ingredients");
         }
 
-        var decoded = IngredientForm.Decode(request);
-        if (!decoded.IsValid)
-        {
-            return Response.Html(
-                AdminIngredientViews.Form(
-                    decoded.Errors,
-                    decoded.Name,
-                    decoded.Description,
-                    decoded.Image,
-                    decoded.Density,
-                    decoded.PieceCount,
-                    decoded.CalorificValue,
-                    decoded.Protein,
-                    decoded.Fat,
-                    decoded.Carbohydrates,
-                    decoded.Sugar,
-                    decoded.Fiber,
-                    env.CurrentUser,
-                    env.T,
-                    formAction: $"/admin/ingredients/{id.Value}",
-                    titleKey: "ingredient.edit_title"),
-                400);
-        }
-
-        var updated = BuildIngredient(id, decoded);
-        await env.Ingredients.Save(updated);
-        return Response.Redirect("/admin/ingredients");
+        return Response.NotFound();
     };
 
     private static Ingredient BuildIngredient(IngredientId id, DecodedIngredientForm decoded) =>

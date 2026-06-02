@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Security.Cryptography;
 
 namespace FunctionalBlog.Identity;
@@ -19,30 +20,33 @@ public static class AuthHandlers
             return Response.Html(
                 AuthViews.RegisterForm(
                     decoded.Errors,
-                    request.Form.GetValueOrDefault("email", string.Empty),
-                    request.Form.GetValueOrDefault("displayName", string.Empty),
+                    request.Form.GetValueOrNone("email").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("displayName").GetOrElse(string.Empty),
                     env.CurrentUser,
                     env.T),
                 400);
         }
 
-        var regEmail = decoded.Email.Match(none: () => default(Email), some: e => e);
-        var existingUser = (await env.Users.FindByEmail(regEmail!)).Match(none: () => default(User), some: u => u);
-        if (existingUser is null)
+        if (decoded.Email is [var regEmail])
         {
-            var id = await env.Users.NextId();
-            var hash = env.PasswordHasher.Hash(decoded.Password);
-            var roleNames = (await env.Roles.FindByName("Benutzer")).Match(
-                none: () => (IReadOnlyList<string>)[],
-                some: r => (IReadOnlyList<string>)[r.Name]);
+            if ((await env.Users.FindByEmail(regEmail)) is not [var existingUser])
+            {
+                var id = await env.Users.NextId();
+                var hash = env.PasswordHasher.Hash(decoded.Password);
+                var roleNames = (await env.Roles.FindByName("Benutzer")).Select(role => role.Name).ToEnumerable().ToImmutableList();
 
-            existingUser = User.Create(id, regEmail!, new DisplayName(decoded.DisplayName), hash, roleNames, env.Clock.Now);
-            await env.Users.Save(existingUser);
+                existingUser = User.Create(id, regEmail!, new DisplayName(decoded.DisplayName), hash, roleNames, env.Clock.Now);
+                await env.Users.Save(existingUser);
+            }
+
+            var session = NewSession(existingUser.Id, env.Clock.Now);
+            await env.Sessions.Save(session);
+            return RedirectWithSession("/", session, env.Clock.Now);
         }
 
-        var session = NewSession(existingUser.Id, env.Clock.Now);
-        await env.Sessions.Save(session);
-        return RedirectWithSession("/", session, env.Clock.Now);
+        return Response.Html(
+            AuthViews.RegisterForm(decoded.Errors, request.Form.GetValueOrNone("email").GetOrElse(string.Empty), request.Form.GetValueOrNone("displayName").GetOrElse(string.Empty), env.CurrentUser, env.T),
+            400);
     };
 
     public static App NewLoginForm => _ => env =>
@@ -82,15 +86,12 @@ public static class AuthHandlers
 
     public static App Logout => request => async env =>
     {
-        var token = request.Cookies.GetValueOrDefault("session");
-
-        if (token is not null)
+        if (request.Cookies.GetValueOrNone("session") is [var token])
         {
             await env.Sessions.Delete(token);
         }
 
-        return Response.Redirect("/login")
-            .WithCookie(CookieHelper.ExpireSessionCookie());
+        return Response.Redirect("/login").WithCookie(CookieHelper.ExpireSessionCookie());
     };
 
     public static App NewPasswordResetForm => _ => env =>

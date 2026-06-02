@@ -10,15 +10,16 @@
     <PackageVersion Include="Funcky" Version="3.6.0" />
     <PackageVersion Include="Funcky.DiscriminatedUnion" Version="1.2.1" />
   </ItemGroup>
-  <ItemGroup>
-    <PackageVersion Include="Dapper" Version="2.1.72" />
-    <PackageVersion Include="Microsoft.Data.Sqlite" Version="9.0.5" />
+  <ItemGroup Label="DataAccess">
+    <PackageVersion Include="Dapper" Version="2.1.79" />
+    <PackageVersion Include="Microsoft.Data.Sqlite" Version="10.0.8" />
     <PackageVersion Include="dbup-sqlite" Version="6.0.4" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Label="Testing">
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.6.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0-pre.4" />
+    <PackageVersion Include="Funcky.XUnit" Version="2.1.1" />
   </ItemGroup>
 </Project>

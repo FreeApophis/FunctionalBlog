@@ -4,9 +4,9 @@ public static class ArticleForm
 {
     public static DecodedArticleForm Decode(Request request)
     {
-        var title = request.Form.GetValueOrDefault("title", string.Empty).Trim();
-        var teaser = request.Form.GetValueOrDefault("teaser", string.Empty).Trim();
-        var text = request.Form.GetValueOrDefault("text", string.Empty).Trim();
+        var title = request.Form.GetValueOrNone("title").Match(none: string.Empty, some: Trim);
+        var teaser = request.Form.GetValueOrNone("teaser").Match(none: string.Empty, some: Trim);
+        var text = request.Form.GetValueOrNone("text").Match(none: string.Empty, some: Trim);
 
         var errors = new List<string>();
 
@@ -32,4 +32,6 @@ public static class ArticleForm
             Teaser: teaser,
             Text: text);
     }
+
+    private static string Trim(string arg) => arg.Trim();
 }

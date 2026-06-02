@@ -1,3 +1,5 @@
+using Funcky;
+
 namespace FunctionalBlog.Test;
 
 public sealed class SeederTests
@@ -19,8 +21,8 @@ public sealed class SeederTests
 
         await Seeder.SeedAsync(env);
 
-        var role = (await env.Roles.FindByName("Admin")).Match(none: () => default(Role), some: r => r);
-        Assert.NotNull(role);
+        var role = FunctionalAssert.Some(await env.Roles.FindByName("Admin"));
+
         Assert.Contains(new PermissionRule("Manage", "user"), role!.Rules);
         Assert.Contains(new PermissionRule("Manage", "role"), role.Rules);
         Assert.Contains(new PermissionRule("Manage", "rule"), role.Rules);

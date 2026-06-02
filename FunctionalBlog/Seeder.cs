@@ -58,17 +58,13 @@ public static class Seeder
 
     private static async ValueTask SeedAdminUser(Env env)
     {
-        var email = Email.Parse(AdminEmail).Match(none: () => default(Email), some: e => e);
-
-        if ((await env.Users.FindByEmail(email!)) != Option<User>.None)
+        if (Email.Parse(AdminEmail) is [var email] && (await env.Users.FindByEmail(email)) is [])
         {
-            return;
+            var id = await env.Users.NextId();
+            var hash = env.PasswordHasher.Hash(AdminPassword);
+            var user = User.Create(id, email, new DisplayName("Admin"), hash, [AdminRoleName], env.Clock.Now);
+            await env.Users.Save(user);
         }
-
-        var id = await env.Users.NextId();
-        var hash = env.PasswordHasher.Hash(AdminPassword);
-        var user = User.Create(id, email!, new DisplayName("Admin"), hash, [AdminRoleName], env.Clock.Now);
-        await env.Users.Save(user);
     }
 
     private static async ValueTask SeedSampleArticles(Env env)
@@ -79,31 +75,29 @@ public static class Seeder
         }
 
         var adminEmail = Email.Parse(AdminEmail).GetOrElse(new Email("invalid"));
-        var admin = (await env.Users.FindByEmail(adminEmail)).Match(none: () => default(User), some: u => u);
-        if (admin is null)
+
+        if ((await env.Users.FindByEmail(adminEmail)) is [var admin])
         {
-            return;
+            var id1 = await env.Articles.NextId();
+            await env.Articles.Save(Article.Create(
+                id1,
+                new ArticleTitle("Hallo funktionales Blog"),
+                new ArticleTeaser("Ein funktionaler Ansatz für einen modernen Blog mit .NET 10."),
+                new ArticleText("Dieser Blog wurde mit einem funktionalen Ansatz in .NET 10 entwickelt. " +
+                    "Das Kernstück ist eine curried, reader-style Pipeline ausgedrückt mit Delegates."),
+                admin.Id,
+                new DateTimeOffset(2026, 1, 15, 10, 0, 0, TimeSpan.Zero)));
+
+            var id2 = await env.Articles.NextId();
+            await env.Articles.Save(Article.Create(
+                id2,
+                new ArticleTitle("Macarons selbst backen"),
+                new ArticleTeaser("Macarons sind kleine französische Mandelbaisers mit einer Cremefüllung."),
+                new ArticleText("Macarons sind kleine französische Mandelbaisers mit einer Cremefüllung. " +
+                    "Das Rezept ist anspruchsvoll, aber das Ergebnis ist köstlich."),
+                admin.Id,
+                new DateTimeOffset(2026, 2, 20, 14, 0, 0, TimeSpan.Zero)));
         }
-
-        var id1 = await env.Articles.NextId();
-        await env.Articles.Save(Article.Create(
-            id1,
-            new ArticleTitle("Hallo funktionales Blog"),
-            new ArticleTeaser("Ein funktionaler Ansatz für einen modernen Blog mit .NET 10."),
-            new ArticleText("Dieser Blog wurde mit einem funktionalen Ansatz in .NET 10 entwickelt. " +
-                "Das Kernstück ist eine curried, reader-style Pipeline ausgedrückt mit Delegates."),
-            admin.Id,
-            new DateTimeOffset(2026, 1, 15, 10, 0, 0, TimeSpan.Zero)));
-
-        var id2 = await env.Articles.NextId();
-        await env.Articles.Save(Article.Create(
-            id2,
-            new ArticleTitle("Macarons selbst backen"),
-            new ArticleTeaser("Macarons sind kleine französische Mandelbaisers mit einer Cremefüllung."),
-            new ArticleText("Macarons sind kleine französische Mandelbaisers mit einer Cremefüllung. " +
-                "Das Rezept ist anspruchsvoll, aber das Ergebnis ist köstlich."),
-            admin.Id,
-            new DateTimeOffset(2026, 2, 20, 14, 0, 0, TimeSpan.Zero)));
     }
 
     private static async ValueTask SeedSampleIngredients(Env env)
@@ -435,105 +429,101 @@ public static class Seeder
         }
 
         var adminEmail = Email.Parse(AdminEmail).GetOrElse(new Email("invalid"));
-        var admin = (await env.Users.FindByEmail(adminEmail)).Match(none: () => default(User), some: u => u);
-        if (admin is null)
+        if ((await env.Users.FindByEmail(adminEmail)) is [var admin])
         {
-            return;
-        }
+            var ingredients = (await env.Ingredients.All()).ToDictionary(i => i.Name.Value, i => i.Id);
 
-        var ingredients = (await env.Ingredients.All()).ToDictionary(i => i.Name.Value, i => i.Id);
+            if (!ingredients.TryGetValue("Mehl", out var mehlId) ||
+                !ingredients.TryGetValue("Zucker", out var zuckerId) ||
+                !ingredients.TryGetValue("Butter", out var butterId) ||
+                !ingredients.TryGetValue("Eier", out var eierId) ||
+                !ingredients.TryGetValue("Milch", out var milchId) ||
+                !ingredients.TryGetValue("Zwiebel", out var zwiebelId) ||
+                !ingredients.TryGetValue("Öl", out var ölId) ||
+                !ingredients.TryGetValue("Paprikapulver", out var paprikaId) ||
+                !ingredients.TryGetValue("Kartoffeln", out var kartoffelnId) ||
+                !ingredients.TryGetValue("Knoblauch", out var knoblauchId) ||
+                !ingredients.TryGetValue("Kümmel", out var kümmelId) ||
+                !ingredients.TryGetValue("Karotten", out var karottenId) ||
+                !ingredients.TryGetValue("Gewürzgurken", out var gewürzgurkenId) ||
+                !ingredients.TryGetValue("Salz", out var salzId) ||
+                !ingredients.TryGetValue("Gurkenwasser", out var gurkenwasserId) ||
+                !ingredients.TryGetValue("Älplermagronen", out var magronenId) ||
+                !ingredients.TryGetValue("Äpfel", out var äpfelId) ||
+                !ingredients.TryGetValue("Speckwürfel", out var speckId) ||
+                !ingredients.TryGetValue("Frühlingszwiebeln", out var frühlingszwiebelnId) ||
+                !ingredients.TryGetValue("Rahm", out var rahmId) ||
+                !ingredients.TryGetValue("Gemüsebouillon", out var bouillonId) ||
+                !ingredients.TryGetValue("Bergkäse", out var käseId))
+            {
+                return;
+            }
 
-        if (!ingredients.TryGetValue("Mehl", out var mehlId) ||
-            !ingredients.TryGetValue("Zucker", out var zuckerId) ||
-            !ingredients.TryGetValue("Butter", out var butterId) ||
-            !ingredients.TryGetValue("Eier", out var eierId) ||
-            !ingredients.TryGetValue("Milch", out var milchId) ||
-            !ingredients.TryGetValue("Zwiebel", out var zwiebelId) ||
-            !ingredients.TryGetValue("Öl", out var ölId) ||
-            !ingredients.TryGetValue("Paprikapulver", out var paprikaId) ||
-            !ingredients.TryGetValue("Kartoffeln", out var kartoffelnId) ||
-            !ingredients.TryGetValue("Knoblauch", out var knoblauchId) ||
-            !ingredients.TryGetValue("Kümmel", out var kümmelId) ||
-            !ingredients.TryGetValue("Karotten", out var karottenId) ||
-            !ingredients.TryGetValue("Gewürzgurken", out var gewürzgurkenId) ||
-            !ingredients.TryGetValue("Salz", out var salzId) ||
-            !ingredients.TryGetValue("Gurkenwasser", out var gurkenwasserId) ||
-            !ingredients.TryGetValue("Älplermagronen", out var magronenId) ||
-            !ingredients.TryGetValue("Äpfel", out var äpfelId) ||
-            !ingredients.TryGetValue("Speckwürfel", out var speckId) ||
-            !ingredients.TryGetValue("Frühlingszwiebeln", out var frühlingszwiebelnId) ||
-            !ingredients.TryGetValue("Rahm", out var rahmId) ||
-            !ingredients.TryGetValue("Gemüsebouillon", out var bouillonId) ||
-            !ingredients.TryGetValue("Bergkäse", out var käseId))
-        {
-            return;
-        }
-
-        var kuchenId = await env.Recipes.NextId();
-        await env.Recipes.Save(Recipe.Create(
-            kuchenId,
-            new RecipeName("Einfacher Rührkuchen"),
-            new RecipeDescription("Ein klassischer Rührkuchen – saftig, locker und immer beliebt."),
-            [
-                new PreparationStep(1, "Butter und Zucker cremig rühren."),
+            var kuchenId = await env.Recipes.NextId();
+            await env.Recipes.Save(Recipe.Create(
+                kuchenId,
+                new RecipeName("Einfacher Rührkuchen"),
+                new RecipeDescription("Ein klassischer Rührkuchen – saftig, locker und immer beliebt."),
+                [
+                    new PreparationStep(1, "Butter und Zucker cremig rühren."),
                 new PreparationStep(2, "Eier einzeln unterrühren."),
                 new PreparationStep(3, "Mehl und Milch abwechselnd unterheben."),
                 new PreparationStep(4, "Teig in eine gefettete Form füllen und bei 175 °C ca. 40 Minuten backen."),
-            ],
-            admin.Id,
-            Difficulty.Medium,
-            [new RecipeTag("Backen"), new RecipeTag("Kuchen")],
-            8,
-            [
-                new RecipeIngredient(mehlId, 250m, WeightUnit.Gram),
+                ],
+                admin.Id,
+                Difficulty.Medium,
+                [new RecipeTag("Backen"), new RecipeTag("Kuchen")],
+                8,
+                [
+                    new RecipeIngredient(mehlId, 250m, WeightUnit.Gram),
                 new RecipeIngredient(zuckerId, 200m, WeightUnit.Gram),
                 new RecipeIngredient(butterId, 125m, WeightUnit.Gram),
                 new RecipeIngredient(eierId, 3m, PieceUnit.Piece),
                 new RecipeIngredient(milchId, 100m, VolumeUnit.Milliliter),
-            ],
-            [],
-            [new RecipeHint("Den Kuchen mit einem Holzstäbchen auf Gare prüfen – bleibt kein Teig kleben, ist er fertig.")]));
+                ],
+                [],
+                [new RecipeHint("Den Kuchen mit einem Holzstäbchen auf Gare prüfen – bleibt kein Teig kleben, ist er fertig.")]));
 
-        var pfannkuchenId = await env.Recipes.NextId();
-        await env.Recipes.Save(Recipe.Create(
-            pfannkuchenId,
-            new RecipeName("Pfannkuchen"),
-            new RecipeDescription("Dünne, goldbraune Pfannkuchen – schnell gemacht und vielseitig belegbar."),
-            [
-                new PreparationStep(1, "Mehl, Milch und Eier zu einem glatten Teig verrühren."),
+            var pfannkuchenId = await env.Recipes.NextId();
+            await env.Recipes.Save(Recipe.Create(
+                pfannkuchenId,
+                new RecipeName("Pfannkuchen"),
+                new RecipeDescription("Dünne, goldbraune Pfannkuchen – schnell gemacht und vielseitig belegbar."),
+                [
+                    new PreparationStep(1, "Mehl, Milch und Eier zu einem glatten Teig verrühren."),
                 new PreparationStep(2, "Teig 15 Minuten ruhen lassen."),
                 new PreparationStep(3, "Butter in einer Pfanne erhitzen und Pfannkuchen portionsweise ausbacken."),
-            ],
-            admin.Id,
-            Difficulty.Easy,
-            [new RecipeTag("Frühstück"), new RecipeTag("Pfanne")],
-            4,
-            [
-                new RecipeIngredient(mehlId, 200m, WeightUnit.Gram),
+                ],
+                admin.Id,
+                Difficulty.Easy,
+                [new RecipeTag("Frühstück"), new RecipeTag("Pfanne")],
+                4,
+                [
+                    new RecipeIngredient(mehlId, 200m, WeightUnit.Gram),
                 new RecipeIngredient(milchId, 400m, VolumeUnit.Milliliter),
                 new RecipeIngredient(eierId, 2m, PieceUnit.Piece),
                 new RecipeIngredient(butterId, 20m, WeightUnit.Gram),
-            ],
-            [],
-            [new RecipeHint("Den Teig nicht zu lange rühren – ein paar kleine Klümpchen sind in Ordnung.")]));
+                ],
+                [],
+                [new RecipeHint("Den Teig nicht zu lange rühren – ein paar kleine Klümpchen sind in Ordnung.")]));
 
-        await env.Recipes.Save(Recipe.Create(
-            await env.Recipes.NextId(),
-            new RecipeName("Kartoffelgulasch"),
-            new RecipeDescription("Ein herzhafter Eintopf mit Kartoffeln, Paprika und Gewürzgurken – ein Klassiker der deutschen Hausmannskost."),
-            [
-                new PreparationStep(1, "Zwiebel fein würfeln und im Öl in einem großen Topf bei mittlerer Hitze glasig andünsten."),
+            await env.Recipes.Save(Recipe.Create(
+                await env.Recipes.NextId(),
+                new RecipeName("Kartoffelgulasch"),
+                new RecipeDescription("Ein herzhafter Eintopf mit Kartoffeln, Paprika und Gewürzgurken – ein Klassiker der deutschen Hausmannskost."),
+                [
+                    new PreparationStep(1, "Zwiebel fein würfeln und im Öl in einem großen Topf bei mittlerer Hitze glasig andünsten."),
                 new PreparationStep(2, "Kartoffeln schälen und in Würfel schneiden. Mit Paprikapulver, Kümmel und gepresstem Knoblauch in den Topf geben und kurz mitdünsten."),
                 new PreparationStep(3, "Mit Wasser bedecken und zum Kochen bringen."),
                 new PreparationStep(4, "Karotten in Scheiben und Gewürzgurken in Stücke schneiden. Zusammen mit dem Gurkenwasser und Salz in den Topf geben."),
                 new PreparationStep(5, "Bei niedriger bis mittlerer Hitze 60–90 Minuten köcheln lassen, bis die Kartoffeln weich sind."),
-            ],
-            admin.Id,
-            Difficulty.Easy,
-            [new RecipeTag("Eintopf"), new RecipeTag("Vegetarisch")],
-            4,
-            [
-                new RecipeIngredient(zwiebelId, 1m, PieceUnit.Piece),
+                ],
+                admin.Id,
+                Difficulty.Easy,
+                [new RecipeTag("Eintopf"), new RecipeTag("Vegetarisch")],
+                4,
+                [
+                    new RecipeIngredient(zwiebelId, 1m, PieceUnit.Piece),
                 new RecipeIngredient(ölId, 1m, VolumeUnit.Tablespoon),
                 new RecipeIngredient(paprikaId, 2m, VolumeUnit.Tablespoon),
                 new RecipeIngredient(kartoffelnId, 1000m, WeightUnit.Gram),
@@ -543,24 +533,24 @@ public static class Seeder
                 new RecipeIngredient(gewürzgurkenId, 3m, PieceUnit.Piece),
                 new RecipeIngredient(salzId, 1m, VolumeUnit.Teaspoon),
                 new RecipeIngredient(gurkenwasserId, 1m, VolumeUnit.Tablespoon),
-            ],
-            [],
-            [new RecipeHint("Am zweiten Tag schmeckt das Gericht noch besser – einfach aufwärmen und genießen.")]));
+                ],
+                [],
+                [new RecipeHint("Am zweiten Tag schmeckt das Gericht noch besser – einfach aufwärmen und genießen.")]));
 
-        await env.Recipes.Save(Recipe.Create(
-            await env.Recipes.NextId(),
-            new RecipeName("Älpler One-Pot"),
-            new RecipeDescription("Ein echtes Schweizer Nationalgericht in einer kreativen und schnell gemachten Variante – alles in einem Topf."),
-            [
-                new PreparationStep(1, "Magronen, Kartoffeln, Äpfel, Speck, Frühlingszwiebeln und Bouillon in einen großen Topf geben, mischen und zum Kochen bringen. Bei mittlerer Hitze ohne Deckel ca. 20 Minuten köcheln lassen, dabei gelegentlich umrühren."),
+            await env.Recipes.Save(Recipe.Create(
+                await env.Recipes.NextId(),
+                new RecipeName("Älpler One-Pot"),
+                new RecipeDescription("Ein echtes Schweizer Nationalgericht in einer kreativen und schnell gemachten Variante – alles in einem Topf."),
+                [
+                    new PreparationStep(1, "Magronen, Kartoffeln, Äpfel, Speck, Frühlingszwiebeln und Bouillon in einen großen Topf geben, mischen und zum Kochen bringen. Bei mittlerer Hitze ohne Deckel ca. 20 Minuten köcheln lassen, dabei gelegentlich umrühren."),
                 new PreparationStep(2, "Rahm und Bergkäse unterrühren, abschmecken und nach Belieben mit Röstzwiebeln garnieren."),
-            ],
-            admin.Id,
-            Difficulty.Easy,
-            [new RecipeTag("Schweizer Küche"), new RecipeTag("One-Pot")],
-            4,
-            [
-                new RecipeIngredient(magronenId, 400m, WeightUnit.Gram),
+                ],
+                admin.Id,
+                Difficulty.Easy,
+                [new RecipeTag("Schweizer Küche"), new RecipeTag("One-Pot")],
+                4,
+                [
+                    new RecipeIngredient(magronenId, 400m, WeightUnit.Gram),
                 new RecipeIngredient(kartoffelnId, 240m, WeightUnit.Gram),
                 new RecipeIngredient(äpfelId, 2m, PieceUnit.Piece),
                 new RecipeIngredient(speckId, 160m, WeightUnit.Gram),
@@ -568,8 +558,9 @@ public static class Seeder
                 new RecipeIngredient(rahmId, 3m, VolumeUnit.Deciliter),
                 new RecipeIngredient(bouillonId, 8m, VolumeUnit.Deciliter),
                 new RecipeIngredient(käseId, 79m, WeightUnit.Gram),
-            ],
-            [],
-            [new RecipeHint("Das Gericht nicht zu lange kochen – die Magronen sollen noch bissfest sein.")]));
+                ],
+                [],
+                [new RecipeHint("Das Gericht nicht zu lange kochen – die Magronen sollen noch bissfest sein.")]));
+        }
     }
 }

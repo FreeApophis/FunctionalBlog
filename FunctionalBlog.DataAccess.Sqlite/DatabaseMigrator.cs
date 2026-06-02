@@ -1,5 +1,4 @@
 using DbUp;
-using DbUp.Sqlite;
 
 namespace FunctionalBlog.DataAccess.Sqlite;
 
