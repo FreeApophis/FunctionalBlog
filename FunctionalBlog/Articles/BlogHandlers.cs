@@ -12,15 +12,15 @@ public static class BlogHandlers
 
     public static App ShowArticle(ArticleId id) => _ => async env =>
     {
-        var article = await env.Articles.Find(id);
-
+        var article = (await env.Articles.Find(id)).Match(none: () => default(Article), some: a => a);
         if (article is null)
         {
             return Response.NotFound();
         }
 
-        var author = await env.Users.FindById(article.AuthorId);
-        var authorName = author?.DisplayName.Value ?? "?";
+        var authorName = (await env.Users.FindById(article.AuthorId))
+            .Select(u => u.DisplayName.Value)
+            .GetOrElse("?");
         return Response.Html(BlogViews.Show(article, env.CurrentUser, authorName, env.T));
     };
 
@@ -52,8 +52,7 @@ public static class BlogHandlers
 
     public static App EditArticleForm(ArticleId id) => _ => async env =>
     {
-        var article = await env.Articles.Find(id);
-
+        var article = (await env.Articles.Find(id)).Match(none: () => default(Article), some: a => a);
         if (article is null)
         {
             return Response.NotFound();
@@ -72,9 +71,7 @@ public static class BlogHandlers
 
     public static App DeleteArticle(ArticleId id) => _ => async env =>
     {
-        var existing = await env.Articles.Find(id);
-
-        if (existing is null)
+        if ((await env.Articles.Find(id)) == Option<Article>.None)
         {
             return Response.NotFound();
         }
@@ -85,8 +82,7 @@ public static class BlogHandlers
 
     public static App UpdateArticle(ArticleId id) => request => async env =>
     {
-        var existing = await env.Articles.Find(id);
-
+        var existing = (await env.Articles.Find(id)).Match(none: () => default(Article), some: a => a);
         if (existing is null)
         {
             return Response.NotFound();

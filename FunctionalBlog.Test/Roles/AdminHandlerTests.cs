@@ -32,7 +32,7 @@ public sealed class AdminHandlerTests
 
         Assert.Equal(303, response.Status);
         Assert.Equal("/admin/roles", response.Headers["Location"]);
-        Assert.NotNull(await env.Roles.FindByName("Autor"));
+        Assert.NotEqual(Option<Role>.None, await env.Roles.FindByName("Autor"));
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public sealed class AdminHandlerTests
         var response = await AdminHandlers.AddRule(roleId.Value)(RuleRequest("Edit", "article"))(env);
 
         Assert.Equal(303, response.Status);
-        var saved = await env.Roles.FindById(roleId);
+        var saved = (await env.Roles.FindById(roleId)).Match(none: () => default(Role), some: r => r);
         Assert.Contains(new PermissionRule("Edit", "article"), saved!.Rules);
     }
 
@@ -70,7 +70,7 @@ public sealed class AdminHandlerTests
         var response = await AdminHandlers.DeleteRule(roleId.Value)(RuleRequest("Edit", "article"))(env);
 
         Assert.Equal(303, response.Status);
-        var saved = await env.Roles.FindById(roleId);
+        var saved = (await env.Roles.FindById(roleId)).Match(none: () => default(Role), some: r => r);
         Assert.Empty(saved!.Rules);
     }
 
@@ -85,7 +85,7 @@ public sealed class AdminHandlerTests
             AssignRolesRequest("Admin"))(env);
 
         Assert.Equal(303, response.Status);
-        var saved = await env.Users.FindById(userId);
+        var saved = (await env.Users.FindById(userId)).Match(none: () => default(User), some: u => u);
         Assert.Contains("Admin", saved!.RoleNames);
     }
 

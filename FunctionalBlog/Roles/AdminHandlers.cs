@@ -10,8 +10,7 @@ public static class AdminHandlers
 
     public static App UserDetail(int userId) => _ => async env =>
     {
-        var user = await env.Users.FindById(new UserId(userId));
-
+        var user = (await env.Users.FindById(new UserId(userId))).Match(none: () => default(User), some: u => u);
         if (user is null)
         {
             return Response.NotFound();
@@ -23,8 +22,7 @@ public static class AdminHandlers
 
     public static App UpdateUserRoles(int userId) => request => async env =>
     {
-        var user = await env.Users.FindById(new UserId(userId));
-
+        var user = (await env.Users.FindById(new UserId(userId))).Match(none: () => default(User), some: u => u);
         if (user is null)
         {
             return Response.NotFound();
@@ -60,8 +58,7 @@ public static class AdminHandlers
 
     public static App RoleDetail(int roleId) => _ => async env =>
     {
-        var role = await env.Roles.FindById(new RoleId(roleId));
-
+        var role = (await env.Roles.FindById(new RoleId(roleId))).Match(none: () => default(Role), some: r => r);
         if (role is null)
         {
             return Response.NotFound();
@@ -71,51 +68,41 @@ public static class AdminHandlers
     };
 
     public static App AddRule(int roleId) => request => async env =>
-    {
-        var role = await env.Roles.FindById(new RoleId(roleId));
+        await (await env.Roles.FindById(new RoleId(roleId))).Match(
+            none: () => Task.FromResult(Response.NotFound()),
+            some: async role =>
+            {
+                var decoded = RuleForm.Decode(request);
 
-        if (role is null)
-        {
-            return Response.NotFound();
-        }
+                if (!decoded.IsValid)
+                {
+                    return Response.Html(AdminViews.RoleDetail(role, decoded.Errors, env.CurrentUser, env.T), 400);
+                }
 
-        var decoded = RuleForm.Decode(request);
+                var rule = new PermissionRule(decoded.ActionName, decoded.ResourceKey);
 
-        if (!decoded.IsValid)
-        {
-            return Response.Html(AdminViews.RoleDetail(role, decoded.Errors, env.CurrentUser, env.T), 400);
-        }
+                if (!role.Rules.Contains(rule))
+                {
+                    await env.Roles.Save(role.AddRule(rule));
+                }
 
-        var rule = new PermissionRule(decoded.ActionName, decoded.ResourceKey);
-
-        if (!role.Rules.Contains(rule))
-        {
-            await env.Roles.Save(role.AddRule(rule));
-        }
-
-        return Response.Redirect($"/admin/roles/{roleId}");
-    };
+                return Response.Redirect($"/admin/roles/{roleId}");
+            });
 
     public static App DeleteRule(int roleId) => request => async env =>
-    {
-        var role = await env.Roles.FindById(new RoleId(roleId));
-
-        if (role is null)
-        {
-            return Response.NotFound();
-        }
-
-        var decoded = RuleForm.Decode(request);
-        var rule = new PermissionRule(decoded.ActionName, decoded.ResourceKey);
-        await env.Roles.Save(role.RemoveRule(rule));
-        return Response.Redirect($"/admin/roles/{roleId}");
-    };
+        await (await env.Roles.FindById(new RoleId(roleId))).Match(
+            none: () => Task.FromResult(Response.NotFound()),
+            some: async role =>
+            {
+                var decoded = RuleForm.Decode(request);
+                var rule = new PermissionRule(decoded.ActionName, decoded.ResourceKey);
+                await env.Roles.Save(role.RemoveRule(rule));
+                return Response.Redirect($"/admin/roles/{roleId}");
+            });
 
     public static App DeleteRole(int roleId) => _ => async env =>
     {
-        var role = await env.Roles.FindById(new RoleId(roleId));
-
-        if (role is null)
+        if ((await env.Roles.FindById(new RoleId(roleId))) == Option<Role>.None)
         {
             return Response.NotFound();
         }

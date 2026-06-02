@@ -9,8 +9,7 @@ public sealed class SeederTests
 
         await Seeder.SeedAsync(env);
 
-        var admin = await env.Users.FindByEmail(new Email("admin@blog.de"));
-        Assert.NotNull(admin);
+        Assert.NotEqual(Option<User>.None, await env.Users.FindByEmail(new Email("admin@blog.de")));
     }
 
     [Fact]
@@ -20,9 +19,9 @@ public sealed class SeederTests
 
         await Seeder.SeedAsync(env);
 
-        var role = await env.Roles.FindByName("Admin");
+        var role = (await env.Roles.FindByName("Admin")).Match(none: () => default(Role), some: r => r);
         Assert.NotNull(role);
-        Assert.Contains(new PermissionRule("Manage", "user"), role.Rules);
+        Assert.Contains(new PermissionRule("Manage", "user"), role!.Rules);
         Assert.Contains(new PermissionRule("Manage", "role"), role.Rules);
         Assert.Contains(new PermissionRule("Manage", "rule"), role.Rules);
     }
@@ -34,8 +33,7 @@ public sealed class SeederTests
 
         await Seeder.SeedAsync(env);
 
-        var role = await env.Roles.FindByName("Benutzer");
-        Assert.NotNull(role);
+        Assert.NotEqual(Option<Role>.None, await env.Roles.FindByName("Benutzer"));
     }
 
     [Fact]

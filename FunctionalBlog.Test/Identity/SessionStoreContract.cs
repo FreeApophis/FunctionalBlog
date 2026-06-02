@@ -10,7 +10,7 @@ public abstract class SessionStoreContract
 
         await store.Save(session);
 
-        Assert.Equal(session, await store.Find("tok1"));
+        Assert.Equal(Option.Some(session), await store.Find("tok1"));
     }
 
     [Fact]
@@ -18,7 +18,7 @@ public abstract class SessionStoreContract
     {
         var store = CreateStore();
 
-        Assert.Null(await store.Find("unknown"));
+        Assert.Equal(Option<Session>.None, await store.Find("unknown"));
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public abstract class SessionStoreContract
         await store.Save(session);
         await store.Delete("tok2");
 
-        Assert.Null(await store.Find("tok2"));
+        Assert.Equal(Option<Session>.None, await store.Find("tok2"));
     }
 
     protected abstract ISessionStore CreateStore();

@@ -51,7 +51,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
             hints[r.Id].ToList())).ToList();
     }
 
-    public async ValueTask<Recipe?> Find(RecipeId id)
+    public async ValueTask<Option<Recipe>> Find(RecipeId id)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<RecipeRow>(
             "SELECT id AS Id, name AS Name, description AS Description, author_id AS AuthorId, difficulty AS Difficulty, portions AS Portions FROM recipes WHERE id = @id",
@@ -59,7 +59,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
 
         if (row is null)
         {
-            return null;
+            return Option<Recipe>.None;
         }
 
         var steps = (await _connection.QueryAsync<StepRow>(
@@ -82,7 +82,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
             "SELECT recipe_id AS RecipeId, text AS Text FROM recipe_hints WHERE recipe_id = @id ORDER BY sort_order",
             new { id = id.Value })).ToList();
 
-        return BuildRecipe(row, steps, tags, ingredients, images, hints);
+        return Option.Some(BuildRecipe(row, steps, tags, ingredients, images, hints));
     }
 
     public async ValueTask<RecipeId> NextId()
@@ -193,7 +193,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
             images.Select(i => i.Url).ToList(),
             hints.Select(h => new RecipeHint(h.Text)).ToList());
 
-    private static Unit ParseUnit(string abbreviation) => abbreviation switch
+    private static FunctionalBlog.Domain.Recipes.Unit ParseUnit(string abbreviation) => abbreviation switch
     {
         "g" => WeightUnit.Gram,
         "kg" => WeightUnit.Kilogram,

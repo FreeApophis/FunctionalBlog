@@ -17,12 +17,12 @@ public sealed class SqliteIngredientRepository : IIngredientRepository
         return rows.Select(ToIngredient).ToList();
     }
 
-    public async ValueTask<Ingredient?> Find(IngredientId id)
+    public async ValueTask<Option<Ingredient>> Find(IngredientId id)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<IngredientRow>(
             "SELECT id AS Id, name AS Name, image AS Image, description AS Description, density AS Density, piece_count AS PieceCount, calorific_value AS CalorificValue, protein AS Protein, fat AS Fat, carbohydrates AS Carbohydrates, sugar AS Sugar, fiber AS Fiber FROM ingredients WHERE id = @id",
             new { id = id.Value });
-        return row is null ? null : ToIngredient(row);
+        return row is null ? Option<Ingredient>.None : Option.Some(ToIngredient(row));
     }
 
     public async ValueTask<IngredientId> NextId()

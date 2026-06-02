@@ -11,8 +11,8 @@ public sealed class InMemoryIngredientRepository : IIngredientRepository
         ValueTask.FromResult<IReadOnlyList<Ingredient>>(
             _ingredients.Values.OrderBy(x => x.Name.Value).ToList());
 
-    public ValueTask<Ingredient?> Find(IngredientId id) =>
-        ValueTask.FromResult(_ingredients.TryGetValue(id.Value, out var ingredient) ? ingredient : null);
+    public ValueTask<Option<Ingredient>> Find(IngredientId id) =>
+        ValueTask.FromResult(_ingredients.TryGetValue(id.Value, out var ingredient) ? Option.Some(ingredient) : Option<Ingredient>.None);
 
     public ValueTask<IngredientId> NextId() =>
         ValueTask.FromResult(new IngredientId(Interlocked.Increment(ref _nextId)));

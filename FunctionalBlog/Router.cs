@@ -4,7 +4,7 @@ public static class Router
 {
     public static Middleware Create(RouteTable routes) => _ => request => env =>
     {
-        var app = routes.Match(request) ?? NotFound;
+        var app = routes.Match(request).GetOrElse(NotFound);
         return app(request)(env);
     };
 

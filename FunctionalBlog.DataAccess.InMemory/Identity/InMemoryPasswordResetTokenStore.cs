@@ -12,8 +12,8 @@ public sealed class InMemoryPasswordResetTokenStore : IPasswordResetTokenStore
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask<PasswordResetToken?> Find(string token) =>
-        ValueTask.FromResult(_tokens.TryGetValue(token, out var t) ? t : null);
+    public ValueTask<Option<PasswordResetToken>> Find(string token) =>
+        ValueTask.FromResult(_tokens.TryGetValue(token, out var t) ? Option.Some(t) : Option<PasswordResetToken>.None);
 
     public ValueTask Consume(string token)
     {

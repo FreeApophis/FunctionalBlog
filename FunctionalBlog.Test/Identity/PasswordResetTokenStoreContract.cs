@@ -10,7 +10,7 @@ public abstract class PasswordResetTokenStoreContract
 
         await store.Save(token);
 
-        Assert.Equal(token, await store.Find("reset1"));
+        Assert.Equal(Option.Some(token), await store.Find("reset1"));
     }
 
     [Fact]
@@ -18,7 +18,7 @@ public abstract class PasswordResetTokenStoreContract
     {
         var store = CreateStore();
 
-        Assert.Null(await store.Find("unknown"));
+        Assert.Equal(Option<PasswordResetToken>.None, await store.Find("unknown"));
     }
 
     [Fact]
@@ -31,8 +31,7 @@ public abstract class PasswordResetTokenStoreContract
         await store.Consume("reset2");
 
         var found = await store.Find("reset2");
-        Assert.NotNull(found);
-        Assert.True(found.Consumed);
+        Assert.True(found.Match(none: () => false, some: t => t.Consumed));
     }
 
     [Fact]
@@ -46,8 +45,7 @@ public abstract class PasswordResetTokenStoreContract
         await store.Consume("reset3");
 
         var found = await store.Find("reset3");
-        Assert.NotNull(found);
-        Assert.True(found.Consumed);
+        Assert.True(found.Match(none: () => false, some: t => t.Consumed));
     }
 
     protected abstract IPasswordResetTokenStore CreateStore();

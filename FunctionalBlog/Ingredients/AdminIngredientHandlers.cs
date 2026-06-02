@@ -19,8 +19,7 @@ public static class AdminIngredientHandlers
             return Response.Redirect("/admin/ingredients?error=in-use");
         }
 
-        var existing = await env.Ingredients.Find(id);
-        if (existing is null)
+        if ((await env.Ingredients.Find(id)) == Option<Ingredient>.None)
         {
             return Response.NotFound();
         }
@@ -77,7 +76,7 @@ public static class AdminIngredientHandlers
 
     public static App EditForm(IngredientId id) => _ => async env =>
     {
-        var ingredient = await env.Ingredients.Find(id);
+        var ingredient = (await env.Ingredients.Find(id)).Match(none: () => default(Ingredient), some: i => i);
         if (ingredient is null)
         {
             return Response.NotFound();
@@ -104,8 +103,7 @@ public static class AdminIngredientHandlers
 
     public static App Update(IngredientId id) => request => async env =>
     {
-        var existing = await env.Ingredients.Find(id);
-        if (existing is null)
+        if ((await env.Ingredients.Find(id)) == Option<Ingredient>.None)
         {
             return Response.NotFound();
         }

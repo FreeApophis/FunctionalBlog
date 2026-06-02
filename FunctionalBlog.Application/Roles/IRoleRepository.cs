@@ -4,9 +4,9 @@ public interface IRoleRepository
 {
     ValueTask<IReadOnlyList<Role>> All();
 
-    ValueTask<Role?> FindById(RoleId id);
+    ValueTask<Option<Role>> FindById(RoleId id);
 
-    ValueTask<Role?> FindByName(string name);
+    ValueTask<Option<Role>> FindByName(string name);
 
     ValueTask<RoleId> NextId();
 

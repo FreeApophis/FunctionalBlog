@@ -4,7 +4,7 @@ public interface IPasswordResetTokenStore
 {
     ValueTask Save(PasswordResetToken token);
 
-    ValueTask<PasswordResetToken?> Find(string token);
+    ValueTask<Option<PasswordResetToken>> Find(string token);
 
     ValueTask Consume(string token);
 }

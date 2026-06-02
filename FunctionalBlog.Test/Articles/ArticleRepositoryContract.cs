@@ -11,7 +11,7 @@ public abstract class ArticleRepositoryContract
 
         await repo.Save(article);
 
-        Assert.Equal(article, await repo.Find(id));
+        Assert.Equal(Option.Some(article), await repo.Find(id));
     }
 
     [Fact]
@@ -19,7 +19,7 @@ public abstract class ArticleRepositoryContract
     {
         var repo = CreateRepository();
 
-        Assert.Null(await repo.Find(new ArticleId(987_654)));
+        Assert.Equal(Option<Article>.None, await repo.Find(new ArticleId(987_654)));
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public abstract class ArticleRepositoryContract
 
         var id = await repo.NextId();
 
-        Assert.Null(await repo.Find(id));
+        Assert.Equal(Option<Article>.None, await repo.Find(id));
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public abstract class ArticleRepositoryContract
         await repo.Save(original);
         await repo.Save(updated);
 
-        Assert.Equal(updated, await repo.Find(id));
+        Assert.Equal(Option.Some(updated), await repo.Find(id));
     }
 
     [Fact]
@@ -83,7 +83,7 @@ public abstract class ArticleRepositoryContract
 
         await repo.Delete(id);
 
-        Assert.Null(await repo.Find(id));
+        Assert.Equal(Option<Article>.None, await repo.Find(id));
     }
 
     [Fact]

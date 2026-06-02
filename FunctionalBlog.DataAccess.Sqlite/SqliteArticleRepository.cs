@@ -17,12 +17,12 @@ public sealed class SqliteArticleRepository : IArticleRepository
         return rows.Select(ToArticle).ToList();
     }
 
-    public async ValueTask<Article?> Find(ArticleId id)
+    public async ValueTask<Option<Article>> Find(ArticleId id)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<ArticleRow>(
             "SELECT id AS Id, title AS Title, teaser AS Teaser, text AS Text, author_id AS AuthorId, published_at AS PublishedAt FROM articles WHERE id = @id",
             new { id = id.Value });
-        return row is null ? null : ToArticle(row);
+        return row is null ? Option<Article>.None : Option.Some(ToArticle(row));
     }
 
     public async ValueTask<ArticleId> NextId()

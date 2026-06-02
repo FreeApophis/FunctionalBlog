@@ -4,7 +4,7 @@ public interface IRecipeRepository
 {
     ValueTask<IReadOnlyList<Recipe>> All();
 
-    ValueTask<Recipe?> Find(RecipeId id);
+    ValueTask<Option<Recipe>> Find(RecipeId id);
 
     ValueTask<RecipeId> NextId();
 

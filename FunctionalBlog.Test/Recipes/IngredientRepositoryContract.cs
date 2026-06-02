@@ -11,7 +11,7 @@ public abstract class IngredientRepositoryContract
 
         await repo.Save(ingredient);
 
-        Assert.Equal(ingredient, await repo.Find(id));
+        Assert.Equal(Option.Some(ingredient), await repo.Find(id));
     }
 
     [Fact]
@@ -19,7 +19,7 @@ public abstract class IngredientRepositoryContract
     {
         var repo = CreateRepository();
 
-        Assert.Null(await repo.Find(new IngredientId(987_654)));
+        Assert.Equal(Option<Ingredient>.None, await repo.Find(new IngredientId(987_654)));
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public abstract class IngredientRepositoryContract
 
         var id = await repo.NextId();
 
-        Assert.Null(await repo.Find(id));
+        Assert.Equal(Option<Ingredient>.None, await repo.Find(id));
     }
 
     [Fact]
@@ -69,7 +69,7 @@ public abstract class IngredientRepositoryContract
         await repo.Save(original);
         await repo.Save(updated);
 
-        Assert.Equal(updated, await repo.Find(id));
+        Assert.Equal(Option.Some(updated), await repo.Find(id));
     }
 
     [Fact]
@@ -81,7 +81,7 @@ public abstract class IngredientRepositoryContract
 
         await repo.Delete(id);
 
-        Assert.Null(await repo.Find(id));
+        Assert.Equal(Option<Ingredient>.None, await repo.Find(id));
     }
 
     [Fact]

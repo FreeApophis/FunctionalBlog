@@ -4,7 +4,7 @@ public interface IArticleRepository
 {
     ValueTask<IReadOnlyList<Article>> All();
 
-    ValueTask<Article?> Find(ArticleId id);
+    ValueTask<Option<Article>> Find(ArticleId id);
 
     ValueTask<ArticleId> NextId();
 

@@ -1,3 +1,4 @@
+global using Funcky;
 global using FunctionalBlog.Application.Articles;
 global using FunctionalBlog.Application.Identity;
 global using FunctionalBlog.Application.Recipes;

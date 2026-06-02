@@ -27,36 +27,36 @@ public sealed class SqliteRoleRepository : IRoleRepository
         return rows.Select(r => ToRole(r, ruleLookup[r.Id].ToList())).ToList();
     }
 
-    public async ValueTask<Role?> FindById(RoleId id)
+    public async ValueTask<Option<Role>> FindById(RoleId id)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<RoleRow>(
             "SELECT id AS Id, name AS Name FROM roles WHERE id = @id",
             new { id = id.Value });
         if (row is null)
         {
-            return null;
+            return Option<Role>.None;
         }
 
         var rules = (await _connection.QueryAsync<RuleRow>(
             "SELECT role_id AS RoleId, action_name AS ActionName, resource_key AS ResourceKey FROM permission_rules WHERE role_id = @id",
             new { id = id.Value })).ToList();
-        return ToRole(row, rules);
+        return Option.Some(ToRole(row, rules));
     }
 
-    public async ValueTask<Role?> FindByName(string name)
+    public async ValueTask<Option<Role>> FindByName(string name)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<RoleRow>(
             "SELECT id AS Id, name AS Name FROM roles WHERE name = @name",
             new { name });
         if (row is null)
         {
-            return null;
+            return Option<Role>.None;
         }
 
         var rules = (await _connection.QueryAsync<RuleRow>(
             "SELECT role_id AS RoleId, action_name AS ActionName, resource_key AS ResourceKey FROM permission_rules WHERE role_id = @id",
             new { id = row.Id })).ToList();
-        return ToRole(row, rules);
+        return Option.Some(ToRole(row, rules));
     }
 
     public async ValueTask<RoleId> NextId()

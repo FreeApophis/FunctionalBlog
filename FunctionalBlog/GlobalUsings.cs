@@ -1,4 +1,3 @@
-global using Funcky;
 global using FunctionalBlog.Application.Articles;
 global using FunctionalBlog.Application.Identity;
 global using FunctionalBlog.Application.Recipes;
@@ -15,10 +14,10 @@ global using FunctionalBlog.Domain.Roles;
 global using FunctionalBlog.Domain.Translations;
 global using FunctionalBlog.Identity;
 global using FunctionalBlog.Ingredients;
-global using FunctionalBlog.Pipeline;
 global using FunctionalBlog.Recipes;
 global using FunctionalBlog.Roles;
 global using FunctionalBlog.Translations;
 global using static FunctionalBlog.Domain.Recipes.Unit;
 global using App = FunctionalBlog.Pipeline.App<FunctionalBlog.Env, FunctionalBlog.Request, FunctionalBlog.Response>;
+global using Functional = FunctionalBlog.Pipeline.Functional;
 global using Middleware = FunctionalBlog.Pipeline.Middleware<FunctionalBlog.Env, FunctionalBlog.Request, FunctionalBlog.Response>;

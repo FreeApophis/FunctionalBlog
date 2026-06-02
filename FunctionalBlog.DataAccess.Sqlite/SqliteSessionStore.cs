@@ -16,12 +16,12 @@ public sealed class SqliteSessionStore : ISessionStore
             new { session.Token, UserId = session.UserId.Value, session.ExpiresAt });
     }
 
-    public async ValueTask<Session?> Find(string token)
+    public async ValueTask<Option<Session>> Find(string token)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<SessionRow>(
             "SELECT token AS Token, user_id AS UserId, expires_at AS ExpiresAt FROM sessions WHERE token = @token",
             new { token });
-        return row is null ? null : new Session(row.Token, new UserId((int)row.UserId), row.ExpiresAt);
+        return row is null ? Option<Session>.None : Option.Some(new Session(row.Token, new UserId((int)row.UserId), row.ExpiresAt));
     }
 
     public async ValueTask Delete(string token)

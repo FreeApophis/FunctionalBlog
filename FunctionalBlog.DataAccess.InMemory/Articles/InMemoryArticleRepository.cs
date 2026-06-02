@@ -11,8 +11,8 @@ public sealed class InMemoryArticleRepository : IArticleRepository
         ValueTask.FromResult<IReadOnlyList<Article>>(
             _articles.Values.OrderByDescending(x => x.PublishedAt).ToList());
 
-    public ValueTask<Article?> Find(ArticleId id) =>
-        ValueTask.FromResult(_articles.TryGetValue(id.Value, out var article) ? article : null);
+    public ValueTask<Option<Article>> Find(ArticleId id) =>
+        ValueTask.FromResult(_articles.TryGetValue(id.Value, out var article) ? Option.Some(article) : Option<Article>.None);
 
     public ValueTask<ArticleId> NextId() =>
         ValueTask.FromResult(new ArticleId(Interlocked.Increment(ref _nextId)));

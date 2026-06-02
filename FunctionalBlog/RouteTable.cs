@@ -16,7 +16,7 @@ public sealed class RouteTable
 
     public RouteTable Post(string pattern, Func<string[], App> factory) => Add(HttpMethod.Post, pattern, factory);
 
-    public App? Match(Request request)
+    public Option<App> Match(Request request)
     {
         foreach (var route in _routes)
         {
@@ -27,11 +27,11 @@ public sealed class RouteTable
 
             if (TryMatch(route.Segments, request.Path, out var captures))
             {
-                return route.Factory(captures);
+                return Option.Some(route.Factory(captures));
             }
         }
 
-        return null;
+        return Option<App>.None;
     }
 
     private RouteTable Add(HttpMethod method, string pattern, Func<string[], App> factory) =>

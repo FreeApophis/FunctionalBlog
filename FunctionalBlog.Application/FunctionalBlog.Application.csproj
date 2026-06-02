@@ -4,6 +4,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Funcky" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FunctionalBlog.Domain\FunctionalBlog.Domain.csproj" />
   </ItemGroup>
 

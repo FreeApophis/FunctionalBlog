@@ -10,7 +10,7 @@ public abstract class UserRepositoryContract
 
         await repo.Save(user);
 
-        Assert.Equal(user, await repo.FindById(user.Id));
+        Assert.Equal(Option.Some(user), await repo.FindById(user.Id));
     }
 
     [Fact]
@@ -18,7 +18,7 @@ public abstract class UserRepositoryContract
     {
         var repo = CreateRepository();
 
-        Assert.Null(await repo.FindById(new UserId(987_654)));
+        Assert.Equal(Option<User>.None, await repo.FindById(new UserId(987_654)));
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public abstract class UserRepositoryContract
 
         await repo.Save(user);
 
-        Assert.Equal(user, await repo.FindByEmail(user.Email));
+        Assert.Equal(Option.Some(user), await repo.FindByEmail(user.Email));
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public abstract class UserRepositoryContract
     {
         var repo = CreateRepository();
 
-        Assert.Null(await repo.FindByEmail(new Email("nobody@example.com")));
+        Assert.Equal(Option<User>.None, await repo.FindByEmail(new Email("nobody@example.com")));
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public abstract class UserRepositoryContract
         await repo.Save(original);
         await repo.Save(updated);
 
-        Assert.Equal(updated, await repo.FindById(id));
+        Assert.Equal(Option.Some(updated), await repo.FindById(id));
     }
 
     protected abstract IUserRepository CreateRepository();

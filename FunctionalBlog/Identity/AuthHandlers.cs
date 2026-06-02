@@ -26,18 +26,17 @@ public static class AuthHandlers
                 400);
         }
 
-        var existingUser = await env.Users.FindByEmail(decoded.Email!);
-
+        var regEmail = decoded.Email.Match(none: () => default(Email), some: e => e);
+        var existingUser = (await env.Users.FindByEmail(regEmail!)).Match(none: () => default(User), some: u => u);
         if (existingUser is null)
         {
             var id = await env.Users.NextId();
             var hash = env.PasswordHasher.Hash(decoded.Password);
-            var defaultRole = await env.Roles.FindByName("Benutzer");
-            var roleNames = defaultRole is not null
-                ? (IReadOnlyList<string>)[defaultRole.Name]
-                : [];
+            var roleNames = (await env.Roles.FindByName("Benutzer")).Match(
+                none: () => (IReadOnlyList<string>)[],
+                some: r => (IReadOnlyList<string>)[r.Name]);
 
-            existingUser = User.Create(id, decoded.Email!, new DisplayName(decoded.DisplayName), hash, roleNames, env.Clock.Now);
+            existingUser = User.Create(id, regEmail!, new DisplayName(decoded.DisplayName), hash, roleNames, env.Clock.Now);
             await env.Users.Save(existingUser);
         }
 
@@ -61,11 +60,14 @@ public static class AuthHandlers
                 400);
         }
 
-        var email = Email.Parse(decoded.EmailRaw);
-        var user = email is not null ? await env.Users.FindByEmail(email) : null;
-        var hashToVerify = user?.PasswordHash ?? DummyHash;
+        var emailOption = Email.Parse(decoded.EmailRaw);
+        var userOption = await emailOption.Match(
+            none: () => Task.FromResult(Option<User>.None),
+            some: async email => await env.Users.FindByEmail(email));
+        var hashToVerify = userOption.Match(none: () => DummyHash, some: u => u.PasswordHash);
         var passwordMatch = env.PasswordHasher.Verify(decoded.Password, hashToVerify);
 
+        var user = userOption.Match(none: () => default(User), some: u => u);
         if (user is null || !passwordMatch)
         {
             return Response.Html(
@@ -98,16 +100,20 @@ public static class AuthHandlers
     public static App RequestPasswordReset => request => async env =>
     {
         var decoded = PasswordResetRequestForm.Decode(request);
-        var email = Email.Parse(decoded.EmailRaw);
-        var user = email is not null ? await env.Users.FindByEmail(email) : null;
 
-        if (user is not null)
-        {
-            var token = GenerateToken();
-            var resetToken = new PasswordResetToken(token, user.Id, env.Clock.Now.AddHours(1), Consumed: false);
-            await env.PasswordResets.Save(resetToken);
-            env.Log.Info($"[Passwort-Reset] reset-token:{token} für {decoded.EmailRaw}");
-        }
+        var userOption = await Email.Parse(decoded.EmailRaw)
+            .Match(
+                none: () => Task.FromResult(Option<User>.None),
+                some: async email => await env.Users.FindByEmail(email));
+        await userOption.Match(
+            none: () => Task.CompletedTask,
+            some: async user =>
+            {
+                var token = GenerateToken();
+                var resetToken = new PasswordResetToken(token, user.Id, env.Clock.Now.AddHours(1), Consumed: false);
+                await env.PasswordResets.Save(resetToken);
+                env.Log.Info($"[Passwort-Reset] reset-token:{token} für {decoded.EmailRaw}");
+            });
 
         return Response.Html(AuthViews.PasswordResetRequested(env.CurrentUser, env.T));
     };
@@ -130,26 +136,26 @@ public static class AuthHandlers
                 400);
         }
 
-        var resetToken = await env.PasswordResets.Find(decoded.Token);
+        var tokenInvalid = Response.Html(
+            AuthViews.PasswordResetConfirmForm(["auth.error.reset_token_invalid"], string.Empty, env.CurrentUser, env.T),
+            400);
 
-        if (resetToken is null || resetToken.Consumed || resetToken.ExpiresAt <= env.Clock.Now)
-        {
-            return Response.Html(
-                AuthViews.PasswordResetConfirmForm(["auth.error.reset_token_invalid"], string.Empty, env.CurrentUser, env.T),
-                400);
-        }
+        var validToken = (await env.PasswordResets.Find(decoded.Token))
+            .SelectMany(t => !t.Consumed && t.ExpiresAt > env.Clock.Now
+                ? Option.Some(t)
+                : Option<PasswordResetToken>.None);
 
-        var user = await env.Users.FindById(resetToken.UserId);
-
-        if (user is null)
-        {
-            return Response.NotFound();
-        }
-
-        await env.Users.Save(user with { PasswordHash = env.PasswordHasher.Hash(decoded.Password) });
-        await env.PasswordResets.Consume(decoded.Token);
-
-        return Response.Redirect("/login");
+        return await validToken.Match(
+            none: () => Task.FromResult(tokenInvalid),
+            some: async token =>
+                await (await env.Users.FindById(token.UserId)).Match(
+                    none: () => Task.FromResult(Response.NotFound()),
+                    some: async user =>
+                    {
+                        await env.Users.Save(user with { PasswordHash = env.PasswordHasher.Hash(decoded.Password) });
+                        await env.PasswordResets.Consume(decoded.Token);
+                        return Response.Redirect("/login");
+                    }));
     };
 
     private static Session NewSession(UserId userId, DateTimeOffset now) =>

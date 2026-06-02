@@ -12,8 +12,8 @@ public sealed class InMemorySessionStore : ISessionStore
         return ValueTask.CompletedTask;
     }
 
-    public ValueTask<Session?> Find(string token) =>
-        ValueTask.FromResult(_sessions.TryGetValue(token, out var session) ? session : null);
+    public ValueTask<Option<Session>> Find(string token) =>
+        ValueTask.FromResult(_sessions.TryGetValue(token, out var session) ? Option.Some(session) : Option<Session>.None);
 
     public ValueTask Delete(string token)
     {

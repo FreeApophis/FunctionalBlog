@@ -13,19 +13,16 @@ public static class RecipeHandlers
     };
 
     public static App ShowRecipe(RecipeId id) => _ => async env =>
-    {
-        var recipe = await env.Recipes.Find(id);
-
-        if (recipe is null)
-        {
-            return Response.NotFound();
-        }
-
-        var author = await env.Users.FindById(recipe.AuthorId);
-        var authorName = author?.DisplayName.Value ?? "?";
-        var ingredients = (await env.Ingredients.All()).ToDictionary(i => i.Id);
-        return Response.Html(RecipeViews.Show(recipe, env.CurrentUser, authorName, ingredients, env.T));
-    };
+        await (await env.Recipes.Find(id)).Match(
+            none: () => Task.FromResult(Response.NotFound()),
+            some: async recipe =>
+            {
+                var authorName = (await env.Users.FindById(recipe.AuthorId))
+                    .Select(u => u.DisplayName.Value)
+                    .GetOrElse("?");
+                var ingredients = (await env.Ingredients.All()).ToDictionary(i => i.Id);
+                return Response.Html(RecipeViews.Show(recipe, env.CurrentUser, authorName, ingredients, env.T));
+            });
 
     public static App NewRecipeForm => _ => async env =>
     {
@@ -136,7 +133,7 @@ public static class RecipeHandlers
             .Select(ing => new RecipeIngredient(
                 new IngredientId(int.Parse(ing.Id)),
                 decimal.Parse(ing.Amount, CultureInfo.InvariantCulture),
-                RecipeForm.ParseUnit(ing.Unit)!))
+                RecipeForm.ParseUnit(ing.Unit).GetOrElse(WeightUnit.Gram)))
             .ToList();
 
         var tags = string.IsNullOrWhiteSpace(decoded.Tags)
@@ -220,9 +217,7 @@ public static class RecipeHandlers
 
     public static App DeleteRecipe(RecipeId id) => _ => async env =>
     {
-        var existing = await env.Recipes.Find(id);
-
-        if (existing is null)
+        if ((await env.Recipes.Find(id)) == Option<Recipe>.None)
         {
             return Response.NotFound();
         }
@@ -232,46 +227,42 @@ public static class RecipeHandlers
     };
 
     public static App EditRecipeForm(RecipeId id) => _ => async env =>
-    {
-        var recipe = await env.Recipes.Find(id);
+        await (await env.Recipes.Find(id)).Match(
+            none: () => Task.FromResult(Response.NotFound()),
+            some: async recipe =>
+            {
+                var availableIngredients = await env.Ingredients.All();
 
-        if (recipe is null)
-        {
-            return Response.NotFound();
-        }
+                var ingredients = recipe.Ingredients
+                    .Select(ri => (ri.IngredientId.Value.ToString(), ri.Amount.ToString(CultureInfo.InvariantCulture), ri.Unit.Abbreviation))
+                    .ToList<(string Id, string Amount, string Unit)>();
 
-        var availableIngredients = await env.Ingredients.All();
+                var steps = recipe.PreparationSteps
+                    .OrderBy(s => s.SortOrder)
+                    .Select(s => s.Text)
+                    .ToList();
 
-        var ingredients = recipe.Ingredients
-            .Select(ri => (ri.IngredientId.Value.ToString(), ri.Amount.ToString(CultureInfo.InvariantCulture), ri.Unit.Abbreviation))
-            .ToList<(string Id, string Amount, string Unit)>();
-
-        var steps = recipe.PreparationSteps
-            .OrderBy(s => s.SortOrder)
-            .Select(s => s.Text)
-            .ToList();
-
-        return Response.Html(RecipeViews.Form(
-            errors: [],
-            name: recipe.Name.Value,
-            description: recipe.Description.Value,
-            portions: recipe.Portions.ToString(),
-            difficulty: ((int)recipe.Difficulty).ToString(),
-            tags: string.Join(", ", recipe.Tags.Select(tag => tag.Value)),
-            hints: string.Join("\n", recipe.Hints.Select(h => h.Text)),
-            ingredients: ingredients,
-            steps: steps,
-            availableIngredients: availableIngredients,
-            principal: env.CurrentUser,
-            t: env.T,
-            formAction: $"/recipes/{id.Value}",
-            titleKey: "recipe.edit_title"));
-    };
+                return Response.Html(RecipeViews.Form(
+                    errors: [],
+                    name: recipe.Name.Value,
+                    description: recipe.Description.Value,
+                    portions: recipe.Portions.ToString(),
+                    difficulty: ((int)recipe.Difficulty).ToString(),
+                    tags: string.Join(", ", recipe.Tags.Select(tag => tag.Value)),
+                    hints: string.Join("\n", recipe.Hints.Select(h => h.Text)),
+                    ingredients: ingredients,
+                    steps: steps,
+                    availableIngredients: availableIngredients,
+                    principal: env.CurrentUser,
+                    t: env.T,
+                    formAction: $"/recipes/{id.Value}",
+                    titleKey: "recipe.edit_title"));
+            });
 
     public static App UpdateRecipe(RecipeId id) => request => async env =>
     {
-        var existing = await env.Recipes.Find(id);
-
+        var existingOption = await env.Recipes.Find(id);
+        var existing = existingOption.Match(none: () => default(Recipe), some: r => r);
         if (existing is null)
         {
             return Response.NotFound();
@@ -372,7 +363,7 @@ public static class RecipeHandlers
             .Select(ing => new RecipeIngredient(
                 new IngredientId(int.Parse(ing.Id)),
                 decimal.Parse(ing.Amount, CultureInfo.InvariantCulture),
-                RecipeForm.ParseUnit(ing.Unit)!))
+                RecipeForm.ParseUnit(ing.Unit).GetOrElse(WeightUnit.Gram)))
             .ToList();
 
         var tags = string.IsNullOrWhiteSpace(decoded.Tags)

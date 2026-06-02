@@ -4,6 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Funcky" />
     <PackageReference Include="Funcky.DiscriminatedUnion" PrivateAssets="all" />
   </ItemGroup>
 

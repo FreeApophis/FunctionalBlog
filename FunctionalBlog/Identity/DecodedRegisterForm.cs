@@ -3,6 +3,6 @@ namespace FunctionalBlog.Identity;
 public sealed record DecodedRegisterForm(
     bool IsValid,
     IReadOnlyList<string> Errors,
-    Email? Email,
+    Option<Email> Email,
     string DisplayName,
     string Password);

@@ -27,36 +27,36 @@ public sealed class SqliteUserRepository : IUserRepository
         return rows.Select(r => ToUser(r, roleLookup[r.Id].ToList())).ToList();
     }
 
-    public async ValueTask<User?> FindById(UserId id)
+    public async ValueTask<Option<User>> FindById(UserId id)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<UserRow>(
             "SELECT id AS Id, email AS Email, display_name AS DisplayName, password_hash AS PasswordHash, created_at AS CreatedAt FROM users WHERE id = @id",
             new { id = id.Value });
         if (row is null)
         {
-            return null;
+            return Option<User>.None;
         }
 
         var roles = (await _connection.QueryAsync<string>(
             "SELECT role_name FROM user_roles WHERE user_id = @id",
             new { id = id.Value })).ToList();
-        return ToUser(row, roles);
+        return Option.Some(ToUser(row, roles));
     }
 
-    public async ValueTask<User?> FindByEmail(Email email)
+    public async ValueTask<Option<User>> FindByEmail(Email email)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<UserRow>(
             "SELECT id AS Id, email AS Email, display_name AS DisplayName, password_hash AS PasswordHash, created_at AS CreatedAt FROM users WHERE email = @email",
             new { email = email.Value });
         if (row is null)
         {
-            return null;
+            return Option<User>.None;
         }
 
         var roles = (await _connection.QueryAsync<string>(
             "SELECT role_name FROM user_roles WHERE user_id = @id",
             new { id = row.Id })).ToList();
-        return ToUser(row, roles);
+        return Option.Some(ToUser(row, roles));
     }
 
     public async ValueTask<UserId> NextId()

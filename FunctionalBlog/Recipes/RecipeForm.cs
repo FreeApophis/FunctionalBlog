@@ -51,7 +51,7 @@ public static class RecipeForm
                 continue;
             }
 
-            if (!decimal.TryParse(amount, NumberStyles.Any, CultureInfo.InvariantCulture, out var amt) || amt <= 0 || ParseUnit(unit) is null)
+            if (!decimal.TryParse(amount, NumberStyles.Any, CultureInfo.InvariantCulture, out var amt) || amt <= 0 || ParseUnit(unit) == Option<FunctionalBlog.Domain.Recipes.Unit>.None)
             {
                 errors.Add("recipe.error.ingredient_invalid");
                 break;
@@ -96,18 +96,18 @@ public static class RecipeForm
         return result;
     }
 
-    public static Unit? ParseUnit(string abbreviation) => abbreviation switch
+    public static Option<FunctionalBlog.Domain.Recipes.Unit> ParseUnit(string abbreviation) => abbreviation switch
     {
-        "g" => WeightUnit.Gram,
-        "kg" => WeightUnit.Kilogram,
-        "ml" => VolumeUnit.Milliliter,
-        "dl" => VolumeUnit.Deciliter,
-        "l" => VolumeUnit.Liter,
-        "EL" => VolumeUnit.Tablespoon,
-        "TL" => VolumeUnit.Teaspoon,
-        "Stück" => PieceUnit.Piece,
-        "Prise" => PieceUnit.Pinch,
-        _ => null,
+        "g" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(WeightUnit.Gram),
+        "kg" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(WeightUnit.Kilogram),
+        "ml" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Milliliter),
+        "dl" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Deciliter),
+        "l" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Liter),
+        "EL" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Tablespoon),
+        "TL" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Teaspoon),
+        "Stück" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(PieceUnit.Piece),
+        "Prise" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(PieceUnit.Pinch),
+        _ => Option<FunctionalBlog.Domain.Recipes.Unit>.None,
     };
 
     public static IReadOnlyList<(string Name, string Abbreviation)> AllUnits =>

@@ -23,7 +23,7 @@ public static class Seeder
 
     private static async ValueTask SeedRoles(Env env)
     {
-        if (await env.Roles.FindByName(DefaultRoleName) is null)
+        if ((await env.Roles.FindByName(DefaultRoleName)) == Option<Role>.None)
         {
             var id = await env.Roles.NextId();
             var role = Role.Create(id, DefaultRoleName)
@@ -31,7 +31,7 @@ public static class Seeder
             await env.Roles.Save(role);
         }
 
-        if (await env.Roles.FindByName(AdminRoleName) is null)
+        if ((await env.Roles.FindByName(AdminRoleName)) == Option<Role>.None)
         {
             var id = await env.Roles.NextId();
             var role = Role.Create(id, AdminRoleName)
@@ -58,16 +58,16 @@ public static class Seeder
 
     private static async ValueTask SeedAdminUser(Env env)
     {
-        var email = Email.Parse(AdminEmail)!;
+        var email = Email.Parse(AdminEmail).Match(none: () => default(Email), some: e => e);
 
-        if (await env.Users.FindByEmail(email) is not null)
+        if ((await env.Users.FindByEmail(email!)) != Option<User>.None)
         {
             return;
         }
 
         var id = await env.Users.NextId();
         var hash = env.PasswordHasher.Hash(AdminPassword);
-        var user = User.Create(id, email, new DisplayName("Admin"), hash, [AdminRoleName], env.Clock.Now);
+        var user = User.Create(id, email!, new DisplayName("Admin"), hash, [AdminRoleName], env.Clock.Now);
         await env.Users.Save(user);
     }
 
@@ -78,8 +78,8 @@ public static class Seeder
             return;
         }
 
-        var admin = await env.Users.FindByEmail(Email.Parse(AdminEmail)!);
-
+        var adminEmail = Email.Parse(AdminEmail).GetOrElse(new Email("invalid"));
+        var admin = (await env.Users.FindByEmail(adminEmail)).Match(none: () => default(User), some: u => u);
         if (admin is null)
         {
             return;
@@ -434,8 +434,8 @@ public static class Seeder
             return;
         }
 
-        var admin = await env.Users.FindByEmail(Email.Parse(AdminEmail)!);
-
+        var adminEmail = Email.Parse(AdminEmail).GetOrElse(new Email("invalid"));
+        var admin = (await env.Users.FindByEmail(adminEmail)).Match(none: () => default(User), some: u => u);
         if (admin is null)
         {
             return;

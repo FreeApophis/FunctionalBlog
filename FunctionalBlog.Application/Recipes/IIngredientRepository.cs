@@ -4,7 +4,7 @@ public interface IIngredientRepository
 {
     ValueTask<IReadOnlyList<Ingredient>> All();
 
-    ValueTask<Ingredient?> Find(IngredientId id);
+    ValueTask<Option<Ingredient>> Find(IngredientId id);
 
     ValueTask<IngredientId> NextId();
 

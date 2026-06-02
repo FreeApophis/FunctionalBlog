@@ -10,12 +10,14 @@ public sealed class InMemoryUserRepository : IUserRepository
     public ValueTask<IReadOnlyList<User>> All() =>
         ValueTask.FromResult<IReadOnlyList<User>>(_users.Values.ToList());
 
-    public ValueTask<User?> FindById(UserId id) =>
-        ValueTask.FromResult(_users.TryGetValue(id.Value, out var user) ? user : null);
+    public ValueTask<Option<User>> FindById(UserId id) =>
+        ValueTask.FromResult(_users.TryGetValue(id.Value, out var user) ? Option.Some(user) : Option<User>.None);
 
-    public ValueTask<User?> FindByEmail(Email email) =>
-        ValueTask.FromResult(
-            _users.Values.FirstOrDefault(u => u.Email.Value == email.Value));
+    public ValueTask<Option<User>> FindByEmail(Email email)
+    {
+        var user = _users.Values.FirstOrDefault(u => u.Email.Value == email.Value);
+        return ValueTask.FromResult(user is not null ? Option.Some(user) : Option<User>.None);
+    }
 
     public ValueTask<UserId> NextId() =>
         ValueTask.FromResult(new UserId(Interlocked.Increment(ref _nextId)));

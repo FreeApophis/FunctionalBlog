@@ -10,7 +10,7 @@ public abstract class RoleRepositoryContract
 
         await repo.Save(role);
 
-        Assert.Equal(role, await repo.FindById(role.Id));
+        Assert.Equal(Option.Some(role), await repo.FindById(role.Id));
     }
 
     [Fact]
@@ -18,7 +18,7 @@ public abstract class RoleRepositoryContract
     {
         var repo = CreateRepository();
 
-        Assert.Null(await repo.FindById(new RoleId(987_654)));
+        Assert.Equal(Option<Role>.None, await repo.FindById(new RoleId(987_654)));
     }
 
     [Fact]
@@ -29,7 +29,7 @@ public abstract class RoleRepositoryContract
 
         await repo.Save(role);
 
-        Assert.Equal(role, await repo.FindByName("Admin"));
+        Assert.Equal(Option.Some(role), await repo.FindByName("Admin"));
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public abstract class RoleRepositoryContract
     {
         var repo = CreateRepository();
 
-        Assert.Null(await repo.FindByName("Unbekannt"));
+        Assert.Equal(Option<Role>.None, await repo.FindByName("Unbekannt"));
     }
 
     [Fact]

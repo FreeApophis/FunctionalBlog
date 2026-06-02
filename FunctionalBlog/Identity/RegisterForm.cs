@@ -12,7 +12,7 @@ public static class RegisterForm
         var errors = new List<string>();
         var email = Email.Parse(emailRaw);
 
-        if (email is null)
+        if (email == Option<Email>.None)
         {
             errors.Add("auth.error.invalid_email");
         }

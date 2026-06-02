@@ -74,6 +74,6 @@ public sealed class UnitTests
         var weight = new WeightUnit("X", "x", 1m);
         var volume = new VolumeUnit("X", "x", 1m);
 
-        Assert.NotEqual<Unit>(weight, volume);
+        Assert.NotEqual<FunctionalBlog.Domain.Recipes.Unit>(weight, volume);
     }
 }
