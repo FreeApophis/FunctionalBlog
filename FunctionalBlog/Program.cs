@@ -25,7 +25,7 @@ internal class Program
             Middlewares.Recover,
             Middlewares.RequestLogging,
             AuthMiddleware.Create(),
-            Router.Create());
+            Router.Create(Routes.Build()));
 
         web.Run(async http =>
         {

@@ -155,11 +155,11 @@ public sealed class AuthHandlerTests
         response.SetCookies[0].Split(';')[0].Replace("session=", string.Empty);
 
     private static Request RequestWithCookie(string name, string value) =>
-        new("GET", "/", Empty, Empty, Empty, new Dictionary<string, string> { [name] = value });
+        new(HttpMethod.Get, "/", Empty, Empty, Empty, new Dictionary<string, string> { [name] = value });
 
     private static Request RegisterRequest(string email, string password, string confirmation) =>
         new(
-            "POST",
+            HttpMethod.Post,
             "/register",
             Empty,
             Empty,
@@ -168,7 +168,7 @@ public sealed class AuthHandlerTests
 
     private static Request LoginRequest(string email, string password) =>
         new(
-            "POST",
+            HttpMethod.Post,
             "/login",
             Empty,
             Empty,
@@ -177,7 +177,7 @@ public sealed class AuthHandlerTests
 
     private static Request ResetRequestRequest(string email) =>
         new(
-            "POST",
+            HttpMethod.Post,
             "/password-reset",
             Empty,
             Empty,
@@ -186,7 +186,7 @@ public sealed class AuthHandlerTests
 
     private static Request ResetConfirmRequest(string token, string password, string confirmation) =>
         new(
-            "POST",
+            HttpMethod.Post,
             "/password-reset/confirm",
             Empty,
             Empty,

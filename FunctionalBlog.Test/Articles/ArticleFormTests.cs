@@ -40,7 +40,7 @@ public sealed class ArticleFormTests
 
     private static DecodedArticleForm Decode(string title, string teaser, string text) =>
         ArticleForm.Decode(new Request(
-            "POST",
+            HttpMethod.Post,
             "/articles",
             new Dictionary<string, string>(),
             new Dictionary<string, string>(),

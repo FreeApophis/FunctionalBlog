@@ -1,7 +1,7 @@
 namespace FunctionalBlog;
 
 public sealed record Request(
-    string Method,
+    HttpMethod Method,
     string Path,
     IReadOnlyDictionary<string, string> Headers,
     IReadOnlyDictionary<string, string> Query,

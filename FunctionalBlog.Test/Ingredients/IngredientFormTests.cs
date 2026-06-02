@@ -152,7 +152,7 @@ public sealed class IngredientFormTests
             ["sugar"] = sugar,
             ["fiber"] = fiber,
         };
-        return new Request("POST", "/admin/ingredients", Empty, Empty, form, Empty);
+        return new Request(HttpMethod.Post, "/admin/ingredients", Empty, Empty, form, Empty);
     }
 
     private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();

@@ -67,7 +67,7 @@ public sealed class RegisterFormTests
 
     private static DecodedRegisterForm Decode(string email, string displayName, string password, string confirmation) =>
         RegisterForm.Decode(new Request(
-            "POST",
+            HttpMethod.Post,
             "/register",
             new Dictionary<string, string>(),
             new Dictionary<string, string>(),

@@ -213,7 +213,7 @@ public sealed class RecipeFormTests
             form[$"step_{i}"] = step;
         }
 
-        return new Request("POST", "/recipes", Empty, Empty, form, Empty);
+        return new Request(HttpMethod.Post, "/recipes", Empty, Empty, form, Empty);
     }
 
     private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();

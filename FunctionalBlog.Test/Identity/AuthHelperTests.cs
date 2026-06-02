@@ -64,7 +64,7 @@ public sealed class AuthHelperTests
     private static App OkHandler => _ => _ => ValueTask.FromResult(Response.Text("ok"));
 
     private static Request ARequest() =>
-        new("GET", "/", new Dictionary<string, string>(), new Dictionary<string, string>(), new Dictionary<string, string>(), new Dictionary<string, string>());
+        new(HttpMethod.Get, "/", new Dictionary<string, string>(), new Dictionary<string, string>(), new Dictionary<string, string>(), new Dictionary<string, string>());
 
     private static Env BuildEnv(IPrincipal principal) => new(
         Articles: new InMemoryArticleRepository(),

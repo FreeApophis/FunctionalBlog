@@ -6,7 +6,7 @@ public sealed class AuthMiddlewareTests
     public async Task No_session_cookie_results_in_Guest_principal()
     {
         var env = BuildEnv();
-        var request = new Request("GET", "/", EmptyDict, EmptyDict, EmptyDict, EmptyDict);
+        var request = new Request(HttpMethod.Get, "/", EmptyDict, EmptyDict, EmptyDict, EmptyDict);
 
         var resolved = await AuthMiddleware.ResolvePrincipal(request, env);
 
@@ -75,7 +75,7 @@ public sealed class AuthMiddlewareTests
         Ingredients: new InMemoryIngredientRepository());
 
     private static Request RequestWithCookie(string name, string value) =>
-        new("GET", "/", EmptyDict, EmptyDict, EmptyDict, new Dictionary<string, string> { [name] = value });
+        new(HttpMethod.Get, "/", EmptyDict, EmptyDict, EmptyDict, new Dictionary<string, string> { [name] = value });
 
     private static readonly IReadOnlyDictionary<string, string> EmptyDict =
         new Dictionary<string, string>();

@@ -121,14 +121,14 @@ public sealed class AdminHandlerTests
         Ingredients: new InMemoryIngredientRepository());
 
     private static Request ARequest() =>
-        new("GET", "/admin/users", Empty, Empty, Empty, Empty);
+        new(HttpMethod.Get, "/admin/users", Empty, Empty, Empty, Empty);
 
     private static Request RoleRequest(string name) =>
-        new("POST", "/admin/roles", Empty, Empty, new Dictionary<string, string> { ["name"] = name }, Empty);
+        new(HttpMethod.Post, "/admin/roles", Empty, Empty, new Dictionary<string, string> { ["name"] = name }, Empty);
 
     private static Request RuleRequest(string action, string resource) =>
         new(
-            "POST",
+            HttpMethod.Post,
             "/admin/roles/1/rules",
             Empty,
             Empty,
@@ -137,7 +137,7 @@ public sealed class AdminHandlerTests
 
     private static Request AssignRolesRequest(string roleName) =>
         new(
-            "POST",
+            HttpMethod.Post,
             "/admin/users/1/roles",
             Empty,
             Empty,

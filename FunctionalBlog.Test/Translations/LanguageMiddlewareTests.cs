@@ -29,7 +29,7 @@ public sealed class LanguageMiddlewareTests
         };
         var middleware = LanguageMiddleware.Create()(inner);
 
-        await middleware(new Request("GET", "/", Empty, Empty, Empty, Empty))(BuildEnv());
+        await middleware(new Request(HttpMethod.Get, "/", Empty, Empty, Empty, Empty))(BuildEnv());
 
         Assert.Equal("de", captured);
     }
@@ -48,7 +48,7 @@ public sealed class LanguageMiddlewareTests
         Ingredients: new InMemoryIngredientRepository());
 
     private static Request RequestWithCookie(string name, string value) =>
-        new("GET", "/", Empty, Empty, Empty, new Dictionary<string, string> { [name] = value });
+        new(HttpMethod.Get, "/", Empty, Empty, Empty, new Dictionary<string, string> { [name] = value });
 
     private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();
 }

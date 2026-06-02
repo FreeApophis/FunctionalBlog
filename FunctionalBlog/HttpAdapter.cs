@@ -17,7 +17,7 @@ public static class HttpAdapter
         var cookies = http.Request.Cookies.ToDictionary(x => x.Key, x => x.Value ?? string.Empty);
 
         return new Request(
-            Method: http.Request.Method.ToUpperInvariant(),
+            Method: HttpMethod.Parse(http.Request.Method),
             Path: http.Request.Path.Value ?? "/",
             Headers: http.Request.Headers.ToDictionary(x => x.Key, x => x.Value.ToString()),
             Query: http.Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString()),

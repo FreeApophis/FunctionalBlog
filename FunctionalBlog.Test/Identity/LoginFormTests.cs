@@ -31,7 +31,7 @@ public sealed class LoginFormTests
 
     private static DecodedLoginForm Decode(string email, string password) =>
         LoginForm.Decode(new Request(
-            "POST",
+            HttpMethod.Post,
             "/login",
             new Dictionary<string, string>(),
             new Dictionary<string, string>(),

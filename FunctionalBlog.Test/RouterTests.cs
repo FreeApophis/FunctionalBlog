@@ -5,9 +5,9 @@ public class RouterTests
     [Fact]
     public async Task Get_htmx_min_js_returns_a_javascript_response()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/htmx.min.js", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/htmx.min.js", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -19,9 +19,9 @@ public class RouterTests
     [Fact]
     public async Task Get_styles_css_returns_a_css_response()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/styles.css", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/styles.css", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -33,9 +33,9 @@ public class RouterTests
     [Fact]
     public async Task Get_articles_new_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/articles/new", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/articles/new", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -46,9 +46,9 @@ public class RouterTests
     [Fact]
     public async Task Post_articles_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/articles", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/articles", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -59,9 +59,9 @@ public class RouterTests
     [Fact]
     public async Task Get_recipes_returns_200_html_response()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/recipes", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/recipes", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -72,9 +72,9 @@ public class RouterTests
     [Fact]
     public async Task Get_recipe_by_id_returns_404_for_unknown_recipe()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/recipes/987654", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/recipes/987654", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -84,9 +84,9 @@ public class RouterTests
     [Fact]
     public async Task Get_recipes_new_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/recipes/new", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/recipes/new", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -97,9 +97,9 @@ public class RouterTests
     [Fact]
     public async Task Post_recipes_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/recipes", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/recipes", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -110,9 +110,9 @@ public class RouterTests
     [Fact]
     public async Task Post_recipes_form_ingredients_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/recipes/form/ingredients", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/recipes/form/ingredients", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -123,9 +123,9 @@ public class RouterTests
     [Fact]
     public async Task Post_recipes_form_steps_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/recipes/form/steps", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/recipes/form/steps", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -136,9 +136,9 @@ public class RouterTests
     [Fact]
     public async Task Get_recipe_edit_form_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/recipes/1/edit", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/recipes/1/edit", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -149,9 +149,9 @@ public class RouterTests
     [Fact]
     public async Task Post_recipe_update_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/recipes/1", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/recipes/1", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -162,9 +162,9 @@ public class RouterTests
     [Fact]
     public async Task Get_article_edit_form_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/articles/1/edit", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/articles/1/edit", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -175,9 +175,9 @@ public class RouterTests
     [Fact]
     public async Task Post_article_update_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/articles/1", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/articles/1", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -188,9 +188,9 @@ public class RouterTests
     [Fact]
     public async Task Post_delete_article_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/articles/1/delete", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/articles/1/delete", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -201,9 +201,9 @@ public class RouterTests
     [Fact]
     public async Task Post_delete_recipe_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/recipes/1/delete", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/recipes/1/delete", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -214,9 +214,9 @@ public class RouterTests
     [Fact]
     public async Task Post_delete_ingredient_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/admin/ingredients/1/delete", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/admin/ingredients/1/delete", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -227,9 +227,9 @@ public class RouterTests
     [Fact]
     public async Task Get_admin_ingredients_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/admin/ingredients", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/admin/ingredients", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -240,9 +240,9 @@ public class RouterTests
     [Fact]
     public async Task Get_admin_ingredients_new_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/admin/ingredients/new", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/admin/ingredients/new", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -253,9 +253,9 @@ public class RouterTests
     [Fact]
     public async Task Post_admin_ingredients_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/admin/ingredients", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/admin/ingredients", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -266,9 +266,9 @@ public class RouterTests
     [Fact]
     public async Task Get_admin_ingredient_edit_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("GET", "/admin/ingredients/1/edit", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Get, "/admin/ingredients/1/edit", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
@@ -279,9 +279,9 @@ public class RouterTests
     [Fact]
     public async Task Post_admin_ingredient_update_redirects_guest_to_login()
     {
-        var app = Router.Create()(NotFoundTerminal);
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
         var env = BuildEnv();
-        var request = new Request("POST", "/admin/ingredients/1", Empty, Empty, Empty, Empty);
+        var request = new Request(HttpMethod.Post, "/admin/ingredients/1", Empty, Empty, Empty, Empty);
 
         var response = await app(request)(env);
 
