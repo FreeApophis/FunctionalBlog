@@ -7,9 +7,9 @@ public static class AdminViews
 
     public static string UserList(IReadOnlyList<User> users, IPrincipal principal, Translate t)
     {
-        static string UserRow(User u) =>
-            Html.Link($"/admin/users/{u.Id.Value}", $"{Html.Encode(u.DisplayName.Value)} ({Html.Encode(u.Email.Value)})") +
-            " – " + Html.Encode(string.Join(", ", u.RoleNames));
+        static HtmlString UserRow(User u) =>
+            Html.Link($"/admin/users/{u.Id.Value}", $"{u.DisplayName.Value} ({u.Email.Value})") +
+            Html.Raw(" – ") + Html.Text(string.Join(", ", u.RoleNames));
 
         var body = Html.H1(t("admin.users.title")) +
             Html.P(Html.Link("/admin/roles", t("admin.users.manage_roles"))) +
@@ -22,17 +22,17 @@ public static class AdminViews
     public static string UserDetail(User user, IReadOnlyList<Role> allRoles, IReadOnlyList<string> errors, IPrincipal principal, Translate t)
     {
         var errorHtml = errors.Count == 0
-            ? string.Empty
-            : Html.Div("errors", Html.Ul(errors.Select(Html.Encode)));
+            ? HtmlString.Empty
+            : Html.Div("errors", Html.Ul(errors.Select(Html.Text)));
 
-        string CheckboxHtml(Role r) =>
-            Html.Label(Html.InputCheckbox("role", r.Name, user.RoleNames.Contains(r.Name)) + " " + Html.Encode(r.Name));
+        HtmlString CheckboxHtml(Role r) =>
+            Html.Label(Html.InputCheckbox("role", r.Name, user.RoleNames.Contains(r.Name)) + Html.Raw(" ") + Html.Text(r.Name));
 
-        var roleCheckboxes = string.Concat(allRoles.Select(CheckboxHtml));
+        var roleCheckboxes = HtmlString.Concat(allRoles.Select(CheckboxHtml));
         var formBody = Html.Fieldset(t("admin.users.roles_label"), roleCheckboxes) + Html.Button(t("admin.users.save"));
         var form = Html.Form($"/admin/users/{user.Id.Value}/roles", formBody);
 
-        var body = Html.H1(Html.Encode(user.Email.Value)) +
+        var body = Html.H1(user.Email.Value) +
             Html.P(Html.Link("/admin/users", t("common.back"))) +
             errorHtml +
             form;
@@ -41,9 +41,9 @@ public static class AdminViews
 
     public static string RoleList(IReadOnlyList<Role> roles, IPrincipal principal, Translate t)
     {
-        static string RoleRow(Role r) =>
-            Html.Link($"/admin/roles/{r.Id.Value}", Html.Encode(r.Name)) +
-            $" ({r.Rules.Count})";
+        static HtmlString RoleRow(Role r) =>
+            Html.Link($"/admin/roles/{r.Id.Value}", r.Name) +
+            Html.Raw($" ({r.Rules.Count})");
 
         var body = Html.H1(t("admin.roles.title")) +
             Html.P(Html.Link("/admin/roles/new", t("admin.roles.new"))) +
@@ -55,10 +55,10 @@ public static class AdminViews
     public static string NewRoleForm(IReadOnlyList<string> errors, IPrincipal principal, Translate t)
     {
         var errorHtml = errors.Count == 0
-            ? string.Empty
-            : Html.Div("errors", Html.Ul(errors.Select(Html.Encode)));
+            ? HtmlString.Empty
+            : Html.Div("errors", Html.Ul(errors.Select(Html.Text)));
 
-        var formBody = Html.Label(Html.Encode(t("admin.roles.name")) + Html.Input("name")) + Html.Button(t("admin.roles.create"));
+        var formBody = Html.Label(Html.Text(t("admin.roles.name")) + Html.Input("name")) + Html.Button(t("admin.roles.create"));
         var body = Html.H1(t("admin.roles.new")) +
             Html.P(Html.Link("/admin/roles", t("common.back"))) +
             errorHtml +
@@ -69,8 +69,8 @@ public static class AdminViews
     public static string RoleDetail(Role role, IReadOnlyList<string> errors, IPrincipal principal, Translate t)
     {
         var errorHtml = errors.Count == 0
-            ? string.Empty
-            : Html.Div("errors", Html.Ul(errors.Select(Html.Encode)));
+            ? HtmlString.Empty
+            : Html.Div("errors", Html.Ul(errors.Select(Html.Text)));
 
         var actionOptions = string.Join(
             string.Empty,
@@ -80,31 +80,31 @@ public static class AdminViews
             string.Empty,
             AllResources.Select(r => $"<option value=\"{Html.Encode(r)}\">{Html.Encode(r)}</option>"));
 
-        string RuleRow(PermissionRule r)
+        HtmlString RuleRow(PermissionRule r)
         {
             var ruleFormBody =
                 Html.InputHidden("action", r.ActionName) +
                 Html.InputHidden("resource", r.ResourceKey) +
                 Html.Button(t("admin.roles.remove_rule"));
-            return Html.Encode(r.ActionName) + " → " + Html.Encode(r.ResourceKey) + " " +
+            return Html.Text(r.ActionName) + Html.Raw(" → ") + Html.Text(r.ResourceKey) + Html.Raw(" ") +
                 Html.Form($"/admin/roles/{role.Id.Value}/rules/delete", ruleFormBody, style: "display:inline");
         }
 
         var ruleRows = role.Rules.Count == 0
-            ? Html.P(t("admin.roles.no_rules"))
+            ? Html.P(Html.Text(t("admin.roles.no_rules")))
             : Html.Ul(role.Rules.Select(RuleRow));
 
         var addFormBody =
-            Html.Label(Html.Encode(t("admin.roles.action")) + $"""<select name="action">{actionOptions}</select>""") +
-            Html.Label(Html.Encode(t("admin.roles.resource")) + $"""<select name="resource">{resourceOptions}</select>""") +
+            Html.Label(Html.Text(t("admin.roles.action")) + Html.Raw($"""<select name="action">{actionOptions}</select>""")) +
+            Html.Label(Html.Text(t("admin.roles.resource")) + Html.Raw($"""<select name="resource">{resourceOptions}</select>""")) +
             Html.Button(t("admin.roles.add_rule"));
         var addForm = Html.Form($"/admin/roles/{role.Id.Value}/rules", addFormBody);
         var deleteForm = Html.Form($"/admin/roles/{role.Id.Value}/delete", Html.Button(t("admin.roles.delete")));
 
-        var body = Html.H1(Html.Encode(role.Name)) +
+        var body = Html.H1(role.Name) +
             Html.P(Html.Link("/admin/roles", t("common.back"))) +
             Html.P(deleteForm) +
-            Html.H2(t("admin.roles.rules")) +
+            Html.H2(Html.Text(t("admin.roles.rules"))) +
             ruleRows +
             errorHtml +
             addForm;

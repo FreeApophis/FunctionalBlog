@@ -2,7 +2,7 @@ namespace FunctionalBlog;
 
 public static class Layout
 {
-    public static string Page(string title, string body, IPrincipal principal, Translate? t = null)
+    public static string Page(string title, HtmlString body, IPrincipal principal, Translate? t = null)
     {
         var translate = t ?? (key => key);
         return $$"""
@@ -17,12 +17,12 @@ public static class Layout
         </head>
         <body>
             {{NavViews.Nav(principal, translate)}}
-            <main>{{body}}</main>
+            <main>{{body.Render()}}</main>
         </body>
         </html>
         """;
     }
 
-    public static string Page(string title, string body) =>
+    public static string Page(string title, HtmlString body) =>
         Page(title, body, Guest.Instance);
 }

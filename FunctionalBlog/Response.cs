@@ -31,10 +31,10 @@ public sealed record Response(
             "Redirecting...");
 
     public static Response Forbidden() =>
-        Html(Layout.Page("403", FunctionalBlog.Html.H1("Keine Berechtigung") + FunctionalBlog.Html.P("Sie haben keine Berechtigung für diese Seite.")), 403);
+        Html(Layout.Page("403", FunctionalBlog.Html.H1("Keine Berechtigung") + FunctionalBlog.Html.P(FunctionalBlog.Html.Text("Sie haben keine Berechtigung für diese Seite."))), 403);
 
     public static Response NotFound() =>
-        Html(Layout.Page("404", FunctionalBlog.Html.H1("Nicht gefunden") + FunctionalBlog.Html.P("Diese Seite existiert nicht.")), 404);
+        Html(Layout.Page("404", FunctionalBlog.Html.H1("Nicht gefunden") + FunctionalBlog.Html.P(FunctionalBlog.Html.Text("Diese Seite existiert nicht."))), 404);
 
     public static Response JsonDownload(string filename, string body) =>
         new(

@@ -4,81 +4,87 @@ namespace FunctionalBlog;
 
 public static class Html
 {
+    public static HtmlString Text(string value) => new HtmlString.Encoded(value);
+
+    public static HtmlString Raw(string html) => new HtmlString.Safe(html);
+
     public static string Encode(string value) => WebUtility.HtmlEncode(value);
 
-    public static string H1(string value) => $"<h1>{Encode(value)}</h1>";
+    public static HtmlString H1(string text) => new HtmlString.Safe($"<h1>{Encode(text)}</h1>");
 
-    public static string H2(string value) => $"<h2>{Encode(value)}</h2>";
+    public static HtmlString H2(HtmlString body) => new HtmlString.Safe($"<h2>{body.Render()}</h2>");
 
-    public static string P(string value) => $"<p>{value}</p>";
+    public static HtmlString P(HtmlString body) => new HtmlString.Safe($"<p>{body.Render()}</p>");
 
-    public static string Small(string value) => $"<small>{Encode(value)}</small>";
+    public static HtmlString Small(string text) => new HtmlString.Safe($"<small>{Encode(text)}</small>");
 
-    public static string Link(string href, string text) => $"<a href=\"{Encode(href)}\">{Encode(text)}</a>";
+    public static HtmlString Article(HtmlString body) => new HtmlString.Safe($"<article>{body.Render()}</article>");
 
-    public static string Article(string body) => $"<article>{body}</article>";
+    public static HtmlString Div(string cssClass, HtmlString body) => new HtmlString.Safe($"<div class=\"{Encode(cssClass)}\">{body.Render()}</div>");
 
-    public static string Div(string cssClass, string body) => $"<div class=\"{Encode(cssClass)}\">{body}</div>";
+    public static HtmlString Link(string href, string text) => new HtmlString.Safe($"<a href=\"{Encode(href)}\">{Encode(text)}</a>");
 
-    public static string Form(string action, string body, string? cssClass = null, string? style = null)
+    public static HtmlString Button(string text) => new HtmlString.Safe($"<button type=\"submit\">{Encode(text)}</button>");
+
+    public static HtmlString Form(string action, HtmlString body, string? cssClass = null, string? style = null)
     {
         var classAttr = cssClass is null ? string.Empty : $" class=\"{Encode(cssClass)}\"";
         var styleAttr = style is null ? string.Empty : $" style=\"{Encode(style)}\"";
-        return $"""<form method="post" action="{Encode(action)}"{classAttr}{styleAttr}>{body}</form>""";
+        return new HtmlString.Safe($"""<form method="post" action="{Encode(action)}"{classAttr}{styleAttr}>{body.Render()}</form>""");
     }
 
-    public static string Button(string text) => $"<button type=\"submit\">{Encode(text)}</button>";
+    public static HtmlString Fieldset(string legend, HtmlString body) =>
+        new HtmlString.Safe($"""<fieldset><legend>{Encode(legend)}</legend>{body.Render()}</fieldset>""");
 
-    public static string Fieldset(string legend, string body) =>
-        $"""<fieldset><legend>{Encode(legend)}</legend>{body}</fieldset>""";
+    public static HtmlString Label(HtmlString body) => new HtmlString.Safe($"<label>{body.Render()}</label>");
 
-    public static string Label(string body) => $"<label>{body}</label>";
-
-    public static string Input(string name, string value = "", string? style = null)
+    public static HtmlString Input(string name, string value = "", string? style = null)
     {
         var styleAttr = style is null ? string.Empty : $" style=\"{Encode(style)}\"";
-        return $"""<input name="{Encode(name)}" value="{Encode(value)}"{styleAttr} />""";
+        return new HtmlString.Safe($"""<input name="{Encode(name)}" value="{Encode(value)}"{styleAttr} />""");
     }
 
-    public static string InputNumber(string name, string value, string min = "0", string? step = null)
+    public static HtmlString InputNumber(string name, string value, string min = "0", string? step = null)
     {
         var stepAttr = step is null ? string.Empty : $" step=\"{Encode(step)}\"";
-        return $"""<input name="{Encode(name)}" type="number"{stepAttr} min="{Encode(min)}" value="{Encode(value)}" />""";
+        return new HtmlString.Safe($"""<input name="{Encode(name)}" type="number"{stepAttr} min="{Encode(min)}" value="{Encode(value)}" />""");
     }
 
-    public static string InputEmail(string name, string value = "") =>
-        $"""<input type="email" name="{Encode(name)}" value="{Encode(value)}" />""";
+    public static HtmlString InputEmail(string name, string value = "") =>
+        new HtmlString.Safe($"""<input type="email" name="{Encode(name)}" value="{Encode(value)}" />""");
 
-    public static string InputPassword(string name) =>
-        $"""<input type="password" name="{Encode(name)}" />""";
+    public static HtmlString InputPassword(string name) =>
+        new HtmlString.Safe($"""<input type="password" name="{Encode(name)}" />""");
 
-    public static string InputHidden(string name, string value) =>
-        $"""<input type="hidden" name="{Encode(name)}" value="{Encode(value)}" />""";
+    public static HtmlString InputHidden(string name, string value) =>
+        new HtmlString.Safe($"""<input type="hidden" name="{Encode(name)}" value="{Encode(value)}" />""");
 
-    public static string InputCheckbox(string name, string value, bool isChecked) =>
-        $"""<input type="checkbox" name="{Encode(name)}" value="{Encode(value)}"{(isChecked ? " checked" : string.Empty)} />""";
+    public static HtmlString InputCheckbox(string name, string value, bool isChecked) =>
+        new HtmlString.Safe($"""<input type="checkbox" name="{Encode(name)}" value="{Encode(value)}"{(isChecked ? " checked" : string.Empty)} />""");
 
-    public static string Table(string body) => $"<table>{body}</table>";
+    public static HtmlString Table(HtmlString body) => new HtmlString.Safe($"<table>{body.Render()}</table>");
 
-    public static string Thead(string body) => $"<thead>{body}</thead>";
+    public static HtmlString Thead(HtmlString body) => new HtmlString.Safe($"<thead>{body.Render()}</thead>");
 
-    public static string Tbody(string body) => $"<tbody>{body}</tbody>";
+    public static HtmlString Tbody(HtmlString body) => new HtmlString.Safe($"<tbody>{body.Render()}</tbody>");
 
-    public static string Tr(string body) => $"<tr>{body}</tr>";
+    public static HtmlString Tr(HtmlString body) => new HtmlString.Safe($"<tr>{body.Render()}</tr>");
 
-    public static string Th(string body) => $"<th>{Encode(body)}</th>";
+    public static HtmlString Th(string text) => new HtmlString.Safe($"<th>{Encode(text)}</th>");
 
-    public static string Td(string body, int colspan = 1) =>
-        colspan > 1 ? $"""<td colspan="{colspan}">{body}</td>""" : $"<td>{body}</td>";
+    public static HtmlString Td(HtmlString body, int colspan = 1) =>
+        new HtmlString.Safe(colspan > 1
+            ? $"""<td colspan="{colspan}">{body.Render()}</td>"""
+            : $"<td>{body.Render()}</td>");
 
-    public static string Ul(IEnumerable<string> items) =>
-        "<ul>" + string.Join(string.Empty, items.Select(x => $"<li>{x}</li>")) + "</ul>";
+    public static HtmlString Ul(IEnumerable<HtmlString> items) =>
+        new HtmlString.Safe("<ul>" + string.Join(string.Empty, items.Select(x => $"<li>{x.Render()}</li>")) + "</ul>");
 
-    public static string Ol(IEnumerable<string> items) =>
-        "<ol>" + string.Join(string.Empty, items.Select(x => $"<li>{x}</li>")) + "</ol>";
+    public static HtmlString Ol(IEnumerable<HtmlString> items) =>
+        new HtmlString.Safe("<ol>" + string.Join(string.Empty, items.Select(x => $"<li>{x.Render()}</li>")) + "</ol>");
 
-    public static string Paragraphs(string text) =>
-        string.Join(string.Empty, text
+    public static HtmlString Paragraphs(string text) =>
+        new HtmlString.Safe(string.Join(string.Empty, text
             .Split("\n", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(x => P(Encode(x))));
+            .Select(x => P(Text(x)).Render())));
 }

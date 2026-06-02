@@ -13,7 +13,7 @@ public static class Middlewares
             env.Log.Error(ex);
             var t = env.T;
             return Response.Html(
-                Layout.Page(t("error.title"), Html.H1(t("error.heading")) + Html.P(t("error.message")), Guest.Instance, t),
+                Layout.Page(t("error.title"), Html.H1(t("error.heading")) + Html.P(Html.Text(t("error.message"))), Guest.Instance, t),
                 500);
         }
     };

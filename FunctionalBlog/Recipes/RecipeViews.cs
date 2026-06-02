@@ -8,23 +8,23 @@ public static class RecipeViews
         IReadOnlyDictionary<UserId, string> authorNames,
         Translate t)
     {
-        string RecipeHtml(Recipe recipe)
+        HtmlString RecipeHtml(Recipe recipe)
         {
             var authorName = authorNames.TryGetValue(recipe.AuthorId, out var name) ? name : "?";
             var content = Html.H2(Html.Link($"/recipes/{recipe.Id.Value}", recipe.Name.Value)) +
-                Html.Small($"{t("recipe.by")} {Html.Encode(authorName)} · {t(DifficultyKey(recipe.Difficulty))} · {recipe.Portions} {t("recipe.portions")}") +
-                Html.P(Html.Encode(recipe.Description.Value));
+                Html.Small($"{t("recipe.by")} {authorName} · {t(DifficultyKey(recipe.Difficulty))} · {recipe.Portions} {t("recipe.portions")}") +
+                Html.P(Html.Text(recipe.Description.Value));
             return Html.Article(content);
         }
 
         var items = recipes.Count == 0
-            ? Html.P(t("recipe.no_recipes"))
-            : string.Join(string.Empty, recipes.Select(RecipeHtml));
+            ? Html.P(Html.Text(t("recipe.no_recipes")))
+            : HtmlString.Concat(recipes.Select(RecipeHtml));
 
         var body = Html.H1(t("recipe.title")) +
             (principal.Can<Create>(new RecipeResource())
                 ? Html.P(Html.Link("/recipes/new", t("recipe.new_recipe")))
-                : string.Empty) +
+                : HtmlString.Empty) +
             items;
 
         return Layout.Page(t("recipe.title"), body, principal, t);
@@ -38,54 +38,54 @@ public static class RecipeViews
         Translate t)
     {
         var tags = recipe.Tags.Count > 0
-            ? Html.P(string.Join(", ", recipe.Tags.Select(tag => Html.Encode(tag.Value))))
-            : string.Empty;
+            ? Html.P(HtmlString.Join(", ", recipe.Tags.Select(tag => Html.Text(tag.Value))))
+            : HtmlString.Empty;
 
         var images = recipe.Images.Count > 0
-            ? string.Concat(recipe.Images.Select(url => $"""<img src="{Html.Encode(url)}" alt="{Html.Encode(recipe.Name.Value)}" />"""))
-            : string.Empty;
+            ? HtmlString.Concat(recipe.Images.Select(url => Html.Raw($"""<img src="{Html.Encode(url)}" alt="{Html.Encode(recipe.Name.Value)}" />""")))
+            : HtmlString.Empty;
 
         var steps = recipe.PreparationSteps.Count > 0
-            ? Html.Ol(recipe.PreparationSteps.OrderBy(s => s.SortOrder).Select(s => Html.Encode(s.Text)))
-            : Html.P(t("recipe.no_steps"));
+            ? Html.Ol(recipe.PreparationSteps.OrderBy(s => s.SortOrder).Select(s => Html.Text(s.Text)))
+            : Html.P(Html.Text(t("recipe.no_steps")));
 
-        var ingredientRows = string.Concat(recipe.Ingredients.Select(ri =>
+        var ingredientRows = HtmlString.Concat(recipe.Ingredients.Select(ri =>
         {
-            var name = ingredientMap.TryGetValue(ri.IngredientId, out var ing) ? Html.Encode(ing.Name.Value) : "?";
-            return Html.Tr(Html.Td($"{ri.Amount:G29} {Html.Encode(ri.Unit.Abbreviation)}") + Html.Td(name));
+            var name = ingredientMap.TryGetValue(ri.IngredientId, out var ing) ? Html.Text(ing.Name.Value) : Html.Raw("?");
+            return Html.Tr(Html.Td(Html.Raw($"{ri.Amount:G29} ") + Html.Text(ri.Unit.Abbreviation)) + Html.Td(name));
         }));
         var ingredientTable = recipe.Ingredients.Count > 0
             ? Html.Table(Html.Tbody(ingredientRows))
-            : string.Empty;
+            : HtmlString.Empty;
 
         var hints = recipe.Hints.Count > 0
-            ? Html.Ul(recipe.Hints.Select(h => Html.Encode(h.Text)))
-            : string.Empty;
+            ? Html.Ul(recipe.Hints.Select(h => Html.Text(h.Text)))
+            : HtmlString.Empty;
 
         var meta = Html.Small(
-            $"{t("recipe.by")} {Html.Encode(authorName)} · " +
+            $"{t("recipe.by")} {authorName} · " +
             $"{t(DifficultyKey(recipe.Difficulty))} · " +
             $"{recipe.Portions} {t("recipe.portions")}");
 
         var editLink = principal.Can<Edit>(new RecipeResource())
-            ? " · " + Html.Link($"/recipes/{recipe.Id.Value}/edit", t("recipe.edit_link"))
-            : string.Empty;
+            ? Html.Raw(" · ") + Html.Link($"/recipes/{recipe.Id.Value}/edit", t("recipe.edit_link"))
+            : HtmlString.Empty;
 
         var deleteForm = principal.Can<Delete>(new RecipeResource())
-            ? Html.Form($"/recipes/{recipe.Id.Value}/delete", " · " + Html.Button(t("common.delete")), style: "display:inline")
-            : string.Empty;
+            ? Html.Form($"/recipes/{recipe.Id.Value}/delete", Html.Raw(" · ") + Html.Button(t("common.delete")), style: "display:inline")
+            : HtmlString.Empty;
 
         var body = Html.P(Html.Link("/recipes", t("common.back")) + editLink + deleteForm) +
             Html.H1(recipe.Name.Value) +
             meta +
             tags +
             images +
-            Html.P(Html.Encode(recipe.Description.Value)) +
-            Html.H2(t("recipe.preparation")) +
+            Html.P(Html.Text(recipe.Description.Value)) +
+            Html.H2(Html.Text(t("recipe.preparation"))) +
             steps +
-            Html.H2(t("recipe.ingredients")) +
+            Html.H2(Html.Text(t("recipe.ingredients"))) +
             ingredientTable +
-            (recipe.Hints.Count > 0 ? Html.H2(t("recipe.hints")) + hints : string.Empty);
+            (recipe.Hints.Count > 0 ? Html.H2(Html.Text(t("recipe.hints"))) + hints : HtmlString.Empty);
 
         return Layout.Page(recipe.Name.Value, body, principal, t);
     }
@@ -107,8 +107,8 @@ public static class RecipeViews
         string titleKey = "recipe.new_title")
     {
         var errorHtml = errors.Count == 0
-            ? string.Empty
-            : Html.Div("errors", Html.Ul(errors.Select(key => t(key))));
+            ? HtmlString.Empty
+            : Html.Div("errors", Html.Ul(errors.Select(key => Html.Text(t(key)))));
 
         var difficultyOptions = string.Concat(Enum.GetValues<Difficulty>().Select(d =>
         {
@@ -117,15 +117,15 @@ public static class RecipeViews
         }));
 
         var formBody =
-            """<button type="submit" hidden></button>""" +
-            Html.Label(Html.Encode(t("recipe.field.name")) + Html.Input("name", name)) +
-            Html.Label(Html.Encode(t("recipe.field.description")) + $"""<textarea name="description" rows="3">{Html.Encode(description)}</textarea>""") +
-            Html.Label(Html.Encode(t("recipe.field.portions")) + Html.InputNumber("portions", portions, min: "1")) +
-            Html.Label(Html.Encode(t("recipe.field.difficulty")) + $"""<select name="difficulty">{difficultyOptions}</select>""") +
-            Html.Label(Html.Encode(t("recipe.field.tags")) + Html.Input("tags", tags)) +
-            IngredientSection(ingredients, availableIngredients, t) +
-            StepSection(steps, t) +
-            Html.Label(Html.Encode(t("recipe.field.hints")) + $"""<textarea name="hints" rows="4">{Html.Encode(hints)}</textarea>""") +
+            Html.Raw("""<button type="submit" hidden></button>""") +
+            Html.Label(Html.Text(t("recipe.field.name")) + Html.Input("name", name)) +
+            Html.Label(Html.Text(t("recipe.field.description")) + Html.Raw($"""<textarea name="description" rows="3">{Html.Encode(description)}</textarea>""")) +
+            Html.Label(Html.Text(t("recipe.field.portions")) + Html.InputNumber("portions", portions, min: "1")) +
+            Html.Label(Html.Text(t("recipe.field.difficulty")) + Html.Raw($"""<select name="difficulty">{difficultyOptions}</select>""")) +
+            Html.Label(Html.Text(t("recipe.field.tags")) + Html.Input("tags", tags)) +
+            Html.Raw(IngredientSection(ingredients, availableIngredients, t)) +
+            Html.Raw(StepSection(steps, t)) +
+            Html.Label(Html.Text(t("recipe.field.hints")) + Html.Raw($"""<textarea name="hints" rows="4">{Html.Encode(hints)}</textarea>""")) +
             Html.Button(t("recipe.submit"));
         var form = Html.Form(formAction, formBody);
 
@@ -197,7 +197,7 @@ public static class RecipeViews
             var label = Html.Encode($"{t("recipe.field.step")} {i + 1}");
             return $"""
                 <div class="step-row" id="step-row-{i}">
-                    {Html.Label(label + $"<textarea name=\"step_{i}\" rows=\"2\">{Html.Encode(text)}</textarea>")}
+                    {Html.Label(Html.Raw(label) + Html.Raw($"<textarea name=\"step_{i}\" rows=\"2\">{Html.Encode(text)}</textarea>"))}
                     <button type="submit" name="action" value="remove-step-{i}"
                             hx-post="/recipes/form/steps"
                             hx-target="#steps-section"

@@ -9,6 +9,9 @@
 		<EmbeddedResource Include="wwwroot\htmx.min.js" />
 	</ItemGroup>
 	<ItemGroup>
+		<PackageReference Include="Funcky.DiscriminatedUnion" PrivateAssets="all" />
+	</ItemGroup>
+	<ItemGroup>
 		<ProjectReference Include="..\FunctionalBlog.Application\FunctionalBlog.Application.csproj" />
 		<ProjectReference Include="..\FunctionalBlog.DataAccess.Sqlite\FunctionalBlog.DataAccess.Sqlite.csproj" />
 		<ProjectReference Include="..\FunctionalBlog.Pipeline\FunctionalBlog.Pipeline.csproj" />
