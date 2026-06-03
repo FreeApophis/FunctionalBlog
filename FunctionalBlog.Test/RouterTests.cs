@@ -289,6 +289,19 @@ public class RouterTests
         Assert.Equal("/login", response.Headers["Location"]);
     }
 
+    [Fact]
+    public async Task Post_delete_rule_redirects_guest_to_login()
+    {
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request(HttpMethod.Post, "/admin/roles/1/rules/delete", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
     private static Env BuildEnv() => new(
         Articles: new InMemoryArticleRepository(),
         Users: new InMemoryUserRepository(),

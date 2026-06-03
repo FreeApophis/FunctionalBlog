@@ -48,6 +48,7 @@ public static class Routes
         .Post("/admin/roles", Auth.RequirePermission<Create>(new RoleResource(), AdminHandlers.CreateRole))
         .Get("/admin/roles/{id}", p => Auth.RequirePermission<Manage>(new RoleResource(), AdminHandlers.RoleDetail(int.Parse(p[0]))))
         .Post("/admin/roles/{id}/rules", p => Auth.RequirePermission<Manage>(new RuleResource(), AdminHandlers.AddRule(int.Parse(p[0]))))
+        .Post("/admin/roles/{id}/rules/delete", p => Auth.RequirePermission<Manage>(new RuleResource(), AdminHandlers.DeleteRule(int.Parse(p[0]))))
         .Post("/admin/roles/{id}/delete", p => Auth.RequirePermission<Manage>(new RoleResource(), AdminHandlers.DeleteRole(int.Parse(p[0]))))
         .Get("/admin/translations/export.json", Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.Export))
         .Get("/admin/translations", Auth.RequirePermission<Manage>(new UserResource(), TranslationHandlers.List))
