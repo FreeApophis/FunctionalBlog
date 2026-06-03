@@ -2,11 +2,13 @@ namespace FunctionalBlog.Ingredients;
 
 public static class AdminIngredientViews
 {
-    public static string List(IReadOnlyList<Ingredient> ingredients, IPrincipal principal, Translate t, string error = "")
+    public static string List(IReadOnlyList<Ingredient> ingredients, ViewContext ctx, string error = "")
     {
+        var (_, t, csrfToken) = ctx;
+
         HtmlString Row(Ingredient ing)
         {
-            var deleteForm = Html.Form($"/admin/ingredients/{ing.Id.Value}/delete", Html.Button(t("common.delete")), style: "display:inline");
+            var deleteForm = Html.Form($"/admin/ingredients/{ing.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Button(t("common.delete")), style: "display:inline");
             return Html.Tr(
                 Html.Td(Html.Text(ing.Name.Value)) +
                 Html.Td(Html.Text(ing.Description)) +
@@ -26,11 +28,11 @@ public static class AdminIngredientViews
 
         var body = Html.H1(t("ingredient.list_title")) +
             Html.P(Html.Link("/admin/ingredients/new", t("ingredient.new_ingredient"))) +
-            Html.P(Html.Link("/admin/users", "← Admin")) +
+            Html.P(Html.Link("/admin/users", t("common.back_to_admin"))) +
             errorHtml +
             (ingredients.Count == 0 ? Html.P(Html.Text(t("ingredient.no_ingredients"))) : table);
 
-        return Layout.Page(t("ingredient.list_title"), body, principal, t);
+        return Layout.Page(t("ingredient.list_title"), body, ctx);
     }
 
     public static string Form(
@@ -46,11 +48,12 @@ public static class AdminIngredientViews
         string carbohydrates,
         string sugar,
         string fiber,
-        IPrincipal principal,
-        Translate t,
+        ViewContext ctx,
         string formAction = "/admin/ingredients",
         string titleKey = "ingredient.new_title")
     {
+        var (_, t, csrfToken) = ctx;
+
         var errorHtml = errors.Count == 0
             ? HtmlString.Empty
             : Html.Div("errors", Html.Ul(errors.Select(key => Html.Text(t(key)))));
@@ -59,6 +62,7 @@ public static class AdminIngredientViews
             Html.Label(Html.Text(translate(labelKey)) + Html.InputNumber(fieldName, value, min: min, step: step));
 
         var formBody =
+            Html.CsrfField(csrfToken) +
             Html.Label(Html.Text(t("ingredient.field.name")) + Html.Input("name", name)) +
             Html.Label(Html.Text(t("ingredient.field.description")) + Html.Raw($"""<textarea name="description" rows="2">{Html.Encode(description)}</textarea>""")) +
             Html.Label(Html.Text(t("ingredient.field.image")) + Html.Input("image", image)) +
@@ -78,6 +82,6 @@ public static class AdminIngredientViews
             errorHtml +
             form;
 
-        return Layout.Page(t(titleKey), body, principal, t);
+        return Layout.Page(t(titleKey), body, ctx);
     }
 }

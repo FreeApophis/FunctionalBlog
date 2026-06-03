@@ -13,6 +13,6 @@ public static class Auth
             ? inner(request)(env)
             : ValueTask.FromResult(
                 env.CurrentUser.IsAuthenticated
-                    ? Response.Forbidden()
+                    ? Response.Forbidden(env.Ctx)
                     : Response.Redirect("/login"));
 }

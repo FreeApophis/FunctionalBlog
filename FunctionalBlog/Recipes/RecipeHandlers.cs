@@ -9,19 +9,19 @@ public static class RecipeHandlers
         var recipes = await env.Recipes.All();
         var users = await env.Users.All();
         var authorNames = users.ToDictionary(u => u.Id, u => u.DisplayName.Value);
-        return Response.Html(RecipeViews.Index(recipes, env.CurrentUser, authorNames, env.T));
+        return Response.Html(RecipeViews.Index(recipes, authorNames, env.Ctx));
     };
 
     public static App ShowRecipe(RecipeId id) => _ => async env =>
         await (await env.Recipes.Find(id)).Match(
-            none: () => Task.FromResult(Response.NotFound()),
+            none: () => Task.FromResult(Response.NotFound(env.Ctx)),
             some: async recipe =>
             {
                 var authorName = (await env.Users.FindById(recipe.AuthorId))
                     .Select(u => u.DisplayName.Value)
                     .GetOrElse("?");
                 var ingredients = (await env.Ingredients.All()).ToDictionary(i => i.Id);
-                return Response.Html(RecipeViews.Show(recipe, env.CurrentUser, authorName, ingredients, env.T));
+                return Response.Html(RecipeViews.Show(recipe, authorName, ingredients, env.Ctx));
             });
 
     public static App NewRecipeForm => _ => async env =>
@@ -38,8 +38,7 @@ public static class RecipeHandlers
             ingredients: [(string.Empty, string.Empty, "g")],
             steps: [string.Empty],
             availableIngredients: availableIngredients,
-            principal: env.CurrentUser,
-            t: env.T));
+            ctx: env.Ctx));
     };
 
     public static App CreateRecipe => request => async env =>
@@ -72,8 +71,7 @@ public static class RecipeHandlers
                 formIngredients,
                 formSteps,
                 availableIngredients,
-                env.CurrentUser,
-                env.T));
+                env.Ctx));
         }
 
         if (action == "add-step" || action.StartsWith("remove-step-"))
@@ -101,8 +99,7 @@ public static class RecipeHandlers
                 formIngredients,
                 formSteps,
                 availableIngredients,
-                env.CurrentUser,
-                env.T));
+                env.Ctx));
         }
 
         return await RecipeForm.Decode(request).Match(
@@ -118,8 +115,7 @@ public static class RecipeHandlers
                     RecipeForm.ParseIngredients(request),
                     RecipeForm.ParseRawSteps(request),
                     availableIngredients,
-                    env.CurrentUser,
-                    env.T),
+                    env.Ctx),
                 400)),
             success: async s =>
             {
@@ -186,7 +182,7 @@ public static class RecipeHandlers
     {
         if ((await env.Recipes.Find(id)) == Option<Recipe>.None)
         {
-            return Response.NotFound();
+            return Response.NotFound(env.Ctx);
         }
 
         await env.Recipes.Delete(id);
@@ -196,7 +192,7 @@ public static class RecipeHandlers
 
     public static App EditRecipeForm(RecipeId id) => _ => async env =>
         await (await env.Recipes.Find(id)).Match(
-            none: () => Task.FromResult(Response.NotFound()),
+            none: () => Task.FromResult(Response.NotFound(env.Ctx)),
             some: async recipe =>
             {
                 var availableIngredients = await env.Ingredients.All();
@@ -221,8 +217,7 @@ public static class RecipeHandlers
                     ingredients: ingredients,
                     steps: steps,
                     availableIngredients: availableIngredients,
-                    principal: env.CurrentUser,
-                    t: env.T,
+                    ctx: env.Ctx,
                     formAction: $"/recipes/{id.Value}",
                     titleKey: "recipe.edit_title"));
             });
@@ -231,7 +226,7 @@ public static class RecipeHandlers
     {
         if ((await env.Recipes.Find(id)) is not [var existing])
         {
-            return Response.NotFound();
+            return Response.NotFound(env.Ctx);
         }
 
         var action = request.Form.GetValueOrDefault("action", string.Empty);
@@ -263,8 +258,7 @@ public static class RecipeHandlers
                 formIngredients,
                 formSteps,
                 availableIngredients,
-                env.CurrentUser,
-                env.T,
+                env.Ctx,
                 formAction,
                 "recipe.edit_title"));
         }
@@ -294,8 +288,7 @@ public static class RecipeHandlers
                 formIngredients,
                 formSteps,
                 availableIngredients,
-                env.CurrentUser,
-                env.T,
+                env.Ctx,
                 formAction,
                 "recipe.edit_title"));
         }
@@ -313,8 +306,7 @@ public static class RecipeHandlers
                     RecipeForm.ParseIngredients(request),
                     RecipeForm.ParseRawSteps(request),
                     availableIngredients,
-                    env.CurrentUser,
-                    env.T,
+                    env.Ctx,
                     formAction,
                     "recipe.edit_title"),
                 400)),

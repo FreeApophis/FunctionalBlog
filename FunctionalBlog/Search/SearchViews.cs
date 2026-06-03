@@ -2,23 +2,24 @@ namespace FunctionalBlog.Search;
 
 public static class SearchViews
 {
-    public static string Empty(IPrincipal principal, Translate t)
+    public static string Empty(ViewContext ctx)
     {
+        var (_, t, _) = ctx;
         var body =
             Html.H1(t("search.title")) +
             SearchForm(string.Empty, t) +
             Html.P(Html.Text(t("search.prompt")));
 
-        return Layout.Page(t("search.title"), body, principal, t);
+        return Layout.Page(t("search.title"), body, ctx);
     }
 
     public static string Results(
         string query,
         IReadOnlyList<SearchResult> results,
         IReadOnlyList<string> suggestions,
-        IPrincipal principal,
-        Translate t)
+        ViewContext ctx)
     {
+        var (_, t, _) = ctx;
         var form = SearchForm(query, t);
 
         var header = results.Count == 0
@@ -34,11 +35,11 @@ public static class SearchViews
 
         var resultList = results.Count == 0
             ? HtmlString.Empty
-            : Html.Ul(results.Select(ResultItem));
+            : Html.Ul(results.Select(r => ResultItem(r, t)));
 
         var body = Html.H1(t("search.title")) + form + header + suggestionHtml + resultList;
 
-        return Layout.Page(t("search.title"), body, principal, t);
+        return Layout.Page(t("search.title"), body, ctx);
     }
 
     private static HtmlString SearchForm(string query, Translate t) =>
@@ -47,13 +48,13 @@ public static class SearchViews
         Html.Button(t("search.submit")) +
         Html.Raw("</form>");
 
-    private static HtmlString ResultItem(SearchResult result)
+    private static HtmlString ResultItem(SearchResult result, Translate t)
     {
         var typeBadge = result.Type switch
         {
-            "article" => "Artikel",
-            "recipe" => "Rezept",
-            "ingredient" => "Zutat",
+            "article" => t("search.type.article"),
+            "recipe" => t("search.type.recipe"),
+            "ingredient" => t("search.type.ingredient"),
             _ => result.Type,
         };
 

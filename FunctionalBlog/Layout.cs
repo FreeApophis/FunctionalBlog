@@ -2,9 +2,8 @@ namespace FunctionalBlog;
 
 public static class Layout
 {
-    public static string Page(string title, HtmlString body, IPrincipal principal, Translate? t = null)
+    public static string Page(string title, HtmlString body, ViewContext ctx)
     {
-        var translate = t ?? (key => key);
         return $$"""
         <!doctype html>
         <html lang="de">
@@ -16,7 +15,7 @@ public static class Layout
             <script src="/htmx.min.js" defer></script>
         </head>
         <body>
-            {{NavViews.Nav(principal, translate)}}
+            {{NavViews.Nav(ctx)}}
             <main>{{body.Render()}}</main>
         </body>
         </html>
@@ -24,5 +23,5 @@ public static class Layout
     }
 
     public static string Page(string title, HtmlString body) =>
-        Page(title, body, Guest.Instance);
+        Page(title, body, ViewContext.ForGuest());
 }

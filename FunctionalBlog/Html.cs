@@ -62,6 +62,8 @@ public static class Html
     public static HtmlString InputHidden(string name, string value) =>
         new HtmlString.Safe($"""<input type="hidden" name="{Encode(name)}" value="{Encode(value)}" />""");
 
+    public static HtmlString CsrfField(string token) => InputHidden("_csrf", token);
+
     public static HtmlString InputCheckbox(string name, string value, bool isChecked) =>
         new HtmlString.Safe($"""<input type="checkbox" name="{Encode(name)}" value="{Encode(value)}"{(isChecked ? " checked" : string.Empty)} />""");
 

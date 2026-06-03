@@ -30,11 +30,19 @@ public sealed record Response(
             new Dictionary<string, string> { ["Location"] = location },
             "Redirecting...");
 
-    public static Response Forbidden() =>
-        Html(Layout.Page("403", FunctionalBlog.Html.H1("Keine Berechtigung") + FunctionalBlog.Html.P(FunctionalBlog.Html.Text("Sie haben keine Berechtigung für diese Seite."))), 403);
+    public static Response Forbidden(ViewContext? ctx = null)
+    {
+        var resolved = ctx ?? ViewContext.ForGuest();
+        var t = resolved.T;
+        return Html(Layout.Page(t("error.forbidden_heading"), FunctionalBlog.Html.H1(t("error.forbidden_heading")) + FunctionalBlog.Html.P(FunctionalBlog.Html.Text(t("error.forbidden_message"))), resolved), 403);
+    }
 
-    public static Response NotFound() =>
-        Html(Layout.Page("404", FunctionalBlog.Html.H1("Nicht gefunden") + FunctionalBlog.Html.P(FunctionalBlog.Html.Text("Diese Seite existiert nicht."))), 404);
+    public static Response NotFound(ViewContext? ctx = null)
+    {
+        var resolved = ctx ?? ViewContext.ForGuest();
+        var t = resolved.T;
+        return Html(Layout.Page(t("error.notfound_heading"), FunctionalBlog.Html.H1(t("error.notfound_heading")) + FunctionalBlog.Html.P(FunctionalBlog.Html.Text(t("error.notfound_message"))), resolved), 404);
+    }
 
     public static Response JsonDownload(string filename, string body) =>
         new(

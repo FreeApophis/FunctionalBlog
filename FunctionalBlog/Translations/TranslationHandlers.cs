@@ -7,7 +7,7 @@ public static class TranslationHandlers
     public static App List => _ => async env =>
     {
         var all = env.Translations is not null ? await env.Translations.All() : [];
-        return Response.Html(TranslationViews.List(all, env.CurrentUser, env.T));
+        return Response.Html(TranslationViews.List(all, env.Ctx));
     };
 
     public static App Save(string encodedKey, string language) => request => async env =>

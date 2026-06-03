@@ -2,8 +2,10 @@ namespace FunctionalBlog.Articles;
 
 public static class BlogViews
 {
-    public static string Index(IReadOnlyList<Article> articles, IPrincipal principal, IReadOnlyDictionary<UserId, string> authorNames, Translate t)
+    public static string Index(IReadOnlyList<Article> articles, IReadOnlyDictionary<UserId, string> authorNames, ViewContext ctx)
     {
+        var (principal, t, _) = ctx;
+
         HtmlString ArticleHtml(Article article)
         {
             var authorName = authorNames
@@ -26,17 +28,19 @@ public static class BlogViews
                 : HtmlString.Empty) +
             items;
 
-        return Layout.Page(t("blog.title"), body, principal, t);
+        return Layout.Page(t("blog.title"), body, ctx);
     }
 
-    public static string Show(Article article, IPrincipal principal, string authorName, Translate t)
+    public static string Show(Article article, string authorName, ViewContext ctx)
     {
+        var (principal, t, csrfToken) = ctx;
+
         var editLink = principal.Can<Edit>(new ArticleResource())
             ? Html.Raw(" · ") + Html.Link($"/articles/{article.Id.Value}/edit", t("common.edit"))
             : HtmlString.Empty;
 
         var deleteForm = principal.Can<Delete>(new ArticleResource())
-            ? Html.Form($"/articles/{article.Id.Value}/delete", Html.Raw(" · ") + Html.Button(t("common.delete")), style: "display:inline")
+            ? Html.Form($"/articles/{article.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Raw(" · ") + Html.Button(t("common.delete")), style: "display:inline")
             : HtmlString.Empty;
 
         var body = Html.P(Html.Link("/", t("common.back")) + editLink + deleteForm) +
@@ -45,7 +49,7 @@ public static class BlogViews
             Html.P(Html.Text(article.Teaser.Value)) +
             Html.Div("post-text", Html.Paragraphs(article.Text.Value));
 
-        return Layout.Page(article.Title.Value, body, principal, t);
+        return Layout.Page(article.Title.Value, body, ctx);
     }
 
     public static string Form(
@@ -53,16 +57,18 @@ public static class BlogViews
         string title,
         string teaser,
         string text,
-        IPrincipal principal,
-        Translate t,
+        ViewContext ctx,
         string formAction = "/articles",
         string titleKey = "article.new_title")
     {
+        var (_, t, csrfToken) = ctx;
+
         var errorHtml = errors.Count == 0
             ? HtmlString.Empty
             : Html.Div("errors", Html.Ul(errors.Select(key => Html.Text(t(key)))));
 
         var formBody =
+            Html.CsrfField(csrfToken) +
             Html.Label(Html.Text(t("article.field.title")) + Html.Input("title", title)) +
             Html.Label(Html.Text(t("article.field.teaser")) + Html.Raw($"""<textarea name="teaser" rows="3">{Html.Encode(teaser)}</textarea>""")) +
             Html.Label(Html.Text(t("article.field.text")) + Html.Raw($"""<textarea name="text" rows="10">{Html.Encode(text)}</textarea>""")) +
@@ -74,6 +80,6 @@ public static class BlogViews
             errorHtml +
             form;
 
-        return Layout.Page(t(titleKey), body, principal, t);
+        return Layout.Page(t(titleKey), body, ctx);
     }
 }

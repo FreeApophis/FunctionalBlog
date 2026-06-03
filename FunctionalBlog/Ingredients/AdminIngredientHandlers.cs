@@ -8,7 +8,7 @@ public static class AdminIngredientHandlers
     {
         var ingredients = await env.Ingredients.All();
         var error = request.Query.GetValueOrDefault("error", string.Empty);
-        return Response.Html(AdminIngredientViews.List(ingredients, env.CurrentUser, env.T, error));
+        return Response.Html(AdminIngredientViews.List(ingredients, env.Ctx, error));
     };
 
     public static App Delete(IngredientId id) => _ => async env =>
@@ -26,7 +26,7 @@ public static class AdminIngredientHandlers
             return Response.Redirect("/admin/ingredients");
         }
 
-        return Response.NotFound();
+        return Response.NotFound(env.Ctx);
     };
 
     public static App NewForm => _ => env =>
@@ -43,8 +43,7 @@ public static class AdminIngredientHandlers
             carbohydrates: "0",
             sugar: "0",
             fiber: "0",
-            principal: env.CurrentUser,
-            t: env.T)));
+            ctx: env.Ctx)));
 
     public static App Create => request => async env =>
         await IngredientForm.Decode(request).Match(
@@ -62,8 +61,7 @@ public static class AdminIngredientHandlers
                     request.Form.GetValueOrNone("carbohydrates").GetOrElse(string.Empty),
                     request.Form.GetValueOrNone("sugar").GetOrElse(string.Empty),
                     request.Form.GetValueOrNone("fiber").GetOrElse(string.Empty),
-                    env.CurrentUser,
-                    env.T),
+                    env.Ctx),
                 400)),
             success: async s =>
             {
@@ -77,7 +75,7 @@ public static class AdminIngredientHandlers
     {
         if ((await env.Ingredients.Find(id)) is not [var ingredient])
         {
-            return Response.NotFound();
+            return Response.NotFound(env.Ctx);
         }
 
         return Response.Html(AdminIngredientViews.Form(
@@ -93,8 +91,7 @@ public static class AdminIngredientHandlers
             carbohydrates: ingredient.Carbohydrates.ToString(CultureInfo.InvariantCulture),
             sugar: ingredient.Sugar.ToString(CultureInfo.InvariantCulture),
             fiber: ingredient.Fiber.ToString(CultureInfo.InvariantCulture),
-            principal: env.CurrentUser,
-            t: env.T,
+            ctx: env.Ctx,
             formAction: $"/admin/ingredients/{id.Value}",
             titleKey: "ingredient.edit_title"));
     };
@@ -103,7 +100,7 @@ public static class AdminIngredientHandlers
     {
         if ((await env.Ingredients.Find(id)) is not [_])
         {
-            return Response.NotFound();
+            return Response.NotFound(env.Ctx);
         }
 
         return await IngredientForm.Decode(request).Match(
@@ -121,8 +118,7 @@ public static class AdminIngredientHandlers
                     request.Form.GetValueOrNone("carbohydrates").GetOrElse(string.Empty),
                     request.Form.GetValueOrNone("sugar").GetOrElse(string.Empty),
                     request.Form.GetValueOrNone("fiber").GetOrElse(string.Empty),
-                    env.CurrentUser,
-                    env.T,
+                    env.Ctx,
                     formAction: $"/admin/ingredients/{id.Value}",
                     titleKey: "ingredient.edit_title"),
                 400)),

@@ -6,7 +6,7 @@ public static class UserSettingsHandlers
     {
         var user = (AuthenticatedUser)env.CurrentUser;
         return ValueTask.FromResult(Response.Html(
-            UserSettingsViews.Settings(user, [], env.CurrentUser, env.T)));
+            UserSettingsViews.Settings(user, [], env.Ctx)));
     };
 
     public static App ChangePassword => request => async env =>
@@ -15,14 +15,14 @@ public static class UserSettingsHandlers
 
         return await ChangePasswordForm.Decode(request).Match(
             failure: f => Task.FromResult(Response.Html(
-                UserSettingsViews.Settings(user, f.Error, env.CurrentUser, env.T), 400)),
+                UserSettingsViews.Settings(user, f.Error, env.Ctx), 400)),
             success: async s =>
             {
                 if ((await env.Users.FindById(user.Id)) is not [var stored] ||
                     !env.PasswordHasher.Verify(s.Value.CurrentPassword, stored.PasswordHash))
                 {
                     return Response.Html(
-                        UserSettingsViews.Settings(user, ["auth.error.current_password_wrong"], env.CurrentUser, env.T),
+                        UserSettingsViews.Settings(user, ["auth.error.current_password_wrong"], env.Ctx),
                         400);
                 }
 

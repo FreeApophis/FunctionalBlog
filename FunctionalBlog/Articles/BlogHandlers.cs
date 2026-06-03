@@ -7,7 +7,7 @@ public static class BlogHandlers
         var articles = await env.Articles.All();
         var users = await env.Users.All();
         var authorNames = users.ToDictionary(u => u.Id, u => u.DisplayName.Value);
-        return Response.Html(BlogViews.Index(articles, env.CurrentUser, authorNames, env.T));
+        return Response.Html(BlogViews.Index(articles, authorNames, env.Ctx));
     };
 
     public static App ShowArticle(ArticleId id) => _ => async env =>
@@ -18,14 +18,14 @@ public static class BlogHandlers
                 .Select(u => u.DisplayName.Value)
                 .GetOrElse("?");
 
-            return Response.Html(BlogViews.Show(article, env.CurrentUser, authorName, env.T));
+            return Response.Html(BlogViews.Show(article, authorName, env.Ctx));
         }
 
-        return Response.NotFound();
+        return Response.NotFound(env.Ctx);
     };
 
     public static App NewArticleForm => _ => env =>
-        ValueTask.FromResult(Response.Html(BlogViews.Form([], string.Empty, string.Empty, string.Empty, env.CurrentUser, env.T)));
+        ValueTask.FromResult(Response.Html(BlogViews.Form([], string.Empty, string.Empty, string.Empty, env.Ctx)));
 
     public static App CreateArticle => request => async env =>
         await ArticleForm.Decode(request).Match(
@@ -35,8 +35,7 @@ public static class BlogHandlers
                     request.Form.GetValueOrNone("title").GetOrElse(string.Empty),
                     request.Form.GetValueOrNone("teaser").GetOrElse(string.Empty),
                     request.Form.GetValueOrNone("text").GetOrElse(string.Empty),
-                    env.CurrentUser,
-                    env.T),
+                    env.Ctx),
                 400)),
             success: async s =>
             {
@@ -63,13 +62,12 @@ public static class BlogHandlers
                 article.Title.Value,
                 article.Teaser.Value,
                 article.Text.Value,
-                env.CurrentUser,
-                env.T,
+                env.Ctx,
                 formAction: $"/articles/{id.Value}",
                 titleKey: "article.edit_title"));
         }
 
-        return Response.NotFound();
+        return Response.NotFound(env.Ctx);
     };
 
     public static App DeleteArticle(ArticleId id) => _ => async env =>
@@ -81,14 +79,14 @@ public static class BlogHandlers
             return Response.Redirect("/");
         }
 
-        return Response.NotFound();
+        return Response.NotFound(env.Ctx);
     };
 
     public static App UpdateArticle(ArticleId id) => request => async env =>
     {
         if ((await env.Articles.Find(id)) is not [var existing])
         {
-            return Response.NotFound();
+            return Response.NotFound(env.Ctx);
         }
 
         return await ArticleForm.Decode(request).Match(
@@ -98,8 +96,7 @@ public static class BlogHandlers
                     request.Form.GetValueOrNone("title").GetOrElse(string.Empty),
                     request.Form.GetValueOrNone("teaser").GetOrElse(string.Empty),
                     request.Form.GetValueOrNone("text").GetOrElse(string.Empty),
-                    env.CurrentUser,
-                    env.T,
+                    env.Ctx,
                     formAction: $"/articles/{id.Value}",
                     titleKey: "article.edit_title"),
                 400)),

@@ -8,13 +8,13 @@ public static class SearchHandlers
 
         if (string.IsNullOrEmpty(q) || env.Search is null)
         {
-            return ValueTask.FromResult(Response.Html(SearchViews.Empty(env.CurrentUser, env.T)));
+            return ValueTask.FromResult(Response.Html(SearchViews.Empty(env.Ctx)));
         }
 
         var results = env.Search.Search(q);
         var suggestions = results.Count < 3 ? env.Search.Suggestions(q) : [];
 
         return ValueTask.FromResult(Response.Html(
-            SearchViews.Results(q, results, suggestions, env.CurrentUser, env.T)));
+            SearchViews.Results(q, results, suggestions, env.Ctx)));
     };
 }

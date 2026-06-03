@@ -2,8 +2,10 @@ namespace FunctionalBlog.Translations;
 
 public static class TranslationViews
 {
-    public static string List(IReadOnlyList<Translation> translations, IPrincipal principal, Translate t)
+    public static string List(IReadOnlyList<Translation> translations, ViewContext ctx)
     {
+        var (_, t, csrfToken) = ctx;
+
         var grouped = translations
             .GroupBy(tr => tr.Key)
             .OrderBy(g => g.Key)
@@ -19,7 +21,7 @@ public static class TranslationViews
                 var text = entry?.Text ?? string.Empty;
                 var form = Html.Form(
                     $"/admin/translations/{Uri.EscapeDataString(group.Key)}/{lang}",
-                    Html.Input("text", text, style: "width:100%") + Html.Button(t("translations.save")));
+                    Html.CsrfField(csrfToken) + Html.Input("text", text, style: "width:100%") + Html.Button(t("translations.save")));
                 return Html.Td(form);
             }));
             return Html.Tr(Html.Td(Html.Raw($"<code>{Html.Encode(group.Key)}</code>")) + cells);
@@ -34,10 +36,10 @@ public static class TranslationViews
             Html.Tbody(rows));
 
         var body = Html.H1(t("translations.title")) +
-            Html.P(Html.Link("/admin/users", "← Admin")) +
+            Html.P(Html.Link("/admin/users", t("common.back_to_admin"))) +
             Html.P(Html.Link("/admin/translations/export.json", t("translations.export"))) +
             table;
 
-        return Layout.Page(t("translations.title"), body, principal, t);
+        return Layout.Page(t("translations.title"), body, ctx);
     }
 }

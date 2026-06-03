@@ -31,11 +31,12 @@ internal class Program
         env = env with { Search = search };
 
         App app = Functional.Compose(
-            _ => _ => ValueTask.FromResult(Response.NotFound()),
+            _ => env => ValueTask.FromResult(Response.NotFound(env.Ctx)),
             LanguageMiddleware.Create(),
             Middlewares.Recover,
             Middlewares.RequestLogging,
             AuthMiddleware.Create(),
+            CsrfMiddleware.Create(),
             Router.Create(Routes.Build()));
 
         web.Run(async http =>

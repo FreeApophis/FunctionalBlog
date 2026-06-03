@@ -4,10 +4,11 @@ public static class RecipeViews
 {
     public static string Index(
         IReadOnlyList<Recipe> recipes,
-        IPrincipal principal,
         IReadOnlyDictionary<UserId, string> authorNames,
-        Translate t)
+        ViewContext ctx)
     {
+        var (principal, t, _) = ctx;
+
         HtmlString RecipeHtml(Recipe recipe)
         {
             var authorName = authorNames.TryGetValue(recipe.AuthorId, out var name) ? name : "?";
@@ -27,16 +28,17 @@ public static class RecipeViews
                 : HtmlString.Empty) +
             items;
 
-        return Layout.Page(t("recipe.title"), body, principal, t);
+        return Layout.Page(t("recipe.title"), body, ctx);
     }
 
     public static string Show(
         Recipe recipe,
-        IPrincipal principal,
         string authorName,
         IReadOnlyDictionary<IngredientId, Ingredient> ingredientMap,
-        Translate t)
+        ViewContext ctx)
     {
+        var (principal, t, csrfToken) = ctx;
+
         var tags = recipe.Tags.Count > 0
             ? Html.P(HtmlString.Join(", ", recipe.Tags.Select(tag => Html.Text(tag.Value))))
             : HtmlString.Empty;
@@ -72,7 +74,7 @@ public static class RecipeViews
             : HtmlString.Empty;
 
         var deleteForm = principal.Can<Delete>(new RecipeResource())
-            ? Html.Form($"/recipes/{recipe.Id.Value}/delete", Html.Raw(" · ") + Html.Button(t("common.delete")), style: "display:inline")
+            ? Html.Form($"/recipes/{recipe.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Raw(" · ") + Html.Button(t("common.delete")), style: "display:inline")
             : HtmlString.Empty;
 
         var body = Html.P(Html.Link("/recipes", t("common.back")) + editLink + deleteForm) +
@@ -87,7 +89,7 @@ public static class RecipeViews
             ingredientTable +
             (recipe.Hints.Count > 0 ? Html.H2(Html.Text(t("recipe.hints"))) + hints : HtmlString.Empty);
 
-        return Layout.Page(recipe.Name.Value, body, principal, t);
+        return Layout.Page(recipe.Name.Value, body, ctx);
     }
 
     public static string Form(
@@ -101,11 +103,12 @@ public static class RecipeViews
         IReadOnlyList<(string Id, string Amount, string Unit)> ingredients,
         IReadOnlyList<string> steps,
         IReadOnlyList<Ingredient> availableIngredients,
-        IPrincipal principal,
-        Translate t,
+        ViewContext ctx,
         string formAction = "/recipes",
         string titleKey = "recipe.new_title")
     {
+        var (_, t, csrfToken) = ctx;
+
         var errorHtml = errors.Count == 0
             ? HtmlString.Empty
             : Html.Div("errors", Html.Ul(errors.Select(key => Html.Text(t(key)))));
@@ -117,6 +120,7 @@ public static class RecipeViews
         }));
 
         var formBody =
+            Html.CsrfField(csrfToken) +
             Html.Raw("""<button type="submit" hidden></button>""") +
             Html.Label(Html.Text(t("recipe.field.name")) + Html.Input("name", name)) +
             Html.Label(Html.Text(t("recipe.field.description")) + Html.Raw($"""<textarea name="description" rows="3">{Html.Encode(description)}</textarea>""")) +
@@ -134,7 +138,7 @@ public static class RecipeViews
             errorHtml +
             form;
 
-        return Layout.Page(t(titleKey), body, principal, t);
+        return Layout.Page(t(titleKey), body, ctx);
     }
 
     public static string IngredientSection(
@@ -166,7 +170,7 @@ public static class RecipeViews
                             hx-post="/recipes/form/ingredients"
                             hx-target="#ingredients-section"
                             hx-swap="outerHTML"
-                            hx-include="#ingredients-list input, #ingredients-list select">
+                            hx-include="#ingredients-list input, #ingredients-list select, input[name=_csrf]">
                         {Html.Encode(t("recipe.remove"))}
                     </button>
                 </div>
@@ -183,7 +187,7 @@ public static class RecipeViews
                         hx-post="/recipes/form/ingredients"
                         hx-target="#ingredients-section"
                         hx-swap="outerHTML"
-                        hx-include="#ingredients-list input, #ingredients-list select">
+                        hx-include="#ingredients-list input, #ingredients-list select, input[name=_csrf]">
                     {Html.Encode(t("recipe.add_ingredient"))}
                 </button>
             </div>
@@ -202,7 +206,7 @@ public static class RecipeViews
                             hx-post="/recipes/form/steps"
                             hx-target="#steps-section"
                             hx-swap="outerHTML"
-                            hx-include="#steps-list textarea">
+                            hx-include="#steps-list textarea, input[name=_csrf]">
                         {Html.Encode(t("recipe.remove"))}
                     </button>
                 </div>
@@ -219,7 +223,7 @@ public static class RecipeViews
                         hx-post="/recipes/form/steps"
                         hx-target="#steps-section"
                         hx-swap="outerHTML"
-                        hx-include="#steps-list textarea">
+                        hx-include="#steps-list textarea, input[name=_csrf]">
                     {Html.Encode(t("recipe.add_step"))}
                 </button>
             </div>
@@ -231,7 +235,6 @@ public static class RecipeViews
         Difficulty.Easy => "recipe.difficulty.easy",
         Difficulty.Medium => "recipe.difficulty.medium",
         Difficulty.Hard => "recipe.difficulty.hard",
-        Difficulty.Expert => "recipe.difficulty.expert",
         _ => difficulty.ToString(),
     };
 }

@@ -5,7 +5,7 @@ public static class AdminHandlers
     public static App UserList => _ => async env =>
     {
         var users = await env.Users.All();
-        return Response.Html(AdminViews.UserList(users, env.CurrentUser, env.T));
+        return Response.Html(AdminViews.UserList(users, env.Ctx));
     };
 
     public static App UserDetail(int userId) => _ => async env =>
@@ -13,10 +13,10 @@ public static class AdminHandlers
         if ((await env.Users.FindById(new UserId(userId))) is [var user])
         {
             var roles = await env.Roles.All();
-            return Response.Html(AdminViews.UserDetail(user, roles, [], env.CurrentUser, env.T));
+            return Response.Html(AdminViews.UserDetail(user, roles, [], env.Ctx));
         }
 
-        return Response.NotFound();
+        return Response.NotFound(env.Ctx);
     };
 
     public static App UpdateUserRoles(int userId) => request => async env =>
@@ -28,21 +28,21 @@ public static class AdminHandlers
             return Response.Redirect($"/admin/users/{userId}");
         }
 
-        return Response.NotFound();
+        return Response.NotFound(env.Ctx);
     };
 
     public static App RoleList => _ => async env =>
     {
         var roles = await env.Roles.All();
-        return Response.Html(AdminViews.RoleList(roles, env.CurrentUser, env.T));
+        return Response.Html(AdminViews.RoleList(roles, env.Ctx));
     };
 
     public static App NewRoleForm => _ => env =>
-        ValueTask.FromResult(Response.Html(AdminViews.NewRoleForm([], env.CurrentUser, env.T)));
+        ValueTask.FromResult(Response.Html(AdminViews.NewRoleForm([], env.Ctx)));
 
     public static App CreateRole => request => async env =>
         await RoleForm.Decode(request).Match(
-            failure: f => Task.FromResult(Response.Html(AdminViews.NewRoleForm(f.Error, env.CurrentUser, env.T), 400)),
+            failure: f => Task.FromResult(Response.Html(AdminViews.NewRoleForm(f.Error, env.Ctx), 400)),
             success: async s =>
             {
                 var id = await env.Roles.NextId();
@@ -54,19 +54,19 @@ public static class AdminHandlers
     {
         if ((await env.Roles.FindById(new RoleId(roleId))) is [var role])
         {
-            return Response.Html(AdminViews.RoleDetail(role, [], env.CurrentUser, env.T));
+            return Response.Html(AdminViews.RoleDetail(role, [], env.Ctx));
         }
 
-        return Response.NotFound();
+        return Response.NotFound(env.Ctx);
     };
 
     public static App AddRule(int roleId) => request => async env =>
         await (await env.Roles.FindById(new RoleId(roleId))).Match(
-            none: () => Task.FromResult(Response.NotFound()),
+            none: () => Task.FromResult(Response.NotFound(env.Ctx)),
             some: async role =>
                 await RuleForm.Decode(request).Match(
                     failure: f => Task.FromResult(
-                        Response.Html(AdminViews.RoleDetail(role, f.Error, env.CurrentUser, env.T), 400)),
+                        Response.Html(AdminViews.RoleDetail(role, f.Error, env.Ctx), 400)),
                     success: async s =>
                     {
                         var rule = new PermissionRule(s.Value.ActionName, s.Value.ResourceKey);
@@ -81,7 +81,7 @@ public static class AdminHandlers
 
     public static App DeleteRule(int roleId) => request => async env =>
         await (await env.Roles.FindById(new RoleId(roleId))).Match(
-            none: () => Task.FromResult(Response.NotFound()),
+            none: () => Task.FromResult(Response.NotFound(env.Ctx)),
             some: async role =>
             {
                 var action = request.Form.GetValueOrNone("action").GetOrElse(string.Empty);
@@ -99,6 +99,6 @@ public static class AdminHandlers
             return Response.Redirect("/admin/roles");
         }
 
-        return Response.NotFound();
+        return Response.NotFound(env.Ctx);
     };
 }

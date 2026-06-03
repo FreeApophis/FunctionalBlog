@@ -9,7 +9,7 @@ public static class AuthHandlers
 
     public static App NewRegisterForm => _ => env =>
         ValueTask.FromResult(Response.Html(
-            AuthViews.RegisterForm([], string.Empty, string.Empty, env.CurrentUser, env.T)));
+            AuthViews.RegisterForm([], string.Empty, string.Empty, env.Ctx)));
 
     public static App Register => request => async env =>
         await RegisterForm.Decode(request).Match(
@@ -18,8 +18,7 @@ public static class AuthHandlers
                     f.Error,
                     request.Form.GetValueOrNone("email").GetOrElse(string.Empty),
                     request.Form.GetValueOrNone("displayName").GetOrElse(string.Empty),
-                    env.CurrentUser,
-                    env.T),
+                    env.Ctx),
                 400)),
             success: async s =>
             {
@@ -40,7 +39,7 @@ public static class AuthHandlers
 
     public static App NewLoginForm => _ => env =>
         ValueTask.FromResult(Response.Html(
-            AuthViews.LoginForm([], string.Empty, env.CurrentUser, env.T)));
+            AuthViews.LoginForm([], string.Empty, env.Ctx)));
 
     public static App Login => request => async env =>
         await LoginForm.Decode(request).Match(
@@ -48,8 +47,7 @@ public static class AuthHandlers
                 AuthViews.LoginForm(
                     f.Error,
                     request.Form.GetValueOrNone("email").GetOrElse(string.Empty),
-                    env.CurrentUser,
-                    env.T),
+                    env.Ctx),
                 400)),
             success: async s =>
             {
@@ -63,8 +61,7 @@ public static class AuthHandlers
                         AuthViews.LoginForm(
                             ["auth.error.invalid_credentials"],
                             s.Value.Email.Value,
-                            env.CurrentUser,
-                            env.T),
+                            env.Ctx),
                         401);
                 }
 
@@ -85,7 +82,7 @@ public static class AuthHandlers
 
     public static App NewPasswordResetForm => _ => env =>
         ValueTask.FromResult(Response.Html(
-            AuthViews.PasswordResetRequestForm(env.CurrentUser, env.T)));
+            AuthViews.PasswordResetRequestForm(env.Ctx)));
 
     public static App RequestPasswordReset => request => async env =>
     {
@@ -105,14 +102,14 @@ public static class AuthHandlers
                 env.Log.Info($"[Passwort-Reset] reset-token:{token} für {decoded.EmailRaw}");
             });
 
-        return Response.Html(AuthViews.PasswordResetRequested(env.CurrentUser, env.T));
+        return Response.Html(AuthViews.PasswordResetRequested(env.Ctx));
     };
 
     public static App NewPasswordResetConfirmForm => request => env =>
     {
         var token = request.Query.GetValueOrDefault("token", string.Empty);
         return ValueTask.FromResult(Response.Html(
-            AuthViews.PasswordResetConfirmForm([], token, env.CurrentUser, env.T)));
+            AuthViews.PasswordResetConfirmForm([], token, env.Ctx)));
     };
 
     public static App ConfirmPasswordReset => request => async env =>
@@ -121,13 +118,12 @@ public static class AuthHandlers
                 AuthViews.PasswordResetConfirmForm(
                     f.Error,
                     request.Form.GetValueOrNone("token").GetOrElse(string.Empty),
-                    env.CurrentUser,
-                    env.T),
+                    env.Ctx),
                 400)),
             success: async s =>
             {
                 var tokenInvalid = Response.Html(
-                    AuthViews.PasswordResetConfirmForm(["auth.error.reset_token_invalid"], string.Empty, env.CurrentUser, env.T),
+                    AuthViews.PasswordResetConfirmForm(["auth.error.reset_token_invalid"], string.Empty, env.Ctx),
                     400);
 
                 var validToken = (await env.PasswordResets.Find(s.Value.Token))
@@ -139,7 +135,7 @@ public static class AuthHandlers
                     none: () => Task.FromResult(tokenInvalid),
                     some: async token =>
                         await (await env.Users.FindById(token.UserId)).Match(
-                            none: () => Task.FromResult(Response.NotFound()),
+                            none: () => Task.FromResult(Response.NotFound(env.Ctx)),
                             some: async user =>
                             {
                                 await env.Users.Save(user with { PasswordHash = env.PasswordHasher.Hash(s.Value.Password) });

@@ -2,14 +2,15 @@ namespace FunctionalBlog;
 
 public static class NavViews
 {
-    public static string Nav(IPrincipal principal, Translate t)
+    public static string Nav(ViewContext ctx)
     {
+        var (principal, t, csrfToken) = ctx;
         var links = Html.Link("/", t("nav.blog")) + Html.Raw(" · ") + Html.Link("/recipes", t("nav.recipes"));
 
         if (principal is AuthenticatedUser user)
         {
             var settingsLink = Html.Link("/settings", t("nav.settings"));
-            var logoutForm = Html.Form("/logout", Html.Button(t("nav.logout")), style: "display:inline");
+            var logoutForm = Html.Form("/logout", Html.CsrfField(csrfToken) + Html.Button(t("nav.logout")), style: "display:inline");
             var adminLink = principal.Can<Manage>(new UserResource())
                 ? Html.Raw(" · ") + Html.Link("/admin/users", t("nav.admin"))
                 : HtmlString.Empty;
@@ -21,7 +22,7 @@ public static class NavViews
             links += Html.Raw(" · ") + Html.Link("/login", t("nav.login")) + Html.Raw(" · ") + Html.Link("/register", t("nav.register"));
         }
 
-        links += Html.Raw(" · ") + LanguageSelector(t);
+        links += Html.Raw(" · ") + LanguageSelector(t, csrfToken);
         links += Html.Raw(" ") + SearchBox(t);
 
         return $"<nav>{links.Render()}</nav>";
@@ -33,12 +34,12 @@ public static class NavViews
         Html.Button(t("nav.search")) +
         Html.Raw("</form>");
 
-    private static HtmlString LanguageSelector(Translate t)
+    private static HtmlString LanguageSelector(Translate t, string csrfToken)
     {
         var options = string.Join(string.Empty, Languages.Supported.Select(lang =>
             $"<option value=\"{Html.Encode(lang)}\">{Html.Encode(Languages.Names[lang])}</option>"));
 
         var selector = Html.Label(Html.Text(t("nav.language")) + Html.Raw($""":<select name="lang" onchange="this.form.submit()">{options}</select>"""));
-        return Html.Form("/lang", selector, cssClass: "lang-form");
+        return Html.Form("/lang", Html.CsrfField(csrfToken) + selector, cssClass: "lang-form");
     }
 }

@@ -5,8 +5,10 @@ public static class AdminViews
     private static readonly string[] AllActions = ["View", "Create", "Edit", "Delete", "Manage"];
     private static readonly string[] AllResources = ["article", "user", "role", "rule"];
 
-    public static string UserList(IReadOnlyList<User> users, IPrincipal principal, Translate t)
+    public static string UserList(IReadOnlyList<User> users, ViewContext ctx)
     {
+        var (_, t, _) = ctx;
+
         static HtmlString UserRow(User u) =>
             Html.Link($"/admin/users/{u.Id.Value}", $"{u.DisplayName.Value} ({u.Email.Value})") +
             Html.Raw(" – ") + Html.Text(string.Join(", ", u.RoleNames));
@@ -16,11 +18,13 @@ public static class AdminViews
             Html.P(Html.Link("/admin/ingredients", t("ingredient.list_title"))) +
             Html.P(Html.Link("/admin/translations", t("translations.title"))) +
             Html.Ul(users.Select(UserRow));
-        return Layout.Page(t("admin.users.title"), body, principal, t);
+        return Layout.Page(t("admin.users.title"), body, ctx);
     }
 
-    public static string UserDetail(User user, IReadOnlyList<Role> allRoles, IReadOnlyList<string> errors, IPrincipal principal, Translate t)
+    public static string UserDetail(User user, IReadOnlyList<Role> allRoles, IReadOnlyList<string> errors, ViewContext ctx)
     {
+        var (_, t, csrfToken) = ctx;
+
         var errorHtml = errors.Count == 0
             ? HtmlString.Empty
             : Html.Div("errors", Html.Ul(errors.Select(Html.Text)));
@@ -29,18 +33,20 @@ public static class AdminViews
             Html.Label(Html.InputCheckbox("role", r.Name, user.RoleNames.Contains(r.Name)) + Html.Raw(" ") + Html.Text(r.Name));
 
         var roleCheckboxes = HtmlString.Concat(allRoles.Select(CheckboxHtml));
-        var formBody = Html.Fieldset(t("admin.users.roles_label"), roleCheckboxes) + Html.Button(t("admin.users.save"));
+        var formBody = Html.CsrfField(csrfToken) + Html.Fieldset(t("admin.users.roles_label"), roleCheckboxes) + Html.Button(t("admin.users.save"));
         var form = Html.Form($"/admin/users/{user.Id.Value}/roles", formBody);
 
         var body = Html.H1(user.Email.Value) +
             Html.P(Html.Link("/admin/users", t("common.back"))) +
             errorHtml +
             form;
-        return Layout.Page($"Benutzer: {user.Email.Value}", body, principal, t);
+        return Layout.Page($"{t("admin.users.detail_title")}: {user.Email.Value}", body, ctx);
     }
 
-    public static string RoleList(IReadOnlyList<Role> roles, IPrincipal principal, Translate t)
+    public static string RoleList(IReadOnlyList<Role> roles, ViewContext ctx)
     {
+        var (_, t, _) = ctx;
+
         static HtmlString RoleRow(Role r) =>
             Html.Link($"/admin/roles/{r.Id.Value}", r.Name) +
             Html.Raw($" ({r.Rules.Count})");
@@ -49,25 +55,29 @@ public static class AdminViews
             Html.P(Html.Link("/admin/roles/new", t("admin.roles.new"))) +
             Html.P(Html.Link("/admin/users", t("admin.roles.manage_users"))) +
             Html.Ul(roles.Select(RoleRow));
-        return Layout.Page(t("admin.roles.title"), body, principal, t);
+        return Layout.Page(t("admin.roles.title"), body, ctx);
     }
 
-    public static string NewRoleForm(IReadOnlyList<string> errors, IPrincipal principal, Translate t)
+    public static string NewRoleForm(IReadOnlyList<string> errors, ViewContext ctx)
     {
+        var (_, t, csrfToken) = ctx;
+
         var errorHtml = errors.Count == 0
             ? HtmlString.Empty
             : Html.Div("errors", Html.Ul(errors.Select(Html.Text)));
 
-        var formBody = Html.Label(Html.Text(t("admin.roles.name")) + Html.Input("name")) + Html.Button(t("admin.roles.create"));
+        var formBody = Html.CsrfField(csrfToken) + Html.Label(Html.Text(t("admin.roles.name")) + Html.Input("name")) + Html.Button(t("admin.roles.create"));
         var body = Html.H1(t("admin.roles.new")) +
             Html.P(Html.Link("/admin/roles", t("common.back"))) +
             errorHtml +
             Html.Form("/admin/roles", formBody);
-        return Layout.Page(t("admin.roles.new"), body, principal, t);
+        return Layout.Page(t("admin.roles.new"), body, ctx);
     }
 
-    public static string RoleDetail(Role role, IReadOnlyList<string> errors, IPrincipal principal, Translate t)
+    public static string RoleDetail(Role role, IReadOnlyList<string> errors, ViewContext ctx)
     {
+        var (_, t, csrfToken) = ctx;
+
         var errorHtml = errors.Count == 0
             ? HtmlString.Empty
             : Html.Div("errors", Html.Ul(errors.Select(Html.Text)));
@@ -83,6 +93,7 @@ public static class AdminViews
         HtmlString RuleRow(PermissionRule r)
         {
             var ruleFormBody =
+                Html.CsrfField(csrfToken) +
                 Html.InputHidden("action", r.ActionName) +
                 Html.InputHidden("resource", r.ResourceKey) +
                 Html.Button(t("admin.roles.remove_rule"));
@@ -95,11 +106,12 @@ public static class AdminViews
             : Html.Ul(role.Rules.Select(RuleRow));
 
         var addFormBody =
+            Html.CsrfField(csrfToken) +
             Html.Label(Html.Text(t("admin.roles.action")) + Html.Raw($"""<select name="action">{actionOptions}</select>""")) +
             Html.Label(Html.Text(t("admin.roles.resource")) + Html.Raw($"""<select name="resource">{resourceOptions}</select>""")) +
             Html.Button(t("admin.roles.add_rule"));
         var addForm = Html.Form($"/admin/roles/{role.Id.Value}/rules", addFormBody);
-        var deleteForm = Html.Form($"/admin/roles/{role.Id.Value}/delete", Html.Button(t("admin.roles.delete")));
+        var deleteForm = Html.Form($"/admin/roles/{role.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Button(t("admin.roles.delete")));
 
         var body = Html.H1(role.Name) +
             Html.P(Html.Link("/admin/roles", t("common.back"))) +
@@ -108,6 +120,6 @@ public static class AdminViews
             ruleRows +
             errorHtml +
             addForm;
-        return Layout.Page($"Rolle: {role.Name}", body, principal, t);
+        return Layout.Page($"{t("admin.roles.detail_title")}: {role.Name}", body, ctx);
     }
 }

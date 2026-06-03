@@ -15,8 +15,11 @@ public sealed record Env(
     ITranslationRepository? Translations = null,
     TranslationCache? TranslationCache = null,
     ISearchIndex? Search = null,
-    string Language = Languages.Default)
+    string Language = Languages.Default,
+    string CsrfToken = "")
 {
     public Translate T =>
         key => TranslationCache?.Get(key, Language) ?? key;
+
+    public ViewContext Ctx => new(CurrentUser, T, CsrfToken);
 }
