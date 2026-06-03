@@ -53,4 +53,15 @@ public abstract partial record Unit(string Name, string Abbreviation, decimal Fa
         public static decimal Convert(decimal amount, PieceUnit from, PieceUnit to)
             => amount * from.Factor / to.Factor;
     }
+
+    public static IReadOnlyList<Unit> All =>
+    [
+        WeightUnit.Gram, WeightUnit.Kilogram,
+        VolumeUnit.Milliliter, VolumeUnit.Deciliter, VolumeUnit.Liter,
+        VolumeUnit.Tablespoon, VolumeUnit.Teaspoon,
+        PieceUnit.Piece, PieceUnit.Pinch,
+    ];
+
+    public static Option<Unit> ParseByAbbreviation(string abbreviation) =>
+        All.FirstOrNone(u => u.Abbreviation == abbreviation);
 }

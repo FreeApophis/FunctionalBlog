@@ -53,4 +53,18 @@ public static class Validated
         Func<TFailure, TFailure, TFailure> combine) =>
         Succeed<TFailure, Func<T1, Func<T2, Func<T3, Func<T4, TResult>>>>>(a => b => c => d => func(a, b, c, d))
             .Apply(value, combine);
+
+    public static Validated<TFailure, Func<T2, Func<T3, Func<T4, Func<T5, TResult>>>>> Apply<TFailure, T1, T2, T3, T4, T5, TResult>(
+        this Func<T1, T2, T3, T4, T5, TResult> func,
+        Validated<TFailure, T1> value,
+        Func<TFailure, TFailure, TFailure> combine) =>
+        Succeed<TFailure, Func<T1, Func<T2, Func<T3, Func<T4, Func<T5, TResult>>>>>>(a => b => c => d => e => func(a, b, c, d, e))
+            .Apply(value, combine);
+
+    public static Validated<TFailure, Func<T2, Func<T3, Func<T4, Func<T5, Func<T6, TResult>>>>>> Apply<TFailure, T1, T2, T3, T4, T5, T6, TResult>(
+        this Func<T1, T2, T3, T4, T5, T6, TResult> func,
+        Validated<TFailure, T1> value,
+        Func<TFailure, TFailure, TFailure> combine) =>
+        Succeed<TFailure, Func<T1, Func<T2, Func<T3, Func<T4, Func<T5, Func<T6, TResult>>>>>>>(a => b => c => d => e => f => func(a, b, c, d, e, f))
+            .Apply(value, combine);
 }

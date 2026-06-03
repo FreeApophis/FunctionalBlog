@@ -151,7 +151,7 @@ public static class RecipeViews
                     return $"""<option value="{ing.Id.Value}"{selected}>{Html.Encode(ing.Name.Value)}</option>""";
                 }));
 
-            var unitOptions = string.Concat(RecipeForm.AllUnits.Select(u =>
+            var unitOptions = string.Concat(FunctionalBlog.Domain.Recipes.Unit.All.Select(u =>
             {
                 var selected = u.Abbreviation == unit ? " selected" : string.Empty;
                 return $"""<option value="{Html.Encode(u.Abbreviation)}"{selected}>{Html.Encode(u.Name)}</option>""";

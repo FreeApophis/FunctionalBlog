@@ -2,26 +2,29 @@ namespace FunctionalBlog.Roles;
 
 public static class RuleForm
 {
-    public static DecodedRuleForm Decode(Request request)
+    public sealed record Valid(string ActionName, string ResourceKey);
+
+    public static Validated<IReadOnlyList<string>, Valid> Decode(Request request)
     {
-        var action = request.Form.GetValueOrDefault("action", string.Empty).Trim();
-        var resource = request.Form.GetValueOrDefault("resource", string.Empty).Trim();
-        var errors = new List<string>();
+        var action = request.Form.GetValueOrNone("action").GetOrElse(string.Empty).Trim();
+        var resource = request.Form.GetValueOrNone("resource").GetOrElse(string.Empty).Trim();
 
-        if (string.IsNullOrEmpty(action))
-        {
-            errors.Add("Bitte wählen Sie eine Aktion aus.");
-        }
+        Func<string, string, Valid> create = (a, r) => new Valid(a, r);
 
-        if (string.IsNullOrEmpty(resource))
-        {
-            errors.Add("Bitte wählen Sie eine Ressource aus.");
-        }
-
-        return new DecodedRuleForm(
-            IsValid: errors.Count == 0,
-            Errors: errors,
-            ActionName: action,
-            ResourceKey: resource);
+        return create
+            .Apply(TryParseAction(action), Combine)
+            .Apply(TryParseResource(resource), Combine);
     }
+
+    private static Validated<IReadOnlyList<string>, string> TryParseAction(string action) =>
+        action.Length > 0
+            ? Validated.Succeed<IReadOnlyList<string>, string>(action)
+            : Validated.Fail<IReadOnlyList<string>, string>(["admin.roles.error.action_required"]);
+
+    private static Validated<IReadOnlyList<string>, string> TryParseResource(string resource) =>
+        resource.Length > 0
+            ? Validated.Succeed<IReadOnlyList<string>, string>(resource)
+            : Validated.Fail<IReadOnlyList<string>, string>(["admin.roles.error.resource_required"]);
+
+    private static IReadOnlyList<string> Combine(IReadOnlyList<string> a, IReadOnlyList<string> b) => [.. a, .. b];
 }

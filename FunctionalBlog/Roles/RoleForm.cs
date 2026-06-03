@@ -2,19 +2,14 @@ namespace FunctionalBlog.Roles;
 
 public static class RoleForm
 {
-    public static DecodedRoleForm Decode(Request request)
+    public sealed record Valid(string Name);
+
+    public static Validated<IReadOnlyList<string>, Valid> Decode(Request request)
     {
-        var name = request.Form.GetValueOrDefault("name", string.Empty).Trim();
-        var errors = new List<string>();
+        var name = request.Form.GetValueOrNone("name").GetOrElse(string.Empty).Trim();
 
-        if (string.IsNullOrEmpty(name))
-        {
-            errors.Add("Der Rollenname darf nicht leer sein.");
-        }
-
-        return new DecodedRoleForm(
-            IsValid: errors.Count == 0,
-            Errors: errors,
-            Name: name);
+        return name.Length > 0
+            ? Validated.Succeed<IReadOnlyList<string>, Valid>(new Valid(name))
+            : Validated.Fail<IReadOnlyList<string>, Valid>(["admin.roles.error.name_required"]);
     }
 }

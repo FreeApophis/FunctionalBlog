@@ -4,71 +4,41 @@ namespace FunctionalBlog.Recipes;
 
 public static class RecipeForm
 {
-    public static DecodedRecipeForm Decode(Request request)
-    {
-        var name = request.Form.GetValueOrDefault("name", string.Empty).Trim();
-        var description = request.Form.GetValueOrDefault("description", string.Empty).Trim();
-        var portionsRaw = request.Form.GetValueOrDefault("portions", string.Empty).Trim();
-        var difficultyRaw = request.Form.GetValueOrDefault("difficulty", string.Empty).Trim();
-        var tagsRaw = request.Form.GetValueOrDefault("tags", string.Empty).Trim();
-        var hintsRaw = request.Form.GetValueOrDefault("hints", string.Empty).Trim();
+    public sealed record Valid(
+        RecipeName Name,
+        RecipeDescription Description,
+        int Portions,
+        Difficulty Difficulty,
+        IReadOnlyList<RecipeTag> Tags,
+        IReadOnlyList<RecipeHint> Hints,
+        IReadOnlyList<RecipeIngredient> Ingredients,
+        IReadOnlyList<PreparationStep> Steps);
 
-        var ingredients = ParseIngredients(request);
+    public static Validated<IReadOnlyList<string>, Valid> Decode(Request request)
+    {
+        var name = request.Form.GetValueOrNone("name").GetOrElse(string.Empty).Trim();
+        var description = request.Form.GetValueOrNone("description").GetOrElse(string.Empty).Trim();
+        var portionsRaw = request.Form.GetValueOrNone("portions").GetOrElse(string.Empty).Trim();
+        var difficultyRaw = request.Form.GetValueOrNone("difficulty").GetOrElse(string.Empty).Trim();
+        var tagsRaw = request.Form.GetValueOrNone("tags").GetOrElse(string.Empty).Trim();
+        var hintsRaw = request.Form.GetValueOrNone("hints").GetOrElse(string.Empty).Trim();
+
+        var rawIngredients = ParseIngredients(request);
         var rawSteps = ParseRawSteps(request);
 
-        var errors = new List<string>();
+        var tags = ParseTags(tagsRaw);
+        var hints = ParseHints(hintsRaw);
 
-        if (name.Length < 3)
-        {
-            errors.Add("recipe.error.name_too_short");
-        }
+        Func<RecipeName, RecipeDescription, int, Difficulty, IReadOnlyList<RecipeIngredient>, IReadOnlyList<PreparationStep>, Valid> create =
+            (n, d, p, diff, ings, steps) => new Valid(n, d, p, diff, tags, hints, ings, steps);
 
-        if (description.Length < 10)
-        {
-            errors.Add("recipe.error.description_too_short");
-        }
-
-        if (!int.TryParse(portionsRaw, out var portions) || portions < 1)
-        {
-            errors.Add("recipe.error.portions_invalid");
-        }
-
-        if (!int.TryParse(difficultyRaw, out var difficultyInt) || !Enum.IsDefined(typeof(Difficulty), difficultyInt))
-        {
-            errors.Add("recipe.error.difficulty_invalid");
-        }
-
-        var nonEmptySteps = rawSteps.Where(s => s.Length > 0).ToList();
-        if (nonEmptySteps.Count == 0)
-        {
-            errors.Add("recipe.error.no_steps");
-        }
-
-        foreach (var (id, amount, unit) in ingredients)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                continue;
-            }
-
-            if (!decimal.TryParse(amount, NumberStyles.Any, CultureInfo.InvariantCulture, out var amt) || amt <= 0 || ParseUnit(unit) == Option<FunctionalBlog.Domain.Recipes.Unit>.None)
-            {
-                errors.Add("recipe.error.ingredient_invalid");
-                break;
-            }
-        }
-
-        return new DecodedRecipeForm(
-            IsValid: errors.Count == 0,
-            Errors: errors,
-            Name: name,
-            Description: description,
-            Portions: portionsRaw,
-            Difficulty: difficultyRaw,
-            Tags: tagsRaw,
-            Hints: hintsRaw,
-            Ingredients: ingredients,
-            Steps: rawSteps);
+        return create
+            .Apply(TryParseName(name), Combine)
+            .Apply(TryParseDescription(description), Combine)
+            .Apply(TryParsePortions(portionsRaw), Combine)
+            .Apply(TryParseDifficulty(difficultyRaw), Combine)
+            .Apply(TryParseIngredients(rawIngredients), Combine)
+            .Apply(TryParseSteps(rawSteps), Combine);
     }
 
     public static List<(string Id, string Amount, string Unit)> ParseIngredients(Request request)
@@ -96,30 +66,75 @@ public static class RecipeForm
         return result;
     }
 
-    public static Option<FunctionalBlog.Domain.Recipes.Unit> ParseUnit(string abbreviation) => abbreviation switch
-    {
-        "g" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(WeightUnit.Gram),
-        "kg" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(WeightUnit.Kilogram),
-        "ml" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Milliliter),
-        "dl" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Deciliter),
-        "l" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Liter),
-        "EL" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Tablespoon),
-        "TL" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(VolumeUnit.Teaspoon),
-        "Stück" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(PieceUnit.Piece),
-        "Prise" => Option.Some<FunctionalBlog.Domain.Recipes.Unit>(PieceUnit.Pinch),
-        _ => Option<FunctionalBlog.Domain.Recipes.Unit>.None,
-    };
+    private static Validated<IReadOnlyList<string>, RecipeName> TryParseName(string name) =>
+        name.Length >= 3
+            ? Validated.Succeed<IReadOnlyList<string>, RecipeName>(new RecipeName(name))
+            : Validated.Fail<IReadOnlyList<string>, RecipeName>(["recipe.error.name_too_short"]);
 
-    public static IReadOnlyList<(string Name, string Abbreviation)> AllUnits =>
-    [
-        ("Gramm", "g"),
-        ("Kilogramm", "kg"),
-        ("Milliliter", "ml"),
-        ("Deziliter", "dl"),
-        ("Liter", "l"),
-        ("Esslöffel", "EL"),
-        ("Teelöffel", "TL"),
-        ("Stück", "Stück"),
-        ("Prise", "Prise"),
-    ];
+    private static Validated<IReadOnlyList<string>, RecipeDescription> TryParseDescription(string description) =>
+        description.Length >= 10
+            ? Validated.Succeed<IReadOnlyList<string>, RecipeDescription>(new RecipeDescription(description))
+            : Validated.Fail<IReadOnlyList<string>, RecipeDescription>(["recipe.error.description_too_short"]);
+
+    private static Validated<IReadOnlyList<string>, int> TryParsePortions(string portionsRaw) =>
+        int.TryParse(portionsRaw, out var portions) && portions >= 1
+            ? Validated.Succeed<IReadOnlyList<string>, int>(portions)
+            : Validated.Fail<IReadOnlyList<string>, int>(["recipe.error.portions_invalid"]);
+
+    private static Validated<IReadOnlyList<string>, Difficulty> TryParseDifficulty(string difficultyRaw) =>
+        int.TryParse(difficultyRaw, out var difficultyInt) && Enum.IsDefined(typeof(Difficulty), difficultyInt)
+            ? Validated.Succeed<IReadOnlyList<string>, Difficulty>((Difficulty)difficultyInt)
+            : Validated.Fail<IReadOnlyList<string>, Difficulty>(["recipe.error.difficulty_invalid"]);
+
+    private static Validated<IReadOnlyList<string>, IReadOnlyList<RecipeIngredient>> TryParseIngredients(
+        List<(string Id, string Amount, string Unit)> ingredients)
+    {
+        var result = new List<RecipeIngredient>();
+        foreach (var (id, amount, unit) in ingredients)
+        {
+            if (string.IsNullOrEmpty(id))
+            {
+                continue;
+            }
+
+            if (!decimal.TryParse(amount, NumberStyles.Any, CultureInfo.InvariantCulture, out var amt) || amt <= 0
+                || FunctionalBlog.Domain.Recipes.Unit.ParseByAbbreviation(unit) is not [var parsedUnit])
+            {
+                return Validated.Fail<IReadOnlyList<string>, IReadOnlyList<RecipeIngredient>>(["recipe.error.ingredient_invalid"]);
+            }
+
+            result.Add(new RecipeIngredient(new IngredientId(int.Parse(id)), amt, parsedUnit));
+        }
+
+        return Validated.Succeed<IReadOnlyList<string>, IReadOnlyList<RecipeIngredient>>(result);
+    }
+
+    private static Validated<IReadOnlyList<string>, IReadOnlyList<PreparationStep>> TryParseSteps(List<string> rawSteps)
+    {
+        var nonEmpty = rawSteps.Where(s => s.Length > 0).ToList();
+
+        return nonEmpty.Count > 0
+            ? Validated.Succeed<IReadOnlyList<string>, IReadOnlyList<PreparationStep>>(
+                nonEmpty.Select((text, i) => new PreparationStep(i + 1, text)).ToList())
+            : Validated.Fail<IReadOnlyList<string>, IReadOnlyList<PreparationStep>>(["recipe.error.no_steps"]);
+    }
+
+    private static IReadOnlyList<RecipeTag> ParseTags(string tagsRaw) =>
+        string.IsNullOrWhiteSpace(tagsRaw)
+            ? []
+            : tagsRaw.Split(',')
+                .Select(tag => new RecipeTag(tag.Trim()))
+                .Where(tag => tag.Value.Length > 0)
+                .ToList();
+
+    private static IReadOnlyList<RecipeHint> ParseHints(string hintsRaw) =>
+        string.IsNullOrWhiteSpace(hintsRaw)
+            ? []
+            : hintsRaw.Split('\n')
+                .Select(h => h.Trim())
+                .Where(h => h.Length > 0)
+                .Select(h => new RecipeHint(h))
+                .ToList();
+
+    private static IReadOnlyList<string> Combine(IReadOnlyList<string> a, IReadOnlyList<string> b) => [.. a, .. b];
 }

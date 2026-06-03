@@ -12,23 +12,22 @@ public static class UserSettingsHandlers
     public static App ChangePassword => request => async env =>
     {
         var user = (AuthenticatedUser)env.CurrentUser;
-        var decoded = ChangePasswordForm.Decode(request);
 
-        if (!decoded.IsValid)
-        {
-            return Response.Html(
-                UserSettingsViews.Settings(user, decoded.Errors, env.CurrentUser, env.T),
-                400);
-        }
+        return await ChangePasswordForm.Decode(request).Match(
+            failure: f => Task.FromResult(Response.Html(
+                UserSettingsViews.Settings(user, f.Error, env.CurrentUser, env.T), 400)),
+            success: async s =>
+            {
+                if ((await env.Users.FindById(user.Id)) is not [var stored] ||
+                    !env.PasswordHasher.Verify(s.Value.CurrentPassword, stored.PasswordHash))
+                {
+                    return Response.Html(
+                        UserSettingsViews.Settings(user, ["auth.error.current_password_wrong"], env.CurrentUser, env.T),
+                        400);
+                }
 
-        if ((await env.Users.FindById(user.Id)) is not [var stored] || !env.PasswordHasher.Verify(decoded.CurrentPassword, stored.PasswordHash))
-        {
-            return Response.Html(
-                UserSettingsViews.Settings(user, ["auth.error.current_password_wrong"], env.CurrentUser, env.T),
-                400);
-        }
-
-        await env.Users.Save(stored with { PasswordHash = env.PasswordHasher.Hash(decoded.NewPassword) });
-        return Response.Redirect("/settings");
+                await env.Users.Save(stored with { PasswordHash = env.PasswordHasher.Hash(s.Value.NewPassword) });
+                return Response.Redirect("/settings");
+            });
     };
 }

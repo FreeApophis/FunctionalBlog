@@ -3,25 +3,26 @@ namespace FunctionalBlog.Test.Ingredients;
 public sealed class IngredientFormTests
 {
     [Fact]
-    public void Valid_form_is_valid()
+    public void Valid_form_returns_success_with_typed_fields()
     {
         var request = Build("Ei", "Hühnerei", "1.0", "1.0", "155", "13", "11", "1", "0.4", "0");
 
-        var decoded = IngredientForm.Decode(request);
+        var form = ValidatedAssert.IsSuccess(IngredientForm.Decode(request));
 
-        Assert.True(decoded.IsValid);
-        Assert.Empty(decoded.Errors);
+        Assert.Equal(new IngredientName("Ei"), form.Name);
+        Assert.Equal(1.0m, form.Density);
+        Assert.Equal(155m, form.CalorificValue);
+        Assert.Equal(11m, form.Fat);
     }
 
     [Fact]
-    public void Name_shorter_than_2_characters_adds_error()
+    public void Name_shorter_than_2_characters_returns_failure()
     {
         var request = Build("X", "Beschreibung", "1.0", "0", "0", "0", "0", "0", "0", "0");
 
-        var decoded = IngredientForm.Decode(request);
+        var errors = ValidatedAssert.IsFailure(IngredientForm.Decode(request));
 
-        Assert.False(decoded.IsValid);
-        Assert.Contains("ingredient.error.name_too_short", decoded.Errors);
+        Assert.Contains("ingredient.error.name_too_short", errors);
     }
 
     [Fact]
@@ -29,53 +30,47 @@ public sealed class IngredientFormTests
     {
         var request = Build("Ei", "Beschreibung", "1.0", "0", "0", "0", "0", "0", "0", "0");
 
-        var decoded = IngredientForm.Decode(request);
-
-        Assert.True(decoded.IsValid);
+        ValidatedAssert.IsSuccess(IngredientForm.Decode(request));
     }
 
     [Fact]
-    public void Density_of_zero_or_less_adds_error()
+    public void Density_of_zero_or_less_returns_failure()
     {
         var request = Build("Salz", "Beschreibung", "0", "0", "0", "0", "0", "0", "0", "0");
 
-        var decoded = IngredientForm.Decode(request);
+        var errors = ValidatedAssert.IsFailure(IngredientForm.Decode(request));
 
-        Assert.False(decoded.IsValid);
-        Assert.Contains("ingredient.error.density_invalid", decoded.Errors);
+        Assert.Contains("ingredient.error.density_invalid", errors);
     }
 
     [Fact]
-    public void Density_not_a_number_adds_error()
+    public void Density_not_a_number_returns_failure()
     {
         var request = Build("Salz", "Beschreibung", "abc", "0", "0", "0", "0", "0", "0", "0");
 
-        var decoded = IngredientForm.Decode(request);
+        var errors = ValidatedAssert.IsFailure(IngredientForm.Decode(request));
 
-        Assert.False(decoded.IsValid);
-        Assert.Contains("ingredient.error.density_invalid", decoded.Errors);
+        Assert.Contains("ingredient.error.density_invalid", errors);
     }
 
     [Fact]
-    public void Negative_piece_count_adds_error()
+    public void Negative_piece_count_returns_failure()
     {
         var request = Build("Ei", "Beschreibung", "1.0", "-1", "0", "0", "0", "0", "0", "0");
 
-        var decoded = IngredientForm.Decode(request);
+        var errors = ValidatedAssert.IsFailure(IngredientForm.Decode(request));
 
-        Assert.False(decoded.IsValid);
-        Assert.Contains("ingredient.error.piece_count_invalid", decoded.Errors);
+        Assert.Contains("ingredient.error.piece_count_invalid", errors);
     }
 
     [Fact]
-    public void Negative_calorific_value_adds_error()
+    public void Negative_calorific_value_returns_failure()
     {
         var request = Build("Ei", "Beschreibung", "1.0", "0", "-1", "0", "0", "0", "0", "0");
 
-        var decoded = IngredientForm.Decode(request);
+        var errors = ValidatedAssert.IsFailure(IngredientForm.Decode(request));
 
-        Assert.False(decoded.IsValid);
-        Assert.Contains("ingredient.error.calorific_value_invalid", decoded.Errors);
+        Assert.Contains("ingredient.error.calorific_value_invalid", errors);
     }
 
     [Fact]
@@ -94,22 +89,33 @@ public sealed class IngredientFormTests
             sugar: "0",
             fiber: "0");
 
-        var decoded = IngredientForm.Decode(request);
-
-        Assert.True(decoded.IsValid);
+        ValidatedAssert.IsSuccess(IngredientForm.Decode(request));
     }
 
     [Fact]
-    public void All_nutrient_fields_are_preserved_in_decoded_form()
+    public void All_nutrient_fields_are_preserved_with_correct_types()
     {
         var request = Build("Butter", "Süßrahmbutter", "0.96", "0", "740", "0.7", "83", "0.4", "0.4", "0");
 
-        var decoded = IngredientForm.Decode(request);
+        var form = ValidatedAssert.IsSuccess(IngredientForm.Decode(request));
 
-        Assert.Equal("Butter", decoded.Name);
-        Assert.Equal("0.96", decoded.Density);
-        Assert.Equal("740", decoded.CalorificValue);
-        Assert.Equal("83", decoded.Fat);
+        Assert.Equal(new IngredientName("Butter"), form.Name);
+        Assert.Equal(0.96m, form.Density);
+        Assert.Equal(740m, form.CalorificValue);
+        Assert.Equal(83m, form.Fat);
+    }
+
+    [Fact]
+    public void Multiple_errors_accumulate()
+    {
+        var request = Build("X", "Beschreibung", "0", "-1", "-1", "0", "0", "0", "0", "0");
+
+        var errors = ValidatedAssert.IsFailure(IngredientForm.Decode(request));
+
+        Assert.Contains("ingredient.error.name_too_short", errors);
+        Assert.Contains("ingredient.error.density_invalid", errors);
+        Assert.Contains("ingredient.error.piece_count_invalid", errors);
+        Assert.Contains("ingredient.error.calorific_value_invalid", errors);
     }
 
     private static Request Build(

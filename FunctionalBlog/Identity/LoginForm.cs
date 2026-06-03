@@ -2,27 +2,29 @@ namespace FunctionalBlog.Identity;
 
 public static class LoginForm
 {
-    public static DecodedLoginForm Decode(Request request)
+    public sealed record Valid(Email Email, string Password);
+
+    public static Validated<IReadOnlyList<string>, Valid> Decode(Request request)
     {
-        var email = request.Form.GetValueOrDefault("email", string.Empty).Trim();
-        var password = request.Form.GetValueOrDefault("password", string.Empty);
+        var emailRaw = request.Form.GetValueOrNone("email").GetOrElse(string.Empty).Trim();
+        var password = request.Form.GetValueOrNone("password").GetOrElse(string.Empty);
 
-        var errors = new List<string>();
+        Func<Email, string, Valid> create = (email, pwd) => new Valid(email, pwd);
 
-        if (string.IsNullOrEmpty(email))
-        {
-            errors.Add("Bitte geben Sie Ihre E-Mail-Adresse ein.");
-        }
-
-        if (string.IsNullOrEmpty(password))
-        {
-            errors.Add("Bitte geben Sie Ihr Passwort ein.");
-        }
-
-        return new DecodedLoginForm(
-            IsValid: errors.Count == 0,
-            Errors: errors,
-            EmailRaw: email,
-            Password: password);
+        return create
+            .Apply(TryParseEmail(emailRaw), Combine)
+            .Apply(TryParsePassword(password), Combine);
     }
+
+    private static Validated<IReadOnlyList<string>, Email> TryParseEmail(string raw) =>
+        Email.ParseOrNone(raw).Match(
+            none: () => Validated.Fail<IReadOnlyList<string>, Email>(["auth.error.invalid_email"]),
+            some: Validated.Succeed<IReadOnlyList<string>, Email>);
+
+    private static Validated<IReadOnlyList<string>, string> TryParsePassword(string password) =>
+        password.Length > 0
+            ? Validated.Succeed<IReadOnlyList<string>, string>(password)
+            : Validated.Fail<IReadOnlyList<string>, string>(["auth.error.password_required"]);
+
+    private static IReadOnlyList<string> Combine(IReadOnlyList<string> a, IReadOnlyList<string> b) => [.. a, .. b];
 }

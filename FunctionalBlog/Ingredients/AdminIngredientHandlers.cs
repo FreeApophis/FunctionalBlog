@@ -47,34 +47,31 @@ public static class AdminIngredientHandlers
             t: env.T)));
 
     public static App Create => request => async env =>
-    {
-        var decoded = IngredientForm.Decode(request);
-        if (!decoded.IsValid)
-        {
-            return Response.Html(
+        await IngredientForm.Decode(request).Match(
+            failure: f => Task.FromResult(Response.Html(
                 AdminIngredientViews.Form(
-                    decoded.Errors,
-                    decoded.Name,
-                    decoded.Description,
-                    decoded.Image,
-                    decoded.Density,
-                    decoded.PieceCount,
-                    decoded.CalorificValue,
-                    decoded.Protein,
-                    decoded.Fat,
-                    decoded.Carbohydrates,
-                    decoded.Sugar,
-                    decoded.Fiber,
+                    f.Error,
+                    request.Form.GetValueOrNone("name").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("description").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("image").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("density").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("piece_count").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("calorific_value").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("protein").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("fat").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("carbohydrates").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("sugar").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("fiber").GetOrElse(string.Empty),
                     env.CurrentUser,
                     env.T),
-                400);
-        }
-
-        var ingredient = BuildIngredient(await env.Ingredients.NextId(), decoded);
-        await env.Ingredients.Save(ingredient);
-        env.Search?.IndexIngredient(ingredient);
-        return Response.Redirect("/admin/ingredients");
-    };
+                400)),
+            success: async s =>
+            {
+                var ingredient = BuildIngredient(await env.Ingredients.NextId(), s.Value);
+                await env.Ingredients.Save(ingredient);
+                env.Search?.IndexIngredient(ingredient);
+                return Response.Redirect("/admin/ingredients");
+            });
 
     public static App EditForm(IngredientId id) => _ => async env =>
     {
@@ -104,56 +101,52 @@ public static class AdminIngredientHandlers
 
     public static App Update(IngredientId id) => request => async env =>
     {
-        if ((await env.Ingredients.Find(id)) is [var ingredient])
+        if ((await env.Ingredients.Find(id)) is not [_])
         {
-            var decoded = IngredientForm.Decode(request);
-            if (!decoded.IsValid)
-            {
-                return Response.Html(
-                    AdminIngredientViews.Form(
-                        decoded.Errors,
-                        decoded.Name,
-                        decoded.Description,
-                        decoded.Image,
-                        decoded.Density,
-                        decoded.PieceCount,
-                        decoded.CalorificValue,
-                        decoded.Protein,
-                        decoded.Fat,
-                        decoded.Carbohydrates,
-                        decoded.Sugar,
-                        decoded.Fiber,
-                        env.CurrentUser,
-                        env.T,
-                        formAction: $"/admin/ingredients/{id.Value}",
-                        titleKey: "ingredient.edit_title"),
-                    400);
-            }
-
-            var updated = BuildIngredient(id, decoded);
-            await env.Ingredients.Save(updated);
-            env.Search?.IndexIngredient(updated);
-            return Response.Redirect("/admin/ingredients");
+            return Response.NotFound();
         }
 
-        return Response.NotFound();
+        return await IngredientForm.Decode(request).Match(
+            failure: f => Task.FromResult(Response.Html(
+                AdminIngredientViews.Form(
+                    f.Error,
+                    request.Form.GetValueOrNone("name").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("description").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("image").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("density").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("piece_count").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("calorific_value").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("protein").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("fat").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("carbohydrates").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("sugar").GetOrElse(string.Empty),
+                    request.Form.GetValueOrNone("fiber").GetOrElse(string.Empty),
+                    env.CurrentUser,
+                    env.T,
+                    formAction: $"/admin/ingredients/{id.Value}",
+                    titleKey: "ingredient.edit_title"),
+                400)),
+            success: async s =>
+            {
+                var updated = BuildIngredient(id, s.Value);
+                await env.Ingredients.Save(updated);
+                env.Search?.IndexIngredient(updated);
+                return Response.Redirect("/admin/ingredients");
+            });
     };
 
-    private static Ingredient BuildIngredient(IngredientId id, DecodedIngredientForm decoded) =>
+    private static Ingredient BuildIngredient(IngredientId id, IngredientForm.Valid v) =>
         Ingredient.Create(
             id,
-            new IngredientName(decoded.Name),
-            decoded.Image,
-            decoded.Description,
-            Parse(decoded.Density),
-            Parse(decoded.PieceCount),
-            Parse(decoded.CalorificValue),
-            Parse(decoded.Protein),
-            Parse(decoded.Fat),
-            Parse(decoded.Carbohydrates),
-            Parse(decoded.Sugar),
-            Parse(decoded.Fiber));
-
-    private static decimal Parse(string value) =>
-        decimal.Parse(value, NumberStyles.Any, CultureInfo.InvariantCulture);
+            v.Name,
+            v.Image,
+            v.Description,
+            v.Density,
+            v.PieceCount,
+            v.CalorificValue,
+            v.Protein,
+            v.Fat,
+            v.Carbohydrates,
+            v.Sugar,
+            v.Fiber);
 }

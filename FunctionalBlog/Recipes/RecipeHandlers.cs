@@ -105,76 +105,42 @@ public static class RecipeHandlers
                 env.T));
         }
 
-        var decoded = RecipeForm.Decode(request);
-        if (!decoded.IsValid)
-        {
-            return Response.Html(
+        return await RecipeForm.Decode(request).Match(
+            failure: f => Task.FromResult(Response.Html(
                 RecipeViews.Form(
-                    decoded.Errors,
-                    decoded.Name,
-                    decoded.Description,
-                    decoded.Portions,
-                    decoded.Difficulty,
-                    decoded.Tags,
-                    decoded.Hints,
-                    decoded.Ingredients,
-                    decoded.Steps,
+                    f.Error,
+                    ReadName(request),
+                    ReadDescription(request),
+                    ReadPortions(request),
+                    ReadDifficulty(request),
+                    ReadTags(request),
+                    ReadHints(request),
+                    RecipeForm.ParseIngredients(request),
+                    RecipeForm.ParseRawSteps(request),
                     availableIngredients,
                     env.CurrentUser,
                     env.T),
-                400);
-        }
+                400)),
+            success: async s =>
+            {
+                var authorId = ((AuthenticatedUser)env.CurrentUser).Id;
+                var recipe = Recipe.Create(
+                    id: await env.Recipes.NextId(),
+                    name: s.Value.Name,
+                    description: s.Value.Description,
+                    preparationSteps: s.Value.Steps,
+                    authorId: authorId,
+                    difficulty: s.Value.Difficulty,
+                    tags: s.Value.Tags,
+                    portions: s.Value.Portions,
+                    ingredients: s.Value.Ingredients,
+                    images: [],
+                    hints: s.Value.Hints);
 
-        var authorId = ((AuthenticatedUser)env.CurrentUser).Id;
-        var difficulty = (Difficulty)int.Parse(decoded.Difficulty);
-
-        var recipeIngredients = decoded.Ingredients
-            .Where(ing => !string.IsNullOrEmpty(ing.Id))
-            .Select(ing => new RecipeIngredient(
-                new IngredientId(int.Parse(ing.Id)),
-                decimal.Parse(ing.Amount, CultureInfo.InvariantCulture),
-                RecipeForm.ParseUnit(ing.Unit).GetOrElse(WeightUnit.Gram)))
-            .ToList();
-
-        var tags = string.IsNullOrWhiteSpace(decoded.Tags)
-            ? new List<RecipeTag>()
-            : decoded.Tags
-                .Split(',')
-                .Select(tag => new RecipeTag(tag.Trim()))
-                .Where(tag => tag.Value.Length > 0)
-                .ToList();
-
-        var hints = string.IsNullOrWhiteSpace(decoded.Hints)
-            ? new List<RecipeHint>()
-            : decoded.Hints
-                .Split('\n')
-                .Select(h => h.Trim())
-                .Where(h => h.Length > 0)
-                .Select(h => new RecipeHint(h))
-                .ToList();
-
-        var steps = decoded.Steps
-            .Where(s => s.Length > 0)
-            .Select((text, i) => new PreparationStep(i + 1, text))
-            .ToList();
-
-        var recipe = Recipe.Create(
-            id: await env.Recipes.NextId(),
-            name: new RecipeName(decoded.Name),
-            description: new RecipeDescription(decoded.Description),
-            preparationSteps: steps,
-            authorId: authorId,
-            difficulty: difficulty,
-            tags: tags,
-            portions: int.Parse(decoded.Portions),
-            ingredients: recipeIngredients,
-            images: [],
-            hints: hints);
-
-        await env.Recipes.Save(recipe);
-        env.Search?.IndexRecipe(recipe);
-
-        return Response.Redirect($"/recipes/{recipe.Id.Value}");
+                await env.Recipes.Save(recipe);
+                env.Search?.IndexRecipe(recipe);
+                return Response.Redirect($"/recipes/{recipe.Id.Value}");
+            });
     };
 
     public static App IngredientsSection => request => async env =>
@@ -334,77 +300,43 @@ public static class RecipeHandlers
                 "recipe.edit_title"));
         }
 
-        var decoded = RecipeForm.Decode(request);
-        if (!decoded.IsValid)
-        {
-            return Response.Html(
+        return await RecipeForm.Decode(request).Match(
+            failure: f => Task.FromResult(Response.Html(
                 RecipeViews.Form(
-                    decoded.Errors,
-                    decoded.Name,
-                    decoded.Description,
-                    decoded.Portions,
-                    decoded.Difficulty,
-                    decoded.Tags,
-                    decoded.Hints,
-                    decoded.Ingredients,
-                    decoded.Steps,
+                    f.Error,
+                    ReadName(request),
+                    ReadDescription(request),
+                    ReadPortions(request),
+                    ReadDifficulty(request),
+                    ReadTags(request),
+                    ReadHints(request),
+                    RecipeForm.ParseIngredients(request),
+                    RecipeForm.ParseRawSteps(request),
                     availableIngredients,
                     env.CurrentUser,
                     env.T,
                     formAction,
                     "recipe.edit_title"),
-                400);
-        }
+                400)),
+            success: async s =>
+            {
+                var updated = Recipe.Create(
+                    id: id,
+                    name: s.Value.Name,
+                    description: s.Value.Description,
+                    preparationSteps: s.Value.Steps,
+                    authorId: existing.AuthorId,
+                    difficulty: s.Value.Difficulty,
+                    tags: s.Value.Tags,
+                    portions: s.Value.Portions,
+                    ingredients: s.Value.Ingredients,
+                    images: existing.Images,
+                    hints: s.Value.Hints);
 
-        var difficulty = (Difficulty)int.Parse(decoded.Difficulty);
-
-        var recipeIngredients = decoded.Ingredients
-            .Where(ing => !string.IsNullOrEmpty(ing.Id))
-            .Select(ing => new RecipeIngredient(
-                new IngredientId(int.Parse(ing.Id)),
-                decimal.Parse(ing.Amount, CultureInfo.InvariantCulture),
-                RecipeForm.ParseUnit(ing.Unit).GetOrElse(WeightUnit.Gram)))
-            .ToList();
-
-        var tags = string.IsNullOrWhiteSpace(decoded.Tags)
-            ? new List<RecipeTag>()
-            : decoded.Tags
-                .Split(',')
-                .Select(tag => new RecipeTag(tag.Trim()))
-                .Where(tag => tag.Value.Length > 0)
-                .ToList();
-
-        var hints = string.IsNullOrWhiteSpace(decoded.Hints)
-            ? new List<RecipeHint>()
-            : decoded.Hints
-                .Split('\n')
-                .Select(h => h.Trim())
-                .Where(h => h.Length > 0)
-                .Select(h => new RecipeHint(h))
-                .ToList();
-
-        var steps = decoded.Steps
-            .Where(s => s.Length > 0)
-            .Select((text, i) => new PreparationStep(i + 1, text))
-            .ToList();
-
-        var updated = Recipe.Create(
-            id: id,
-            name: new RecipeName(decoded.Name),
-            description: new RecipeDescription(decoded.Description),
-            preparationSteps: steps,
-            authorId: existing.AuthorId,
-            difficulty: difficulty,
-            tags: tags,
-            portions: int.Parse(decoded.Portions),
-            ingredients: recipeIngredients,
-            images: existing.Images,
-            hints: hints);
-
-        await env.Recipes.Save(updated);
-        env.Search?.IndexRecipe(updated);
-
-        return Response.Redirect($"/recipes/{id.Value}");
+                await env.Recipes.Save(updated);
+                env.Search?.IndexRecipe(updated);
+                return Response.Redirect($"/recipes/{id.Value}");
+            });
     };
 
     private static string ReadName(Request r) => r.Form.GetValueOrDefault("name", string.Empty);

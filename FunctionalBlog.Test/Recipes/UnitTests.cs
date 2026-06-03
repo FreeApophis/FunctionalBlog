@@ -76,4 +76,27 @@ public sealed class UnitTests
 
         Assert.NotEqual<FunctionalBlog.Domain.Recipes.Unit>(weight, volume);
     }
+
+    [Fact]
+    public void All_contains_nine_units()
+    {
+        Assert.Equal(9, FunctionalBlog.Domain.Recipes.Unit.All.Count);
+    }
+
+    [Fact]
+    public void ParseByAbbreviation_round_trips_for_every_unit_in_All()
+    {
+        foreach (var unit in FunctionalBlog.Domain.Recipes.Unit.All)
+        {
+            var result = FunctionalBlog.Domain.Recipes.Unit.ParseByAbbreviation(unit.Abbreviation);
+            Assert.Equal(Option.Some(unit), result);
+        }
+    }
+
+    [Fact]
+    public void ParseByAbbreviation_returns_None_for_unknown_abbreviation()
+    {
+        var result = FunctionalBlog.Domain.Recipes.Unit.ParseByAbbreviation("unknown");
+        FunctionalAssert.None(result);
+    }
 }

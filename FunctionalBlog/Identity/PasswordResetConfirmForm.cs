@@ -2,33 +2,44 @@ namespace FunctionalBlog.Identity;
 
 public static class PasswordResetConfirmForm
 {
-    public static DecodedPasswordResetConfirmForm Decode(Request request)
+    public sealed record Valid(string Token, string Password);
+
+    public static Validated<IReadOnlyList<string>, Valid> Decode(Request request)
     {
-        var token = request.Form.GetValueOrDefault("token", string.Empty).Trim();
-        var password = request.Form.GetValueOrDefault("password", string.Empty);
-        var confirmation = request.Form.GetValueOrDefault("confirmation", string.Empty);
+        var token = request.Form.GetValueOrNone("token").GetOrElse(string.Empty).Trim();
+        var password = request.Form.GetValueOrNone("password").GetOrElse(string.Empty);
+        var confirmation = request.Form.GetValueOrNone("confirmation").GetOrElse(string.Empty);
 
-        var errors = new List<string>();
+        Func<string, string, Valid> create = (t, pwd) => new Valid(t, pwd);
 
-        if (string.IsNullOrEmpty(token))
-        {
-            errors.Add("Ungültiger oder fehlender Reset-Token.");
-        }
-
-        if (password.Length < 8)
-        {
-            errors.Add("Das Passwort muss mindestens 8 Zeichen lang sein.");
-        }
-
-        if (password != confirmation)
-        {
-            errors.Add("Die Passwörter stimmen nicht überein.");
-        }
-
-        return new DecodedPasswordResetConfirmForm(
-            IsValid: errors.Count == 0,
-            Errors: errors,
-            Token: token,
-            Password: password);
+        return create
+            .Apply(TryParseToken(token), Combine)
+            .Apply(TryParsePassword(password, confirmation), Combine);
     }
+
+    private static Validated<IReadOnlyList<string>, string> TryParseToken(string token) =>
+        token.Length > 0
+            ? Validated.Succeed<IReadOnlyList<string>, string>(token)
+            : Validated.Fail<IReadOnlyList<string>, string>(["auth.error.reset_token_required"]);
+
+    private static Validated<IReadOnlyList<string>, string> TryParsePassword(string password, string confirmation)
+    {
+        Func<bool, bool, string> alwaysPassword = (_, _) => password;
+
+        return alwaysPassword
+            .Apply(CheckPasswordLength(password), Combine)
+            .Apply(CheckPasswordMatch(password, confirmation), Combine);
+    }
+
+    private static Validated<IReadOnlyList<string>, bool> CheckPasswordLength(string password) =>
+        password.Length >= 8
+            ? Validated.Succeed<IReadOnlyList<string>, bool>(true)
+            : Validated.Fail<IReadOnlyList<string>, bool>(["auth.error.password_too_short"]);
+
+    private static Validated<IReadOnlyList<string>, bool> CheckPasswordMatch(string password, string confirmation) =>
+        password == confirmation
+            ? Validated.Succeed<IReadOnlyList<string>, bool>(true)
+            : Validated.Fail<IReadOnlyList<string>, bool>(["auth.error.passwords_mismatch"]);
+
+    private static IReadOnlyList<string> Combine(IReadOnlyList<string> a, IReadOnlyList<string> b) => [.. a, .. b];
 }
