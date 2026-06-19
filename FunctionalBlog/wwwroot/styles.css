@@ -1,23 +1,53 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,800;1,9..144,500&family=Inter:wght@400;500;650&display=swap");
+
+/*
+   FoodBlog — warm, artistic theme.
+   A cream-paper canvas with appetising "pop" accents: persimmon, herb-green
+   and honey, instead of the usual grey-on-grey. Headings in Fraunces (a
+   characterful display serif), body text in Inter.
+*/
+
 :root {
     color-scheme: light dark;
-    --bg: #f3eadc;
-    --fg: #1f2933;
-    --muted: #6b7280;
-    --card: #fffaf1;
-    --accent: #6d4aff;
-    --danger: #a3333d;
-    --line: rgba(0, 0, 0, .12);
+
+    --bg: #f9f1e3;
+    --bg-tint: #f1e3cb;
+    --fg: #2a2018;
+    --muted: #8a7560;
+    --card: #fffdf8;
+
+    --accent: #e0542f;          /* persimmon — the headline pop  */
+    --accent-soft: #fbe3d6;     /* tinted wash of the accent     */
+    --green: #2f8f6b;           /* herb green — secondary accent */
+    --honey: #d99323;           /* saffron / honey highlight     */
+    --danger: #c0392b;
+
+    --line: rgba(42, 32, 24, .12);
+    --shadow: 0 14px 36px rgba(91, 53, 24, .14);
+    --shadow-hover: 0 22px 50px rgba(91, 53, 24, .22);
+
+    --radius: 1.1rem;
+    --serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
     :root {
-        --bg: #17212b;
-        --fg: #edf2f7;
-        --muted: #a8b3c2;
-        --card: #202c38;
-        --accent: #d3a84f;
-        --danger: #ff8a8a;
-        --line: rgba(255, 255, 255, .15);
+        --bg: #1a1510;
+        --bg-tint: #241c12;
+        --fg: #f4ead9;
+        --muted: #b3a489;
+        --card: #241d15;
+
+        --accent: #ff7a52;
+        --accent-soft: #3a2418;
+        --green: #5cc79b;
+        --honey: #e8b35a;
+        --danger: #ff8a7a;
+
+        --line: rgba(255, 245, 230, .14);
+        --shadow: 0 14px 36px rgba(0, 0, 0, .45);
+        --shadow-hover: 0 22px 50px rgba(0, 0, 0, .55);
     }
 }
 
@@ -25,51 +55,251 @@
 
 body {
     margin: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    background: var(--bg);
+    font-family: var(--sans);
     color: var(--fg);
-    line-height: 1.6;
+    line-height: 1.65;
+    background:
+        radial-gradient(1200px 700px at 12% -8%, var(--accent-soft), transparent 60%),
+        radial-gradient(1000px 600px at 100% 0%, color-mix(in srgb, var(--honey) 22%, transparent), transparent 55%),
+        linear-gradient(180deg, var(--bg-tint), var(--bg) 30%);
+    background-attachment: fixed;
+    min-height: 100vh;
 }
+
+::selection { background: var(--accent); color: #fff; }
+
+/* ---- Navigation ---------------------------------------------------------- */
+
+nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .35rem .7rem;
+    padding: .9rem clamp(1rem, 4vw, 2.5rem);
+    background: color-mix(in srgb, var(--card) 82%, transparent);
+    backdrop-filter: saturate(140%) blur(10px);
+    border-bottom: 1px solid var(--line);
+    box-shadow: 0 2px 20px rgba(91, 53, 24, .06);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-weight: 500;
+}
+
+/* A little hand-made emblem so the bar isn't anonymous. */
+nav::before {
+    content: "";
+    width: .85rem;
+    height: .85rem;
+    border-radius: 50%;
+    margin-right: .3rem;
+    background: conic-gradient(from 210deg, var(--accent), var(--honey), var(--green), var(--accent));
+    box-shadow: 0 0 0 3px var(--accent-soft);
+    flex: 0 0 auto;
+}
+
+nav a {
+    color: var(--fg);
+    text-decoration: none;
+    font-weight: 500;
+    padding: .15rem .1rem;
+    transition: color .15s ease;
+}
+
+nav a:hover { color: var(--accent); }
+
+/* ---- Layout -------------------------------------------------------------- */
 
 main {
     width: min(760px, calc(100vw - 2rem));
-    margin: 3rem auto;
+    margin: 3.25rem auto 5rem;
 }
 
-article, form, .errors {
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 1rem;
-    padding: 1rem 1.25rem;
-    margin: 1rem 0;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .06);
-}
+/* ---- Typography ---------------------------------------------------------- */
 
-h1, h2 { line-height: 1.15; }
-a { color: var(--accent); font-weight: 650; }
-small { color: var(--muted); display: block; margin-bottom: .75rem; }
-label { display: grid; gap: .35rem; margin: 1rem 0; font-weight: 650; }
-
-input, textarea {
-    width: 100%;
-    border: 1px solid var(--line);
-    border-radius: .75rem;
-    padding: .8rem;
-    font: inherit;
-    background: color-mix(in srgb, var(--card), white 8%);
+h1, h2, h3 {
+    font-family: var(--serif);
+    font-optical-sizing: auto;
+    line-height: 1.1;
+    letter-spacing: -.01em;
     color: var(--fg);
 }
+
+h1 {
+    font-size: clamp(2.1rem, 5vw, 3rem);
+    font-weight: 800;
+    margin: 0 0 1.4rem;
+}
+
+/* Artistic swash under the page title. */
+main > h1::after {
+    content: "";
+    display: block;
+    width: 3.2rem;
+    height: .32rem;
+    margin-top: .7rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--honey));
+}
+
+h2 { font-size: 1.6rem; font-weight: 600; margin: 0 0 .4rem; }
+h2 a { color: inherit; text-decoration: none; }
+h2 a:hover { color: var(--accent); }
+
+p { margin: .75rem 0; }
+
+a {
+    color: var(--accent);
+    font-weight: 650;
+    text-decoration: none;
+    background-image: linear-gradient(var(--accent), var(--accent));
+    background-size: 0% 2px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size .2s ease;
+}
+
+a:hover { background-size: 100% 2px; }
+
+small {
+    color: var(--muted);
+    display: block;
+    margin-bottom: .75rem;
+    font-size: .85rem;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+}
+
+/* ---- Cards: articles, forms, errors ------------------------------------- */
+
+article, form.card, .errors, form:not(.search-form):not(.lang-form):not([style]) {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 1.4rem 1.6rem;
+    margin: 1.25rem 0;
+    box-shadow: var(--shadow);
+}
+
+article {
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+
+/* Coloured spine that grows on hover. */
+article::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: .35rem;
+    background: linear-gradient(180deg, var(--accent), var(--honey));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform .2s ease;
+}
+
+article:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-hover);
+}
+
+article:hover::before { transform: scaleX(1); }
+
+.post-text { white-space: normal; }
+.post-text p:first-child { margin-top: 0; }
+
+/* ---- Forms --------------------------------------------------------------- */
+
+label {
+    display: grid;
+    gap: .4rem;
+    margin: 1.1rem 0;
+    font-weight: 650;
+}
+
+input, textarea, select {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: .8rem;
+    padding: .8rem .9rem;
+    font: inherit;
+    color: var(--fg);
+    background: color-mix(in srgb, var(--card), white 6%);
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+textarea { resize: vertical; }
 
 button {
     border: 0;
     border-radius: 999px;
-    padding: .75rem 1.2rem;
+    padding: .75rem 1.4rem;
     font: inherit;
-    font-weight: 750;
+    font-weight: 650;
     cursor: pointer;
-    background: var(--accent);
-    color: white;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent), var(--honey));
+    box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 35%, transparent);
+    transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
 }
 
-.errors { color: var(--danger); }
-.post-text { white-space: normal; }
+button:hover { transform: translateY(-2px); filter: brightness(1.05); box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 45%, transparent); }
+button:active { transform: translateY(0); }
+
+/* ---- Inline nav forms (search / language / logout) ----------------------- */
+
+.search-form, .lang-form {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    margin: 0;
+}
+
+.search-form input {
+    width: auto;
+    padding: .4rem .8rem;
+    border-radius: 999px;
+}
+
+.search-form button, .lang-form button, nav button {
+    padding: .4rem 1rem;
+    font-size: .9rem;
+    box-shadow: none;
+}
+
+.lang-form label, nav label {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    margin: 0;
+    font-weight: 500;
+    color: var(--muted);
+}
+
+.lang-form select {
+    width: auto;
+    padding: .35rem .6rem;
+    border-radius: .6rem;
+}
+
+/* Logout sits inline next to the nav links. */
+nav form[style] { display: inline-flex; align-items: center; }
+
+/* ---- Errors -------------------------------------------------------------- */
+
+.errors {
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 40%, var(--line));
+    background: color-mix(in srgb, var(--danger) 8%, var(--card));
+}
+
+.errors ul { margin: .25rem 0; padding-left: 1.2rem; }
+
+ul { line-height: 1.7; }

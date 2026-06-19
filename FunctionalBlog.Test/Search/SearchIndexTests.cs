@@ -114,6 +114,43 @@ public sealed class SearchIndexTests : IDisposable
         Assert.NotEmpty(_index.Search("Zucker"));
     }
 
+    [Fact]
+    public async Task Restarting_over_same_directory_does_not_accumulate_orphaned_segments()
+    {
+        var indexPath = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+
+        var articles = new InMemoryArticleRepository();
+        var recipes = new InMemoryRecipeRepository();
+        var ingredients = new InMemoryIngredientRepository();
+
+        var articleId = await articles.NextId();
+        await articles.Save(AnArticleEntity(articleId, "Rührkuchen"));
+
+        try
+        {
+            // Simulate many application restarts over the same persisted index directory.
+            for (var restart = 0; restart < 25; restart++)
+            {
+                using var index = new LeanCorpusSearchIndex(indexPath);
+                await index.RebuildAsync(articles, recipes, ingredients);
+                Assert.NotEmpty(index.Search("Rührkuchen"));
+            }
+
+            // A from-scratch rebuild must not leave the directory growing without bound:
+            // orphaned segment files from prior runs are what climbed the production index
+            // to seg_186 and caused the file-lock crash on startup.
+            var segmentCount = Directory.GetFiles(indexPath, "seg_*.pos").Length;
+            Assert.True(segmentCount <= 5, $"Expected a bounded segment count after restarts, but found {segmentCount}.");
+        }
+        finally
+        {
+            if (Directory.Exists(indexPath))
+            {
+                Directory.Delete(indexPath, recursive: true);
+            }
+        }
+    }
+
     public void Dispose()
     {
         _index.Dispose();

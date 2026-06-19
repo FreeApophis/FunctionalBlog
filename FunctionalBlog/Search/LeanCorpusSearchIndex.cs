@@ -27,7 +27,7 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
 
     public LeanCorpusSearchIndex(string indexPath)
     {
-        Directory.CreateDirectory(indexPath);
+        PrepareCleanDirectory(indexPath);
         _directory = new MMapDirectory(indexPath);
         _writer = new IndexWriter(_directory, new IndexWriterConfig());
         _manager = new SearcherManager(_directory, null);
@@ -141,6 +141,31 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
         _manager.Dispose();
         _writer.Dispose();
         _directory.Dispose();
+    }
+
+    // The on-disk index is a rebuildable cache: Program.Main repopulates it from the
+    // database via RebuildAsync on every startup, so nothing persisted here is ever read.
+    // Starting from a clean directory stops superseded segment files from accumulating
+    // across restarts (which grew the production index to seg_186 and triggered a
+    // file-lock crash on startup). It also surfaces a leftover/second instance early:
+    // the delete fails fast if another process still holds the index files memory-mapped.
+    private static void PrepareCleanDirectory(string indexPath)
+    {
+        Directory.CreateDirectory(indexPath);
+
+        foreach (var file in Directory.EnumerateFiles(indexPath))
+        {
+            try
+            {
+                File.Delete(file);
+            }
+            catch (IOException ex)
+            {
+                throw new IOException(
+                    $"Could not clear the search index at '{indexPath}'. Another FunctionalBlog instance may still be running and holding the index files.",
+                    ex);
+            }
+        }
     }
 
     private Query ParseQuery(string userInput)

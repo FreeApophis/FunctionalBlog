@@ -12,6 +12,7 @@ public static class DatabaseMigrator
             .SqliteDatabase(connectionString)
             .WithScriptsEmbeddedInAssembly(typeof(DatabaseMigrator).Assembly)
             .WithTransaction()
+            .WithVariablesDisabled()
             .LogToNowhere()
             .Build()
             .PerformUpgrade();
