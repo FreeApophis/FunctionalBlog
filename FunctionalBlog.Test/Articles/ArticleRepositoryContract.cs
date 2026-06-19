@@ -75,6 +75,19 @@ public abstract class ArticleRepositoryContract
     }
 
     [Fact]
+    public async Task Save_then_Find_preserves_the_cover_image_id()
+    {
+        var repo = CreateRepository();
+        var id = await repo.NextId();
+        var article = AnArticle(id) with { CoverImageId = Option.Some(new ImageId(42)) };
+
+        await repo.Save(article);
+
+        var found = FunctionalAssert.Some(await repo.Find(id));
+        Assert.Equal(Option.Some(new ImageId(42)), found.CoverImageId);
+    }
+
+    [Fact]
     public async Task Delete_removes_the_article()
     {
         var repo = CreateRepository();

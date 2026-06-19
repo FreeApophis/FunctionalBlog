@@ -118,7 +118,8 @@ public sealed class AdminHandlerTests
         Log: new ConsoleLog(),
         CurrentUser: principal,
         Recipes: new InMemoryRecipeRepository(),
-        Ingredients: new InMemoryIngredientRepository());
+        Ingredients: new InMemoryIngredientRepository(),
+        Images: new InMemoryImageRepository());
 
     private static Request ARequest() =>
         new(HttpMethod.Get, "/admin/users", Empty, Empty, Empty, Empty);

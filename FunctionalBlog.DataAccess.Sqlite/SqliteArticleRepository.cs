@@ -13,14 +13,14 @@ public sealed class SqliteArticleRepository : IArticleRepository
     public async ValueTask<IReadOnlyList<Article>> All()
     {
         var rows = await _connection.QueryAsync<ArticleRow>(
-            "SELECT id AS Id, title AS Title, teaser AS Teaser, text AS Text, author_id AS AuthorId, published_at AS PublishedAt FROM articles ORDER BY published_at DESC");
+            "SELECT id AS Id, title AS Title, teaser AS Teaser, text AS Text, author_id AS AuthorId, published_at AS PublishedAt, cover_image_id AS CoverImageId FROM articles ORDER BY published_at DESC");
         return rows.Select(ToArticle).ToList();
     }
 
     public async ValueTask<Option<Article>> Find(ArticleId id)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<ArticleRow>(
-            "SELECT id AS Id, title AS Title, teaser AS Teaser, text AS Text, author_id AS AuthorId, published_at AS PublishedAt FROM articles WHERE id = @id",
+            "SELECT id AS Id, title AS Title, teaser AS Teaser, text AS Text, author_id AS AuthorId, published_at AS PublishedAt, cover_image_id AS CoverImageId FROM articles WHERE id = @id",
             new { id = id.Value });
 
         return Option.FromNullable(row).Select(ToArticle);
@@ -40,8 +40,8 @@ public sealed class SqliteArticleRepository : IArticleRepository
     {
         await _connection.ExecuteAsync(
             """
-            INSERT OR REPLACE INTO articles (id, title, teaser, text, author_id, published_at)
-            VALUES (@Id, @Title, @Teaser, @Text, @AuthorId, @PublishedAt)
+            INSERT OR REPLACE INTO articles (id, title, teaser, text, author_id, published_at, cover_image_id)
+            VALUES (@Id, @Title, @Teaser, @Text, @AuthorId, @PublishedAt, @CoverImageId)
             """,
             new
             {
@@ -51,6 +51,7 @@ public sealed class SqliteArticleRepository : IArticleRepository
                 Text = article.Text.Value,
                 AuthorId = article.AuthorId.Value,
                 article.PublishedAt,
+                CoverImageId = article.CoverImageId.Match(none: (int?)null, some: imageId => imageId.Value),
             });
     }
 
@@ -66,7 +67,8 @@ public sealed class SqliteArticleRepository : IArticleRepository
             new ArticleTeaser(row.Teaser),
             new ArticleText(row.Text),
             new UserId((int)row.AuthorId),
-            row.PublishedAt);
+            row.PublishedAt,
+            row.CoverImageId is { } coverId ? Option.Some(new ImageId((int)coverId)) : Option<ImageId>.None);
 
-    private sealed record ArticleRow(long Id, string Title, string Teaser, string Text, long AuthorId, DateTimeOffset PublishedAt);
+    private sealed record ArticleRow(long Id, string Title, string Teaser, string Text, long AuthorId, DateTimeOffset PublishedAt, long? CoverImageId);
 }

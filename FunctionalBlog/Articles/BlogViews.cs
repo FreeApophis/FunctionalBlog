@@ -43,9 +43,14 @@ public static class BlogViews
             ? Html.Form($"/articles/{article.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Raw(" · ") + Html.Button(t("common.delete")), style: "display:inline")
             : HtmlString.Empty;
 
+        var cover = article.CoverImageId.Match(
+            none: () => HtmlString.Empty,
+            some: imageId => Html.Div("cover", Html.Img($"/images/{imageId.Value}", article.Title.Value, cssClass: "cover-image")));
+
         var body = Html.P(Html.Link("/", t("common.back")) + editLink + deleteForm) +
             Html.H1(article.Title.Value) +
             Html.Small($"{t("article.by")} {authorName} · {article.PublishedAt.LocalDateTime:g}") +
+            cover +
             Html.P(Html.Text(article.Teaser.Value)) +
             Html.Div("post-text", Html.Paragraphs(article.Text.Value));
 
@@ -59,7 +64,8 @@ public static class BlogViews
         string text,
         ViewContext ctx,
         string formAction = "/articles",
-        string titleKey = "article.new_title")
+        string titleKey = "article.new_title",
+        Option<ImageId> currentCover = default)
     {
         var (_, t, csrfToken) = ctx;
 
@@ -67,13 +73,21 @@ public static class BlogViews
             ? HtmlString.Empty
             : Html.Div("errors", Html.Ul(errors.Select(key => Html.Text(t(key)))));
 
+        var coverField = currentCover.Match(
+            none: () => Html.Label(Html.Text(t("article.field.cover_image")) + Html.InputFile("cover", "image/*")),
+            some: imageId =>
+                Html.Div("cover", Html.Img($"/images/{imageId.Value}", title, cssClass: "cover-image")) +
+                Html.Label(Html.Text(t("article.field.cover_image")) + Html.InputFile("cover", "image/*")) +
+                Html.Label(Html.InputCheckbox("remove_cover", "on", false) + Html.Text(t("article.cover_remove"))));
+
         var formBody =
             Html.CsrfField(csrfToken) +
             Html.Label(Html.Text(t("article.field.title")) + Html.Input("title", title)) +
             Html.Label(Html.Text(t("article.field.teaser")) + Html.Raw($"""<textarea name="teaser" rows="3">{Html.Encode(teaser)}</textarea>""")) +
             Html.Label(Html.Text(t("article.field.text")) + Html.Raw($"""<textarea name="text" rows="10">{Html.Encode(text)}</textarea>""")) +
+            coverField +
             Html.Button(t("article.submit"));
-        var form = Html.Form(formAction, formBody);
+        var form = Html.Form(formAction, formBody, enctype: "multipart/form-data");
 
         var body = Html.P(Html.Link("/", t("common.back"))) +
             Html.H1(t(titleKey)) +

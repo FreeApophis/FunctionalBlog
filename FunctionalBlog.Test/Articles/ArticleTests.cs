@@ -14,6 +14,6 @@ public class ArticleTests
 
         var article = Article.Create(id, title, teaser, text, authorId, publishedAt);
 
-        Assert.Equal(new Article(id, title, teaser, text, authorId, publishedAt), article);
+        Assert.Equal(new Article(id, title, teaser, text, authorId, publishedAt, Option<ImageId>.None), article);
     }
 }

@@ -21,39 +21,62 @@ public static class Seeder
         }
     }
 
+    private static readonly PermissionRule[] DefaultRoleRules =
+    [
+        new("View", "article"),
+        new("View", "image"),
+    ];
+
+    private static readonly PermissionRule[] AdminRoleRules =
+    [
+        new("Manage", "article"),
+        new("Manage", "user"),
+        new("Manage", "role"),
+        new("Manage", "rule"),
+        new("Create", "article"),
+        new("Edit", "article"),
+        new("Delete", "article"),
+        new("Create", "role"),
+        new("View", "article"),
+        new("Create", "recipe"),
+        new("Edit", "recipe"),
+        new("Delete", "recipe"),
+        new("Manage", "recipe"),
+        new("Create", "ingredient"),
+        new("Edit", "ingredient"),
+        new("Delete", "ingredient"),
+        new("Manage", "ingredient"),
+        new("Create", "image"),
+        new("Edit", "image"),
+        new("Delete", "image"),
+        new("Manage", "image"),
+    ];
+
     private static async ValueTask SeedRoles(Env env)
     {
-        if ((await env.Roles.FindByName(DefaultRoleName)) is [])
+        await EnsureRole(env, DefaultRoleName, DefaultRoleRules);
+        await EnsureRole(env, AdminRoleName, AdminRoleRules);
+    }
+
+    // Creates the role if missing and additively grants any required permissions it is
+    // lacking, so existing databases pick up rules introduced by new features (e.g. images).
+    private static async ValueTask EnsureRole(Env env, string name, IReadOnlyList<PermissionRule> requiredRules)
+    {
+        var found = await env.Roles.FindByName(name);
+        var role = found is [var existing] ? existing : Role.Create(await env.Roles.NextId(), name);
+
+        var missing = requiredRules.Where(rule => !role.Rules.Contains(rule)).ToList();
+        if (found is [_] && missing.Count == 0)
         {
-            var id = await env.Roles.NextId();
-            var role = Role.Create(id, DefaultRoleName)
-                .AddRule(new PermissionRule("View", "article"));
-            await env.Roles.Save(role);
+            return;
         }
 
-        if ((await env.Roles.FindByName(AdminRoleName)) is [])
+        foreach (var rule in missing)
         {
-            var id = await env.Roles.NextId();
-            var role = Role.Create(id, AdminRoleName)
-                .AddRule(new PermissionRule("Manage", "article"))
-                .AddRule(new PermissionRule("Manage", "user"))
-                .AddRule(new PermissionRule("Manage", "role"))
-                .AddRule(new PermissionRule("Manage", "rule"))
-                .AddRule(new PermissionRule("Create", "article"))
-                .AddRule(new PermissionRule("Edit", "article"))
-                .AddRule(new PermissionRule("Delete", "article"))
-                .AddRule(new PermissionRule("Create", "role"))
-                .AddRule(new PermissionRule("View", "article"))
-                .AddRule(new PermissionRule("Create", "recipe"))
-                .AddRule(new PermissionRule("Edit", "recipe"))
-                .AddRule(new PermissionRule("Delete", "recipe"))
-                .AddRule(new PermissionRule("Manage", "recipe"))
-                .AddRule(new PermissionRule("Create", "ingredient"))
-                .AddRule(new PermissionRule("Edit", "ingredient"))
-                .AddRule(new PermissionRule("Delete", "ingredient"))
-                .AddRule(new PermissionRule("Manage", "ingredient"));
-            await env.Roles.Save(role);
+            role = role.AddRule(rule);
         }
+
+        await env.Roles.Save(role);
     }
 
     private static async ValueTask SeedAdminUser(Env env)

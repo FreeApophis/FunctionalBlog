@@ -6,4 +6,7 @@ public sealed record Request(
     IReadOnlyDictionary<string, string> Headers,
     IReadOnlyDictionary<string, string> Query,
     IReadOnlyDictionary<string, string> Form,
-    IReadOnlyDictionary<string, string> Cookies);
+    IReadOnlyDictionary<string, string> Cookies)
+{
+    public IReadOnlyList<UploadedFile> Files { get; init; } = [];
+}

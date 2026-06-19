@@ -14,8 +14,11 @@ public static class NavViews
             var adminLink = principal.Can<Manage>(new UserResource())
                 ? Html.Raw(" · ") + Html.Link("/admin/users", t("nav.admin"))
                 : HtmlString.Empty;
+            var imagesLink = principal.Can<Manage>(new ImageResource())
+                ? Html.Raw(" · ") + Html.Link("/images", t("nav.images"))
+                : HtmlString.Empty;
 
-            links += Html.Raw(" · ") + Html.Text(user.DisplayName.Value) + Html.Raw(" · ") + settingsLink + Html.Raw(" · ") + logoutForm + adminLink;
+            links += Html.Raw(" · ") + Html.Text(user.DisplayName.Value) + Html.Raw(" · ") + settingsLink + Html.Raw(" · ") + logoutForm + adminLink + imagesLink;
         }
         else
         {

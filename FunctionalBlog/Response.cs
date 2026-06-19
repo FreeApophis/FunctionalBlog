@@ -8,6 +8,8 @@ public sealed record Response(
 {
     public IReadOnlyList<string> SetCookies { get; init; } = [];
 
+    public byte[]? Binary { get; init; }
+
     public Response WithCookie(string cookieHeader) =>
         this with { SetCookies = [..SetCookies, cookieHeader] };
 
@@ -43,6 +45,9 @@ public sealed record Response(
         var t = resolved.T;
         return Html(Layout.Page(t("error.notfound_heading"), FunctionalBlog.Html.H1(t("error.notfound_heading")) + FunctionalBlog.Html.P(FunctionalBlog.Html.Text(t("error.notfound_message"))), resolved), 404);
     }
+
+    public static Response Bytes(string contentType, byte[] bytes, IReadOnlyDictionary<string, string>? headers = null) =>
+        new(200, contentType, headers ?? EmptyHeaders, string.Empty) { Binary = bytes };
 
     public static Response JsonDownload(string filename, string body) =>
         new(

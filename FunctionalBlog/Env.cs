@@ -12,6 +12,7 @@ public sealed record Env(
     IPrincipal CurrentUser,
     IRecipeRepository Recipes,
     IIngredientRepository Ingredients,
+    IImageRepository Images,
     ITranslationRepository? Translations = null,
     TranslationCache? TranslationCache = null,
     ISearchIndex? Search = null,

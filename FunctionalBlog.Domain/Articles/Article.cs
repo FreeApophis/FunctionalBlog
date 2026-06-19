@@ -6,7 +6,8 @@ public sealed record Article(
     ArticleTeaser Teaser,
     ArticleText Text,
     UserId AuthorId,
-    DateTimeOffset PublishedAt)
+    DateTimeOffset PublishedAt,
+    Option<ImageId> CoverImageId)
 {
     public static Article Create(
         ArticleId id,
@@ -14,6 +15,7 @@ public sealed record Article(
         ArticleTeaser teaser,
         ArticleText text,
         UserId authorId,
-        DateTimeOffset publishedAt) =>
-        new(id, title, teaser, text, authorId, publishedAt);
+        DateTimeOffset publishedAt,
+        Option<ImageId> coverImageId = default) =>
+        new(id, title, teaser, text, authorId, publishedAt, coverImageId);
 }

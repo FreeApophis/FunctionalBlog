@@ -116,7 +116,8 @@ public class CsrfMiddlewareTests
         Log: new ConsoleLog(),
         CurrentUser: Guest.Instance,
         Recipes: new InMemoryRecipeRepository(),
-        Ingredients: new InMemoryIngredientRepository());
+        Ingredients: new InMemoryIngredientRepository(),
+        Images: new InMemoryImageRepository());
 
     private static readonly App PassThrough200 = _ => _ => ValueTask.FromResult(Response.Text("ok"));
     private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();

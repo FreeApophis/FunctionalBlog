@@ -302,6 +302,44 @@ public class RouterTests
         Assert.Equal("/login", response.Headers["Location"]);
     }
 
+    [Fact]
+    public async Task Get_images_library_redirects_guest_to_login()
+    {
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request(HttpMethod.Get, "/images", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
+    public async Task Post_images_upload_redirects_guest_to_login()
+    {
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request(HttpMethod.Post, "/images", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
+    public async Task Get_image_by_id_is_public_and_returns_404_for_unknown_image()
+    {
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request(HttpMethod.Get, "/images/987654", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(404, response.Status);
+    }
+
     private static Env BuildEnv() => new(
         Articles: new InMemoryArticleRepository(),
         Users: new InMemoryUserRepository(),
@@ -313,7 +351,8 @@ public class RouterTests
         Log: new ConsoleLog(),
         CurrentUser: Guest.Instance,
         Recipes: new InMemoryRecipeRepository(),
-        Ingredients: new InMemoryIngredientRepository());
+        Ingredients: new InMemoryIngredientRepository(),
+        Images: new InMemoryImageRepository());
 
     private static readonly App NotFoundTerminal = _ => _ => ValueTask.FromResult(Response.NotFound());
     private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();

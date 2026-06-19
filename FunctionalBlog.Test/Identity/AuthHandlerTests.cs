@@ -143,7 +143,8 @@ public sealed class AuthHandlerTests
         Log: log ?? new ConsoleLog(),
         CurrentUser: Guest.Instance,
         Recipes: new InMemoryRecipeRepository(),
-        Ingredients: new InMemoryIngredientRepository());
+        Ingredients: new InMemoryIngredientRepository(),
+        Images: new InMemoryImageRepository());
 
     private static async Task SeedRoles(Env env)
     {

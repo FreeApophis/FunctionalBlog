@@ -77,7 +77,8 @@ public sealed class AuthHelperTests
         Log: new ConsoleLog(),
         CurrentUser: principal,
         Recipes: new InMemoryRecipeRepository(),
-        Ingredients: new InMemoryIngredientRepository());
+        Ingredients: new InMemoryIngredientRepository(),
+        Images: new InMemoryImageRepository());
 
     private static AuthenticatedUser AuthUser(IReadOnlyList<Role>? roles = null)
     {

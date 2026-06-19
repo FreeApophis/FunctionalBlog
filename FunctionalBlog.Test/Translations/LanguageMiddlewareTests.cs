@@ -45,7 +45,8 @@ public sealed class LanguageMiddlewareTests
         Log: new ConsoleLog(),
         CurrentUser: Guest.Instance,
         Recipes: new InMemoryRecipeRepository(),
-        Ingredients: new InMemoryIngredientRepository());
+        Ingredients: new InMemoryIngredientRepository(),
+        Images: new InMemoryImageRepository());
 
     private static Request RequestWithCookie(string name, string value) =>
         new(HttpMethod.Get, "/", Empty, Empty, Empty, new Dictionary<string, string> { [name] = value });

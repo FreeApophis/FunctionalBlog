@@ -26,12 +26,23 @@ public static class Html
 
     public static HtmlString Button(string text) => new HtmlString.Safe($"<button type=\"submit\">{Encode(text)}</button>");
 
-    public static HtmlString Form(string action, HtmlString body, Option<string> cssClass = default, Option<string> style = default)
+    public static HtmlString Form(string action, HtmlString body, Option<string> cssClass = default, Option<string> style = default, Option<string> enctype = default)
     {
         var classAttr = cssClass.Match(none: string.Empty, some: c => $" class=\"{Encode(c)}\"");
         var styleAttr = style.Match(none: string.Empty, some: s => $" style=\"{Encode(s)}\"");
+        var enctypeAttr = enctype.Match(none: string.Empty, some: e => $" enctype=\"{Encode(e)}\"");
 
-        return new HtmlString.Safe($"""<form method="post" action="{Encode(action)}"{classAttr}{styleAttr}>{body.Render()}</form>""");
+        return new HtmlString.Safe($"""<form method="post" action="{Encode(action)}"{classAttr}{styleAttr}{enctypeAttr}>{body.Render()}</form>""");
+    }
+
+    public static HtmlString InputFile(string name, string accept) =>
+        new HtmlString.Safe($"""<input type="file" name="{Encode(name)}" accept="{Encode(accept)}" />""");
+
+    public static HtmlString Img(string src, string alt, Option<string> cssClass = default)
+    {
+        var classAttr = cssClass.Match(none: string.Empty, some: c => $" class=\"{Encode(c)}\"");
+
+        return new HtmlString.Safe($"""<img src="{Encode(src)}" alt="{Encode(alt)}"{classAttr} />""");
     }
 
     public static HtmlString Fieldset(string legend, HtmlString body) =>

@@ -27,6 +27,46 @@ public sealed class SeederTests
     }
 
     [Fact]
+    public async Task SeedAsync_grants_admin_image_permissions()
+    {
+        var env = BuildEnv();
+
+        await Seeder.SeedAsync(env);
+
+        var role = FunctionalAssert.Some(await env.Roles.FindByName("Admin"));
+
+        Assert.Contains(new PermissionRule("Create", "image"), role!.Rules);
+        Assert.Contains(new PermissionRule("Delete", "image"), role.Rules);
+        Assert.Contains(new PermissionRule("Manage", "image"), role.Rules);
+    }
+
+    [Fact]
+    public async Task SeedAsync_adds_missing_image_permissions_to_a_preexisting_admin_role()
+    {
+        var env = BuildEnv();
+        var id = await env.Roles.NextId();
+        await env.Roles.Save(Role.Create(id, "Admin").AddRule(new PermissionRule("Manage", "user")));
+
+        await Seeder.SeedAsync(env);
+
+        var role = FunctionalAssert.Some(await env.Roles.FindByName("Admin"));
+        Assert.Contains(new PermissionRule("Manage", "image"), role!.Rules);
+        Assert.Contains(new PermissionRule("Create", "image"), role.Rules);
+    }
+
+    [Fact]
+    public async Task SeedAsync_does_not_duplicate_rules_when_called_twice()
+    {
+        var env = BuildEnv();
+
+        await Seeder.SeedAsync(env);
+        await Seeder.SeedAsync(env);
+
+        var role = FunctionalAssert.Some(await env.Roles.FindByName("Admin"));
+        Assert.Equal(role!.Rules.Distinct().Count(), role.Rules.Count);
+    }
+
+    [Fact]
     public async Task SeedAsync_creates_default_benutzer_role()
     {
         var env = BuildEnv();
@@ -120,5 +160,6 @@ public sealed class SeederTests
         Log: new ConsoleLog(),
         CurrentUser: Guest.Instance,
         Recipes: new InMemoryRecipeRepository(),
-        Ingredients: new InMemoryIngredientRepository());
+        Ingredients: new InMemoryIngredientRepository(),
+        Images: new InMemoryImageRepository());
 }
