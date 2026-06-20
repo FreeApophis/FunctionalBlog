@@ -97,6 +97,7 @@ public sealed class SearchIndexTests : IDisposable
         var articles = new InMemoryArticleRepository();
         var recipes = new InMemoryRecipeRepository();
         var ingredients = new InMemoryIngredientRepository();
+        var pages = new InMemoryPageRepository();
 
         var articleId = await articles.NextId();
         await articles.Save(AnArticleEntity(articleId, "Rührkuchen"));
@@ -107,11 +108,37 @@ public sealed class SearchIndexTests : IDisposable
         var ingredientId = await ingredients.NextId();
         await ingredients.Save(AnIngredientEntity(ingredientId, "Zucker"));
 
-        await _index.RebuildAsync(articles, recipes, ingredients);
+        var pageId = await pages.NextId();
+        await pages.Save(APageEntity(pageId, "Impressum"));
+
+        await _index.RebuildAsync(articles, recipes, ingredients, pages);
 
         Assert.NotEmpty(_index.Search("Rührkuchen"));
         Assert.NotEmpty(_index.Search("Pfannkuchen"));
         Assert.NotEmpty(_index.Search("Zucker"));
+        Assert.NotEmpty(_index.Search("Impressum"));
+    }
+
+    [Fact]
+    public async Task IndexPage_makes_a_page_searchable_by_title()
+    {
+        _index.IndexPage(Page.Create(new PageId(7), new PageTitle("Über uns"), new PageContent("Wir backen seit 1990.")));
+
+        var results = _index.Search("uns");
+
+        Assert.Single(results);
+        Assert.Equal("page", results[0].Type);
+        Assert.Equal(7, results[0].Id);
+        Assert.Equal("Über uns", results[0].Title);
+    }
+
+    [Fact]
+    public void DeleteDocument_removes_a_page_from_results()
+    {
+        _index.IndexPage(Page.Create(new PageId(3), new PageTitle("Zu löschen"), new PageContent("Diese Seite wird gelöscht.")));
+        _index.DeleteDocument("page", 3);
+
+        Assert.Empty(_index.Search("löschen"));
     }
 
     [Fact]
@@ -122,6 +149,7 @@ public sealed class SearchIndexTests : IDisposable
         var articles = new InMemoryArticleRepository();
         var recipes = new InMemoryRecipeRepository();
         var ingredients = new InMemoryIngredientRepository();
+        var pages = new InMemoryPageRepository();
 
         var articleId = await articles.NextId();
         await articles.Save(AnArticleEntity(articleId, "Rührkuchen"));
@@ -132,7 +160,7 @@ public sealed class SearchIndexTests : IDisposable
             for (var restart = 0; restart < 25; restart++)
             {
                 using var index = new LeanCorpusSearchIndex(indexPath);
-                await index.RebuildAsync(articles, recipes, ingredients);
+                await index.RebuildAsync(articles, recipes, ingredients, pages);
                 Assert.NotEmpty(index.Search("Rührkuchen"));
             }
 
@@ -206,4 +234,7 @@ public sealed class SearchIndexTests : IDisposable
 
     private static Ingredient AnIngredientEntity(IngredientId id, string name) =>
         AnIngredient(id.Value, name, $"Beschreibung von {name}");
+
+    private static Page APageEntity(PageId id, string title) =>
+        Page.Create(id, new PageTitle(title), new PageContent($"Inhalt von {title}"));
 }

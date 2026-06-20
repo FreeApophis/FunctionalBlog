@@ -27,7 +27,7 @@ internal class Program
         env = env with { TranslationCache = translationCache };
 
         using var search = new Search.LeanCorpusSearchIndex(indexPath);
-        await search.RebuildAsync(env.Articles, env.Recipes, env.Ingredients);
+        await search.RebuildAsync(env.Articles, env.Recipes, env.Ingredients, env.Pages);
         env = env with { Search = search };
 
         App app = Functional.Compose(

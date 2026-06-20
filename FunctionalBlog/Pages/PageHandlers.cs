@@ -27,6 +27,7 @@ public static class PageHandlers
             {
                 var page = Page.Create(await env.Pages.NextId(), s.Value.Title, s.Value.Content);
                 await env.Pages.Save(page);
+                env.Search?.IndexPage(page);
                 return Response.Redirect($"/pages/{page.Id.Value}");
             });
 
@@ -65,7 +66,9 @@ public static class PageHandlers
                 400)),
             success: async s =>
             {
-                await env.Pages.Save(Page.Create(id, s.Value.Title, s.Value.Content));
+                var updated = Page.Create(id, s.Value.Title, s.Value.Content);
+                await env.Pages.Save(updated);
+                env.Search?.IndexPage(updated);
                 return Response.Redirect($"/pages/{id.Value}");
             });
     };
@@ -75,6 +78,7 @@ public static class PageHandlers
         if ((await env.Pages.Find(id)) is [_])
         {
             await env.Pages.Delete(id);
+            env.Search?.DeleteDocument("page", id.Value);
             return Response.Redirect("/pages");
         }
 

@@ -35,33 +35,20 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
         _highlighter = new Highlighter("<mark>", "</mark>", _analyser);
     }
 
-    public void IndexArticle(Article article)
-    {
-        _writer.UpdateDocument("_key", $"article_{article.Id.Value}", BuildArticleDocument(article));
-        _writer.Commit();
-        _manager.MaybeRefresh();
-    }
+    public void IndexArticle(Article article) =>
+        TryWrite(() => _writer.UpdateDocument("_key", $"article_{article.Id.Value}", BuildArticleDocument(article)));
 
-    public void IndexRecipe(Recipe recipe)
-    {
-        _writer.UpdateDocument("_key", $"recipe_{recipe.Id.Value}", BuildRecipeDocument(recipe));
-        _writer.Commit();
-        _manager.MaybeRefresh();
-    }
+    public void IndexRecipe(Recipe recipe) =>
+        TryWrite(() => _writer.UpdateDocument("_key", $"recipe_{recipe.Id.Value}", BuildRecipeDocument(recipe)));
 
-    public void IndexIngredient(Ingredient ingredient)
-    {
-        _writer.UpdateDocument("_key", $"ingredient_{ingredient.Id.Value}", BuildIngredientDocument(ingredient));
-        _writer.Commit();
-        _manager.MaybeRefresh();
-    }
+    public void IndexIngredient(Ingredient ingredient) =>
+        TryWrite(() => _writer.UpdateDocument("_key", $"ingredient_{ingredient.Id.Value}", BuildIngredientDocument(ingredient)));
 
-    public void DeleteDocument(string type, int id)
-    {
-        _writer.DeleteDocuments(new TermQuery("_key", $"{type}_{id}"));
-        _writer.Commit();
-        _manager.MaybeRefresh();
-    }
+    public void IndexPage(Page page) =>
+        TryWrite(() => _writer.UpdateDocument("_key", $"page_{page.Id.Value}", BuildPageDocument(page)));
+
+    public void DeleteDocument(string type, int id) =>
+        TryWrite(() => _writer.DeleteDocuments(new TermQuery("_key", $"{type}_{id}")));
 
     public IReadOnlyList<SearchResult> Search(string query, int topN = 20)
     {
@@ -111,11 +98,13 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
     public async ValueTask RebuildAsync(
         IArticleRepository articles,
         IRecipeRepository recipes,
-        IIngredientRepository ingredients)
+        IIngredientRepository ingredients,
+        IPageRepository pages)
     {
         _writer.DeleteDocuments(new TermQuery("type", "article"));
         _writer.DeleteDocuments(new TermQuery("type", "recipe"));
         _writer.DeleteDocuments(new TermQuery("type", "ingredient"));
+        _writer.DeleteDocuments(new TermQuery("type", "page"));
 
         foreach (var article in await articles.All())
         {
@@ -130,6 +119,11 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
         foreach (var ingredient in await ingredients.All())
         {
             _writer.UpdateDocument("_key", $"ingredient_{ingredient.Id.Value}", BuildIngredientDocument(ingredient));
+        }
+
+        foreach (var page in await pages.All())
+        {
+            _writer.UpdateDocument("_key", $"page_{page.Id.Value}", BuildPageDocument(page));
         }
 
         _writer.Commit();
@@ -149,6 +143,25 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
     // across restarts (which grew the production index to seg_186 and triggered a
     // file-lock crash on startup). It also surfaces a leftover/second instance early:
     // the delete fails fast if another process still holds the index files memory-mapped.
+    // A single live write + commit. The on-disk index is a best-effort cache that is cleared
+    // and fully rebuilt from the database on every startup (see PrepareCleanDirectory /
+    // RebuildAsync), so a transient segment inconsistency during an incremental commit must
+    // never bubble up and fail the user's underlying create/update/delete — the change is
+    // simply picked up on the next rebuild.
+    private void TryWrite(Action write)
+    {
+        try
+        {
+            write();
+            _writer.Commit();
+            _manager.MaybeRefresh();
+        }
+        catch (IOException)
+        {
+            // Best-effort: the database remains the source of truth; the index self-heals on restart.
+        }
+    }
+
     private static void PrepareCleanDirectory(string indexPath)
     {
         Directory.CreateDirectory(indexPath);
@@ -188,6 +201,9 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
             article.Id.Value,
             article.Title.Value,
             $"{article.Teaser.Value} {article.Text.Value}");
+
+    private static LeanDocument BuildPageDocument(Page page) =>
+        BuildDocument("page", page.Id.Value, page.Title.Value, page.Content.Value);
 
     private static LeanDocument BuildRecipeDocument(Recipe recipe)
     {

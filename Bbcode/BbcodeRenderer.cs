@@ -1,16 +1,19 @@
 using System.Net;
 using System.Text.RegularExpressions;
 
-namespace FunctionalBlog;
+namespace Bbcode;
 
 // A deliberately tiny, XSS-safe BBCode renderer. The whole input is HTML-encoded *first*
 // (so all literal text, quotes and angle brackets are neutralised) and only then is a fixed
 // whitelist of tags transformed into HTML. Because `[` and `]` survive encoding but `< > " &`
 // do not, attribute break-outs and stray markup are impossible by construction; URLs get an
 // extra scheme allowlist so `javascript:`/`data:` never become links or image sources.
-public static partial class Bbcode
+//
+// The result is a trusted HTML fragment string. It has no dependency on the host application,
+// so callers are responsible for treating the output as already-safe markup.
+public static partial class BbcodeRenderer
 {
-    public static HtmlString Render(string text)
+    public static string RenderToHtml(string text)
     {
         var normalized = (text ?? string.Empty).Replace("\r\n", "\n").Replace("\r", "\n");
         var encoded = WebUtility.HtmlEncode(normalized);
@@ -20,7 +23,7 @@ public static partial class Bbcode
             .Where(p => !string.IsNullOrWhiteSpace(p))
             .Select(p => "<p>" + RenderInline(p) + "</p>");
 
-        return new HtmlString.Safe(string.Concat(paragraphs));
+        return string.Concat(paragraphs);
     }
 
     private static string RenderInline(string paragraph)

@@ -55,6 +55,7 @@ public static class SearchViews
             "article" => t("search.type.article"),
             "recipe" => t("search.type.recipe"),
             "ingredient" => t("search.type.ingredient"),
+            "page" => t("search.type.page"),
             _ => result.Type,
         };
 
@@ -62,6 +63,7 @@ public static class SearchViews
         {
             "article" => $"/articles/{result.Id}",
             "recipe" => $"/recipes/{result.Id}",
+            "page" => $"/pages/{result.Id}",
             _ => null,
         };
 

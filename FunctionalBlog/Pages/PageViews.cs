@@ -33,7 +33,7 @@ public static class PageViews
 
         var body = Html.P(Html.Link("/pages", t("common.back")) + editLink + deleteForm) +
             Html.H1(page.Title.Value) +
-            Html.Div("post-text", Bbcode.Render(page.Content.Value));
+            Html.Div("post-text", Html.Raw(BbcodeRenderer.RenderToHtml(page.Content.Value)));
 
         return Layout.Page(page.Title.Value, body, ctx);
     }

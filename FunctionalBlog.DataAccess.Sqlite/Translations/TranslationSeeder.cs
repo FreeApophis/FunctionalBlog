@@ -837,5 +837,9 @@ public static class TranslationSeeder
         ("search.type.ingredient",   "en", "Ingredient"),
         ("search.type.ingredient",   "it", "Ingrediente"),
         ("search.type.ingredient",   "fr", "Ingrédient"),
+        ("search.type.page",         "de", "Seite"),
+        ("search.type.page",         "en", "Page"),
+        ("search.type.page",         "it", "Pagina"),
+        ("search.type.page",         "fr", "Page"),
     ];
 }

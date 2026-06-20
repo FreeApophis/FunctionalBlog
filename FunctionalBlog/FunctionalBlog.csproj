@@ -13,6 +13,7 @@
 		<PackageReference Include="LeanCorpus" />
 	</ItemGroup>
 	<ItemGroup>
+		<ProjectReference Include="..\Bbcode\Bbcode.csproj" />
 		<ProjectReference Include="..\FunctionalBlog.Application\FunctionalBlog.Application.csproj" />
 		<ProjectReference Include="..\FunctionalBlog.DataAccess.Sqlite\FunctionalBlog.DataAccess.Sqlite.csproj" />
 		<ProjectReference Include="..\FunctionalBlog.Pipeline\FunctionalBlog.Pipeline.csproj" />

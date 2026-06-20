@@ -8,6 +8,8 @@ public interface ISearchIndex
 
     void IndexIngredient(Ingredient ingredient);
 
+    void IndexPage(Page page);
+
     void DeleteDocument(string type, int id);
 
     IReadOnlyList<SearchResult> Search(string query, int topN = 20);
@@ -17,5 +19,6 @@ public interface ISearchIndex
     ValueTask RebuildAsync(
         IArticleRepository articles,
         IRecipeRepository recipes,
-        IIngredientRepository ingredients);
+        IIngredientRepository ingredients,
+        IPageRepository pages);
 }

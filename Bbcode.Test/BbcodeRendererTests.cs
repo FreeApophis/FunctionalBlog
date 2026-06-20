@@ -1,23 +1,23 @@
-namespace FunctionalBlog.Test;
+namespace Bbcode.Test;
 
-public class BbcodeTests
+public class BbcodeRendererTests
 {
     [Fact]
     public void Plain_text_becomes_a_paragraph()
     {
-        Assert.Equal("<p>Hallo Welt</p>", Bbcode.Render("Hallo Welt").Render());
+        Assert.Equal("<p>Hallo Welt</p>", BbcodeRenderer.RenderToHtml("Hallo Welt"));
     }
 
     [Fact]
     public void Blank_lines_separate_paragraphs()
     {
-        Assert.Equal("<p>Eins</p><p>Zwei</p>", Bbcode.Render("Eins\n\nZwei").Render());
+        Assert.Equal("<p>Eins</p><p>Zwei</p>", BbcodeRenderer.RenderToHtml("Eins\n\nZwei"));
     }
 
     [Fact]
     public void Single_newline_becomes_a_line_break()
     {
-        Assert.Equal("<p>Eins<br />Zwei</p>", Bbcode.Render("Eins\nZwei").Render());
+        Assert.Equal("<p>Eins<br />Zwei</p>", BbcodeRenderer.RenderToHtml("Eins\nZwei"));
     }
 
     [Fact]
@@ -25,13 +25,13 @@ public class BbcodeTests
     {
         Assert.Equal(
             "<p>Ein <strong>fetter</strong> und <em>kursiver</em> Text</p>",
-            Bbcode.Render("Ein [b]fetter[/b] und [i]kursiver[/i] Text").Render());
+            BbcodeRenderer.RenderToHtml("Ein [b]fetter[/b] und [i]kursiver[/i] Text"));
     }
 
     [Fact]
     public void Img_tag_renders_a_gallery_image()
     {
-        var html = Bbcode.Render("[img]/images/5[/img]").Render();
+        var html = BbcodeRenderer.RenderToHtml("[img]/images/5[/img]");
 
         Assert.Contains("""<img src="/images/5" """, html);
         Assert.Contains("loading=\"lazy\"", html);
@@ -42,13 +42,13 @@ public class BbcodeTests
     {
         Assert.Equal(
             """<p><a href="/pages/3">Impressum</a></p>""",
-            Bbcode.Render("[url=/pages/3]Impressum[/url]").Render());
+            BbcodeRenderer.RenderToHtml("[url=/pages/3]Impressum[/url]"));
     }
 
     [Fact]
     public void Absolute_http_urls_are_allowed()
     {
-        var html = Bbcode.Render("[url=https://example.com]Extern[/url]").Render();
+        var html = BbcodeRenderer.RenderToHtml("[url=https://example.com]Extern[/url]");
 
         Assert.Contains("""<a href="https://example.com">Extern</a>""", html);
     }
@@ -56,7 +56,7 @@ public class BbcodeTests
     [Fact]
     public void Literal_html_is_encoded_not_executed()
     {
-        var html = Bbcode.Render("<script>alert('x')</script>").Render();
+        var html = BbcodeRenderer.RenderToHtml("<script>alert('x')</script>");
 
         Assert.DoesNotContain("<script>", html);
         Assert.Contains("&lt;script&gt;", html);
@@ -65,7 +65,7 @@ public class BbcodeTests
     [Fact]
     public void Javascript_urls_are_not_turned_into_links()
     {
-        var html = Bbcode.Render("[url=javascript:alert(1)]klick[/url]").Render();
+        var html = BbcodeRenderer.RenderToHtml("[url=javascript:alert(1)]klick[/url]");
 
         Assert.DoesNotContain("<a ", html);
     }
@@ -73,7 +73,7 @@ public class BbcodeTests
     [Fact]
     public void Javascript_image_sources_are_not_rendered_as_images()
     {
-        var html = Bbcode.Render("[img]javascript:alert(1)[/img]").Render();
+        var html = BbcodeRenderer.RenderToHtml("[img]javascript:alert(1)[/img]");
 
         Assert.DoesNotContain("<img", html);
     }
@@ -81,7 +81,7 @@ public class BbcodeTests
     [Fact]
     public void A_quote_inside_a_url_cannot_break_out_of_the_attribute()
     {
-        var html = Bbcode.Render("""[img]/images/5" onerror="alert(1)[/img]""").Render();
+        var html = BbcodeRenderer.RenderToHtml("""[img]/images/5" onerror="alert(1)[/img]""");
 
         Assert.DoesNotContain("onerror=\"alert", html);
     }
@@ -89,6 +89,6 @@ public class BbcodeTests
     [Fact]
     public void Unknown_tags_pass_through_as_encoded_text()
     {
-        Assert.Equal("<p>[blink]hi[/blink]</p>", Bbcode.Render("[blink]hi[/blink]").Render());
+        Assert.Equal("<p>[blink]hi[/blink]</p>", BbcodeRenderer.RenderToHtml("[blink]hi[/blink]"));
     }
 }
