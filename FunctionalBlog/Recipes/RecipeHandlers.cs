@@ -102,7 +102,7 @@ public static class RecipeHandlers
                 env.Ctx));
         }
 
-        return await RecipeForm.Decode(request).Match(
+        return await DecodeWithImages(request).Match(
             failure: f => Task.FromResult(Response.Html(
                 RecipeViews.Form(
                     f.Error,
@@ -115,23 +115,23 @@ public static class RecipeHandlers
                     RecipeForm.ParseIngredients(request),
                     RecipeForm.ParseRawSteps(request),
                     availableIngredients,
-                    env.Ctx),
+                    env.Ctx,
+                    existingImages: RecipeForm.ParseKeptImages(request)),
                 400)),
             success: async s =>
             {
-                var authorId = ((AuthenticatedUser)env.CurrentUser).Id;
                 var recipe = Recipe.Create(
                     id: await env.Recipes.NextId(),
-                    name: s.Value.Name,
-                    description: s.Value.Description,
-                    preparationSteps: s.Value.Steps,
-                    authorId: authorId,
-                    difficulty: s.Value.Difficulty,
-                    tags: s.Value.Tags,
-                    portions: s.Value.Portions,
-                    ingredients: s.Value.Ingredients,
-                    images: [],
-                    hints: s.Value.Hints);
+                    name: s.Value.Form.Name,
+                    description: s.Value.Form.Description,
+                    preparationSteps: s.Value.Form.Steps,
+                    authorId: ((AuthenticatedUser)env.CurrentUser).Id,
+                    difficulty: s.Value.Form.Difficulty,
+                    tags: s.Value.Form.Tags,
+                    portions: s.Value.Form.Portions,
+                    ingredients: s.Value.Form.Ingredients,
+                    images: await SaveImages(env, s.Value.Images),
+                    hints: s.Value.Form.Hints);
 
                 await env.Recipes.Save(recipe);
                 env.Search?.IndexRecipe(recipe);
@@ -219,7 +219,8 @@ public static class RecipeHandlers
                     availableIngredients: availableIngredients,
                     ctx: env.Ctx,
                     formAction: $"/recipes/{id.Value}",
-                    titleKey: "recipe.edit_title"));
+                    titleKey: "recipe.edit_title",
+                    existingImages: recipe.Images));
             });
 
     public static App UpdateRecipe(RecipeId id) => request => async env =>
@@ -260,7 +261,8 @@ public static class RecipeHandlers
                 availableIngredients,
                 env.Ctx,
                 formAction,
-                "recipe.edit_title"));
+                "recipe.edit_title",
+                RecipeForm.ParseKeptImages(request)));
         }
 
         if (action == "add-step" || action.StartsWith("remove-step-"))
@@ -290,10 +292,11 @@ public static class RecipeHandlers
                 availableIngredients,
                 env.Ctx,
                 formAction,
-                "recipe.edit_title"));
+                "recipe.edit_title",
+                RecipeForm.ParseKeptImages(request)));
         }
 
-        return await RecipeForm.Decode(request).Match(
+        return await DecodeWithImages(request).Match(
             failure: f => Task.FromResult(Response.Html(
                 RecipeViews.Form(
                     f.Error,
@@ -308,28 +311,66 @@ public static class RecipeHandlers
                     availableIngredients,
                     env.Ctx,
                     formAction,
-                    "recipe.edit_title"),
+                    "recipe.edit_title",
+                    RecipeForm.ParseKeptImages(request)),
                 400)),
             success: async s =>
             {
+                var keptImages = RecipeForm.ParseKeptImages(request);
+                var newImages = await SaveImages(env, s.Value.Images);
+
                 var updated = Recipe.Create(
                     id: id,
-                    name: s.Value.Name,
-                    description: s.Value.Description,
-                    preparationSteps: s.Value.Steps,
+                    name: s.Value.Form.Name,
+                    description: s.Value.Form.Description,
+                    preparationSteps: s.Value.Form.Steps,
                     authorId: existing.AuthorId,
-                    difficulty: s.Value.Difficulty,
-                    tags: s.Value.Tags,
-                    portions: s.Value.Portions,
-                    ingredients: s.Value.Ingredients,
-                    images: existing.Images,
-                    hints: s.Value.Hints);
+                    difficulty: s.Value.Form.Difficulty,
+                    tags: s.Value.Form.Tags,
+                    portions: s.Value.Form.Portions,
+                    ingredients: s.Value.Form.Ingredients,
+                    images: [.. keptImages, .. newImages],
+                    hints: s.Value.Form.Hints);
 
                 await env.Recipes.Save(updated);
                 env.Search?.IndexRecipe(updated);
                 return Response.Redirect($"/recipes/{id.Value}");
             });
     };
+
+    private sealed record RecipeWithImages(RecipeForm.Valid Form, IReadOnlyList<ImageUploadForm.Valid> Images);
+
+    private static Validated<IReadOnlyList<string>, RecipeWithImages> DecodeWithImages(Request request)
+    {
+        Func<RecipeForm.Valid, IReadOnlyList<ImageUploadForm.Valid>, RecipeWithImages> combine =
+            (form, images) => new RecipeWithImages(form, images);
+
+        return combine
+            .Apply(RecipeForm.Decode(request), CombineErrors)
+            .Apply(ImageUploadForm.DecodeMany(request, "images"), CombineErrors);
+    }
+
+    private static async Task<IReadOnlyList<string>> SaveImages(Env env, IReadOnlyList<ImageUploadForm.Valid> uploads)
+    {
+        var urls = new List<string>();
+        foreach (var upload in uploads)
+        {
+            var image = Image.Create(
+                id: await env.Images.NextId(),
+                fileName: upload.FileName,
+                contentType: upload.ContentType,
+                data: upload.Content,
+                uploadedBy: ((AuthenticatedUser)env.CurrentUser).Id,
+                createdAt: env.Clock.Now);
+
+            await env.Images.Save(image);
+            urls.Add($"/images/{image.Id.Value}");
+        }
+
+        return urls;
+    }
+
+    private static IReadOnlyList<string> CombineErrors(IReadOnlyList<string> a, IReadOnlyList<string> b) => [.. a, .. b];
 
     private static string ReadName(Request r) => r.Form.GetValueOrDefault("name", string.Empty);
 

@@ -44,7 +44,7 @@ public static class RecipeViews
             : HtmlString.Empty;
 
         var images = recipe.Images.Count > 0
-            ? HtmlString.Concat(recipe.Images.Select(url => Html.Raw($"""<img src="{Html.Encode(url)}" alt="{Html.Encode(recipe.Name.Value)}" />""")))
+            ? Slider(recipe.Images, recipe.Name.Value, recipe.Id.Value)
             : HtmlString.Empty;
 
         var steps = recipe.PreparationSteps.Count > 0
@@ -105,7 +105,8 @@ public static class RecipeViews
         IReadOnlyList<Ingredient> availableIngredients,
         ViewContext ctx,
         string formAction = "/recipes",
-        string titleKey = "recipe.new_title")
+        string titleKey = "recipe.new_title",
+        IReadOnlyList<string>? existingImages = null)
     {
         var (_, t, csrfToken) = ctx;
 
@@ -129,9 +130,10 @@ public static class RecipeViews
             Html.Label(Html.Text(t("recipe.field.tags")) + Html.Input("tags", tags)) +
             Html.Raw(IngredientSection(ingredients, availableIngredients, t)) +
             Html.Raw(StepSection(steps, t)) +
+            ImagesField(existingImages ?? [], t) +
             Html.Label(Html.Text(t("recipe.field.hints")) + Html.Raw($"""<textarea name="hints" rows="4">{Html.Encode(hints)}</textarea>""")) +
             Html.Button(t("recipe.submit"));
-        var form = Html.Form(formAction, formBody);
+        var form = Html.Form(formAction, formBody, enctype: "multipart/form-data");
 
         var body = Html.P(Html.Link("/recipes", t("common.back"))) +
             Html.H1(t(titleKey)) +
@@ -228,6 +230,42 @@ public static class RecipeViews
                 </button>
             </div>
             """;
+    }
+
+    // A CSS-only slider: a horizontal scroll-snap track plus anchor-link dots that
+    // scroll each slide into view — no JavaScript involved.
+    private static HtmlString Slider(IReadOnlyList<string> urls, string alt, int recipeId)
+    {
+        string SlideId(int i) => $"recipe-{recipeId}-slide-{i}";
+
+        var slides = string.Concat(urls.Select((url, i) =>
+            $"""<figure class="slide" id="{Html.Encode(SlideId(i))}"><img src="{Html.Encode(url)}" alt="{Html.Encode(alt)}" /></figure>"""));
+
+        var dots = urls.Count > 1
+            ? $"""<div class="slider-dots">{string.Concat(urls.Select((_, i) => $"""<a href="#{Html.Encode(SlideId(i))}" aria-label="{i + 1}"></a>"""))}</div>"""
+            : string.Empty;
+
+        return Html.Raw($"""<div class="slider"><div class="slider-track">{slides}</div>{dots}</div>""");
+    }
+
+    private static HtmlString ImagesField(IReadOnlyList<string> existingImages, Translate t)
+    {
+        var existing = HtmlString.Concat(existingImages.Select((url, i) =>
+        {
+            var removeLabel = Html.Label(Html.InputCheckbox($"remove_image_{i}", "on", false) + Html.Text(t("recipe.image_remove")));
+            var item = Html.Img(url, string.Empty, cssClass: "image-edit-thumb") +
+                Html.InputHidden($"existing_image_{i}", url) +
+                removeLabel;
+            return Html.Div("image-edit-item", item);
+        }));
+
+        var existingBlock = existingImages.Count > 0
+            ? Html.Div("image-edit-grid", existing)
+            : HtmlString.Empty;
+
+        var fileInput = Html.Label(Html.Text(t("recipe.field.images")) + Html.InputFile("images", "image/*", multiple: true));
+
+        return Html.Fieldset(t("recipe.field.images"), existingBlock + fileInput);
     }
 
     private static string DifficultyKey(Difficulty difficulty) => difficulty switch

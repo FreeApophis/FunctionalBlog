@@ -6,16 +6,30 @@ public static class BlogViews
     {
         var (principal, t, _) = ctx;
 
-        HtmlString ArticleHtml(Article article)
+        // Four card layouts that rotate down the feed: banner (image on top),
+        // split-left, split-right, and a text-over-image overlay.
+        HtmlString ArticleHtml(Article article, int position)
         {
             var authorName = authorNames
                 .GetValueOrNone(article.AuthorId)
                 .GetOrElse("?");
 
-            var content = Html.H2(Html.Link($"/articles/{article.Id.Value}", article.Title.Value)) +
+            var href = $"/articles/{article.Id.Value}";
+
+            var bodyContent = Html.H2(Html.Link(href, article.Title.Value)) +
                 Html.Small($"{t("article.by")} {authorName} · {article.PublishedAt.LocalDateTime:d}") +
                 Html.P(Html.Text(article.Teaser.Value));
-            return Html.Article(content);
+            var body = Html.Div("card-body", bodyContent);
+
+            var media = article.CoverImageId.Match(
+                none: () => HtmlString.Empty,
+                some: imageId => Html.LinkBlock(href, "card-media", Html.Img($"/images/{imageId.Value}", article.Title.Value)));
+
+            var design = $"design-{(position % 4) + 1}";
+            var hasCover = article.CoverImageId.Match(none: false, some: _ => true);
+            var cssClass = $"post-card {design}{(hasCover ? string.Empty : " no-cover")}";
+
+            return Html.Article(cssClass, media + body);
         }
 
         var items = articles.Count == 0

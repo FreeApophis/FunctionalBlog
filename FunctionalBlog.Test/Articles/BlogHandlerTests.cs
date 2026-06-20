@@ -45,6 +45,35 @@ public sealed class BlogHandlerTests
     }
 
     [Fact]
+    public async Task Index_shows_cover_images_and_rotates_through_four_card_designs()
+    {
+        var env = BuildEnv();
+        var coverId = await env.Images.NextId();
+        await env.Images.Save(Image.Create(coverId, "titel.png", ImageContentType.Png, PngBytes, new UserId(1), env.Clock.Now));
+
+        for (var i = 0; i < 4; i++)
+        {
+            var id = await env.Articles.NextId();
+            await env.Articles.Save(Article.Create(
+                id,
+                new ArticleTitle($"Artikel {i}"),
+                new ArticleTeaser("Ein ausreichend langer Teaser."),
+                new ArticleText("Ein ausreichend langer Text."),
+                new UserId(1),
+                env.Clock.Now.AddMinutes(-i),
+                i == 0 ? Option.Some(coverId) : Option<ImageId>.None));
+        }
+
+        var response = await BlogHandlers.Index(AnEmptyRequest())(env);
+
+        Assert.Contains($"/images/{coverId.Value}", response.Body);
+        Assert.Contains("design-1", response.Body);
+        Assert.Contains("design-2", response.Body);
+        Assert.Contains("design-3", response.Body);
+        Assert.Contains("design-4", response.Body);
+    }
+
+    [Fact]
     public async Task ShowArticle_renders_the_cover_image_when_present()
     {
         var env = BuildEnv();

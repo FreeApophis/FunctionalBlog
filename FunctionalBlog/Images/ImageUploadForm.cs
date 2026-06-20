@@ -28,6 +28,33 @@ public static class ImageUploadForm
             .Apply(TrySize(file.Content), Combine);
     }
 
+    // For forms that accept several images at once (e.g. a recipe gallery): validates every
+    // supplied file in the named field, accumulating all errors; an empty list when none were sent.
+    public static Validated<IReadOnlyList<string>, IReadOnlyList<Valid>> DecodeMany(Request request, string fieldName)
+    {
+        var files = request.Files.Where(f => f.FieldName == fieldName && f.Content.Length > 0).ToList();
+
+        var failures = new List<string>();
+        var valids = new List<Valid>();
+
+        foreach (var file in files)
+        {
+            switch (Validate(file))
+            {
+                case Validated<IReadOnlyList<string>, Valid>.Success(var value):
+                    valids.Add(value);
+                    break;
+                case Validated<IReadOnlyList<string>, Valid>.Failure(var error):
+                    failures.AddRange(error);
+                    break;
+            }
+        }
+
+        return failures.Count > 0
+            ? Validated.Fail<IReadOnlyList<string>, IReadOnlyList<Valid>>(failures)
+            : Validated.Succeed<IReadOnlyList<string>, IReadOnlyList<Valid>>(valids);
+    }
+
     private static Validated<IReadOnlyList<string>, Valid> Validate(UploadedFile file)
     {
         Func<ImageContentType, byte[], Valid> create =

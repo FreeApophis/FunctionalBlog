@@ -55,6 +55,25 @@ public static class RecipeForm
         return result;
     }
 
+    // Reconstructs the recipe's existing image URLs that the editor chose to keep:
+    // each is carried in a hidden `existing_image_{i}` field and dropped when its
+    // matching `remove_image_{i}` checkbox is ticked.
+    public static List<string> ParseKeptImages(Request request)
+    {
+        var result = new List<string>();
+        for (var i = 0; request.Form.ContainsKey($"existing_image_{i}"); i++)
+        {
+            var url = request.Form.GetValueOrDefault($"existing_image_{i}", string.Empty);
+            var removed = request.Form.GetValueOrDefault($"remove_image_{i}", string.Empty) == "on";
+            if (!removed && url.Length > 0)
+            {
+                result.Add(url);
+            }
+        }
+
+        return result;
+    }
+
     public static List<string> ParseRawSteps(Request request)
     {
         var result = new List<string>();

@@ -20,6 +20,12 @@ public static class Html
 
     public static HtmlString Article(HtmlString body) => new HtmlString.Safe($"<article>{body.Render()}</article>");
 
+    public static HtmlString Article(string cssClass, HtmlString body) =>
+        new HtmlString.Safe($"<article class=\"{Encode(cssClass)}\">{body.Render()}</article>");
+
+    public static HtmlString LinkBlock(string href, string cssClass, HtmlString body) =>
+        new HtmlString.Safe($"""<a href="{Encode(href)}" class="{Encode(cssClass)}">{body.Render()}</a>""");
+
     public static HtmlString Div(string cssClass, HtmlString body) => new HtmlString.Safe($"<div class=\"{Encode(cssClass)}\">{body.Render()}</div>");
 
     public static HtmlString Link(string href, string text) => new HtmlString.Safe($"<a href=\"{Encode(href)}\">{Encode(text)}</a>");
@@ -35,8 +41,8 @@ public static class Html
         return new HtmlString.Safe($"""<form method="post" action="{Encode(action)}"{classAttr}{styleAttr}{enctypeAttr}>{body.Render()}</form>""");
     }
 
-    public static HtmlString InputFile(string name, string accept) =>
-        new HtmlString.Safe($"""<input type="file" name="{Encode(name)}" accept="{Encode(accept)}" />""");
+    public static HtmlString InputFile(string name, string accept, bool multiple = false) =>
+        new HtmlString.Safe($"""<input type="file" name="{Encode(name)}" accept="{Encode(accept)}"{(multiple ? " multiple" : string.Empty)} />""");
 
     public static HtmlString Img(string src, string alt, Option<string> cssClass = default)
     {

@@ -241,6 +241,166 @@ article:hover::before { transform: scaleX(1); }
     border: 1px solid var(--line);
 }
 
+/* ---- Recipe image slider (CSS only) ------------------------------------- */
+
+.slider { margin: 1rem 0 1.5rem; }
+
+.slider-track {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    border-radius: var(--radius);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    -webkit-overflow-scrolling: touch;
+}
+
+.slider-track .slide {
+    flex: 0 0 100%;
+    margin: 0;
+    scroll-snap-align: center;
+}
+
+.slider-track .slide img {
+    display: block;
+    width: 100%;
+    height: 26rem;
+    object-fit: cover;
+}
+
+.slider-dots {
+    display: flex;
+    justify-content: center;
+    gap: .55rem;
+    margin-top: .7rem;
+}
+
+.slider-dots a {
+    width: .7rem;
+    height: .7rem;
+    border-radius: 50%;
+    background: var(--line);
+    background-image: none;          /* override the global link underline */
+    transition: background .2s ease, transform .2s ease;
+}
+
+.slider-dots a:hover {
+    background: var(--accent);
+    transform: scale(1.25);
+}
+
+/* Existing-image editor (recipe form) */
+.image-edit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.image-edit-item { display: grid; gap: .4rem; justify-items: start; }
+
+.image-edit-thumb {
+    width: 100%;
+    height: 7rem;
+    object-fit: cover;
+    border-radius: .7rem;
+    border: 1px solid var(--line);
+}
+
+.image-edit-item label {
+    margin: 0;
+    font-weight: 500;
+    font-size: .85rem;
+    grid-auto-flow: column;
+    justify-content: start;
+    align-items: center;
+    gap: .35rem;
+}
+
+.image-edit-item label input { width: auto; }
+
+/* ---- Blog index: four rotating card designs ----------------------------- */
+
+.post-card {
+    padding: 0;                 /* image goes flush; padding lives on .card-body */
+    overflow: hidden;
+}
+
+.post-card::before { display: none; }   /* drop the default coloured spine */
+
+.post-card .card-body { padding: 1.4rem 1.6rem; }
+.post-card .card-body h2 { margin-top: 0; }
+.post-card .card-body p { margin-bottom: 0; }
+
+.post-card .card-media {
+    display: block;
+    overflow: hidden;
+    background: var(--bg-tint);
+}
+
+.post-card .card-media img {
+    display: block;
+    width: 100%;
+    object-fit: cover;
+    transition: transform .35s ease;
+}
+
+.post-card:hover .card-media img { transform: scale(1.04); }
+
+/* Design 1 — banner: a wide cover image sitting above the text. */
+.design-1 .card-media img { height: 16rem; }
+.design-1 .card-media { border-bottom: 3px solid var(--accent); }
+
+/* Designs 2 & 3 — split: image beside the text (left, then mirrored right). */
+.design-2,
+.design-3 { display: grid; gap: 0; align-items: stretch; }
+
+.design-2 .card-media img,
+.design-3 .card-media img { height: 100%; min-height: 14rem; }
+
+.design-2 .card-body,
+.design-3 .card-body { align-self: center; }
+
+.design-3 .card-body h2 {
+    border-left: .3rem solid var(--green);
+    padding-left: .7rem;
+}
+
+@media (min-width: 720px) {
+    .design-2 { grid-template-columns: 42% 1fr; }
+    .design-3 { grid-template-columns: 1fr 42%; }
+    .design-3 .card-media { order: 2; }     /* image to the right */
+}
+
+/* Design 4 — overlay: title and teaser laid over a dimmed cover image. */
+.design-4 { position: relative; display: grid; min-height: 19rem; }
+.design-4 .card-media { position: absolute; inset: 0; }
+.design-4 .card-media img { height: 100%; }
+
+.design-4 .card-body {
+    position: relative;
+    align-self: end;
+    padding-top: 4.5rem;
+    color: #fff;
+    background: linear-gradient(0deg, rgba(20, 12, 6, .85) 0%, rgba(20, 12, 6, .55) 55%, rgba(20, 12, 6, 0) 100%);
+}
+
+.design-4 .card-body a { color: #fff; }
+.design-4 .card-body small { color: rgba(255, 255, 255, .82); }
+
+/* Graceful fallback when an article has no cover image. */
+.post-card.no-cover { display: block; min-height: 0; }
+
+.design-4.no-cover .card-body {
+    color: var(--fg);
+    background: var(--accent-soft);
+    padding-top: 1.4rem;
+}
+
+.design-4.no-cover .card-body a { color: var(--accent); }
+.design-4.no-cover .card-body small { color: var(--muted); }
+
 /* ---- Forms --------------------------------------------------------------- */
 
 label {
