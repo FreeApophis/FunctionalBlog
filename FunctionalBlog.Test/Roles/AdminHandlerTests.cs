@@ -119,7 +119,8 @@ public sealed class AdminHandlerTests
         CurrentUser: principal,
         Recipes: new InMemoryRecipeRepository(),
         Ingredients: new InMemoryIngredientRepository(),
-        Images: new InMemoryImageRepository());
+        Images: new InMemoryImageRepository(),
+        Pages: new InMemoryPageRepository());
 
     private static Request ARequest() =>
         new(HttpMethod.Get, "/admin/users", Empty, Empty, Empty, Empty);

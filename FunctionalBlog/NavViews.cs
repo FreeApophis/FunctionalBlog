@@ -5,7 +5,8 @@ public static class NavViews
     public static string Nav(ViewContext ctx)
     {
         var (principal, t, csrfToken) = ctx;
-        var links = Html.Link("/", t("nav.blog")) + Html.Raw(" · ") + Html.Link("/recipes", t("nav.recipes"));
+        var links = Html.Link("/", t("nav.blog")) + Html.Raw(" · ") + Html.Link("/recipes", t("nav.recipes")) +
+            Html.Raw(" · ") + Html.Link("/pages", t("nav.pages"));
 
         if (principal is AuthenticatedUser user)
         {

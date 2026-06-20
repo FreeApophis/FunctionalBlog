@@ -41,6 +41,20 @@ public sealed class SeederTests
     }
 
     [Fact]
+    public async Task SeedAsync_grants_admin_page_permissions()
+    {
+        var env = BuildEnv();
+
+        await Seeder.SeedAsync(env);
+
+        var role = FunctionalAssert.Some(await env.Roles.FindByName("Admin"));
+
+        Assert.Contains(new PermissionRule("Create", "page"), role!.Rules);
+        Assert.Contains(new PermissionRule("Edit", "page"), role.Rules);
+        Assert.Contains(new PermissionRule("Delete", "page"), role.Rules);
+    }
+
+    [Fact]
     public async Task SeedAsync_adds_missing_image_permissions_to_a_preexisting_admin_role()
     {
         var env = BuildEnv();
@@ -161,5 +175,6 @@ public sealed class SeederTests
         CurrentUser: Guest.Instance,
         Recipes: new InMemoryRecipeRepository(),
         Ingredients: new InMemoryIngredientRepository(),
-        Images: new InMemoryImageRepository());
+        Images: new InMemoryImageRepository(),
+        Pages: new InMemoryPageRepository());
 }

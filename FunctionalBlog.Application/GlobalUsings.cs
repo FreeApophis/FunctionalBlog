@@ -1,9 +1,11 @@
 global using FunctionalBlog.Application.Articles;
+global using FunctionalBlog.Application.Pages;
 global using FunctionalBlog.Application.Recipes;
 global using FunctionalBlog.Application.Search;
 global using FunctionalBlog.Domain.Articles;
 global using FunctionalBlog.Domain.Identity;
 global using FunctionalBlog.Domain.Images;
+global using FunctionalBlog.Domain.Pages;
 global using FunctionalBlog.Domain.Recipes;
 global using FunctionalBlog.Domain.Roles;
 global using FunctionalBlog.Domain.Translations;

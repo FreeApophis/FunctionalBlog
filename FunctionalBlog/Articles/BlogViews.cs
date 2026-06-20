@@ -66,7 +66,7 @@ public static class BlogViews
             Html.Small($"{t("article.by")} {authorName} · {article.PublishedAt.LocalDateTime:g}") +
             cover +
             Html.P(Html.Text(article.Teaser.Value)) +
-            Html.Div("post-text", Html.Paragraphs(article.Text.Value));
+            Html.Div("post-text", Bbcode.Render(article.Text.Value));
 
         return Layout.Page(article.Title.Value, body, ctx);
     }

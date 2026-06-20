@@ -107,7 +107,8 @@ public sealed class ImageHandlerTests
         CurrentUser: AuthUser(),
         Recipes: new InMemoryRecipeRepository(),
         Ingredients: new InMemoryIngredientRepository(),
-        Images: new InMemoryImageRepository());
+        Images: new InMemoryImageRepository(),
+        Pages: new InMemoryPageRepository());
 
     private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();
 }

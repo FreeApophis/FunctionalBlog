@@ -73,7 +73,8 @@ public sealed class AuthMiddlewareTests
         CurrentUser: Guest.Instance,
         Recipes: new InMemoryRecipeRepository(),
         Ingredients: new InMemoryIngredientRepository(),
-        Images: new InMemoryImageRepository());
+        Images: new InMemoryImageRepository(),
+        Pages: new InMemoryPageRepository());
 
     private static Request RequestWithCookie(string name, string value) =>
         new(HttpMethod.Get, "/", EmptyDict, EmptyDict, EmptyDict, new Dictionary<string, string> { [name] = value });

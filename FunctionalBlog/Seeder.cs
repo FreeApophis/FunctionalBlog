@@ -25,6 +25,7 @@ public static class Seeder
     [
         new("View", "article"),
         new("View", "image"),
+        new("View", "page"),
     ];
 
     private static readonly PermissionRule[] AdminRoleRules =
@@ -50,6 +51,11 @@ public static class Seeder
         new("Edit", "image"),
         new("Delete", "image"),
         new("Manage", "image"),
+        new("View", "page"),
+        new("Create", "page"),
+        new("Edit", "page"),
+        new("Delete", "page"),
+        new("Manage", "page"),
     ];
 
     private static async ValueTask SeedRoles(Env env)

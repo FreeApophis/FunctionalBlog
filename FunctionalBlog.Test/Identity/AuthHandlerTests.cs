@@ -144,7 +144,8 @@ public sealed class AuthHandlerTests
         CurrentUser: Guest.Instance,
         Recipes: new InMemoryRecipeRepository(),
         Ingredients: new InMemoryIngredientRepository(),
-        Images: new InMemoryImageRepository());
+        Images: new InMemoryImageRepository(),
+        Pages: new InMemoryPageRepository());
 
     private static async Task SeedRoles(Env env)
     {

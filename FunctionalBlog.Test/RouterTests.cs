@@ -340,6 +340,44 @@ public class RouterTests
         Assert.Equal(404, response.Status);
     }
 
+    [Fact]
+    public async Task Get_pages_list_is_public_and_returns_200()
+    {
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request(HttpMethod.Get, "/pages", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(200, response.Status);
+        Assert.StartsWith("text/html", response.ContentType);
+    }
+
+    [Fact]
+    public async Task Get_pages_new_redirects_guest_to_login()
+    {
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request(HttpMethod.Get, "/pages/new", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Equal("/login", response.Headers["Location"]);
+    }
+
+    [Fact]
+    public async Task Get_page_by_id_returns_404_for_unknown_page()
+    {
+        var app = Router.Create(Routes.Build())(NotFoundTerminal);
+        var env = BuildEnv();
+        var request = new Request(HttpMethod.Get, "/pages/987654", Empty, Empty, Empty, Empty);
+
+        var response = await app(request)(env);
+
+        Assert.Equal(404, response.Status);
+    }
+
     private static Env BuildEnv() => new(
         Articles: new InMemoryArticleRepository(),
         Users: new InMemoryUserRepository(),
@@ -352,7 +390,8 @@ public class RouterTests
         CurrentUser: Guest.Instance,
         Recipes: new InMemoryRecipeRepository(),
         Ingredients: new InMemoryIngredientRepository(),
-        Images: new InMemoryImageRepository());
+        Images: new InMemoryImageRepository(),
+        Pages: new InMemoryPageRepository());
 
     private static readonly App NotFoundTerminal = _ => _ => ValueTask.FromResult(Response.NotFound());
     private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();

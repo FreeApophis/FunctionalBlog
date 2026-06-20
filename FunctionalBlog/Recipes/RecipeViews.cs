@@ -82,7 +82,7 @@ public static class RecipeViews
             meta +
             tags +
             images +
-            Html.P(Html.Text(recipe.Description.Value)) +
+            Html.Div("post-text", Bbcode.Render(recipe.Description.Value)) +
             Html.H2(Html.Text(t("recipe.preparation"))) +
             steps +
             Html.H2(Html.Text(t("recipe.ingredients"))) +

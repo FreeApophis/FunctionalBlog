@@ -241,6 +241,22 @@ article:hover::before { transform: scaleX(1); }
     border: 1px solid var(--line);
 }
 
+.image-card .embed-snippet {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: .72rem;
+    padding: .25rem .4rem;
+    border-radius: .4rem;
+    background: var(--bg-tint);
+}
+
+/* Inline images embedded in body text via BBCode. */
+.post-text img {
+    max-width: 100%;
+    height: auto;
+    border-radius: .8rem;
+    margin: .6rem 0;
+}
+
 /* ---- Recipe image slider (CSS only) ------------------------------------- */
 
 .slider { margin: 1rem 0 1.5rem; }

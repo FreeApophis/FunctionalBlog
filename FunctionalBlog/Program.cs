@@ -63,5 +63,6 @@ internal class Program
             Recipes: new SqliteRecipeRepository(connection),
             Ingredients: new SqliteIngredientRepository(connection),
             Images: new SqliteImageRepository(connection),
+            Pages: new SqlitePageRepository(connection),
             Translations: translations);
 }

@@ -16,6 +16,7 @@
     <EmbeddedResource Include="Migrations\0001_initial_schema.sql" />
     <EmbeddedResource Include="Migrations\0002_import_foodblog_data.sql" />
     <EmbeddedResource Include="Migrations\0003_images.sql" />
+    <EmbeddedResource Include="Migrations\0004_pages.sql" />
   </ItemGroup>
 
   <ItemGroup>

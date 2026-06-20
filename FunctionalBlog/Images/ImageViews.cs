@@ -35,8 +35,12 @@ public static class ImageViews
             Html.CsrfField(csrfToken) + Html.Button(t("common.delete")),
             style: "display:inline");
 
+        var snippet = $"[img]/images/{image.Id.Value}[/img]";
+        var embedField = Html.Raw($"""<input class="embed-snippet" type="text" value="{Html.Encode(snippet)}" readonly onclick="this.select()" />""");
+
         var cardBody = Html.Img($"/images/{image.Id.Value}", image.FileName) +
             Html.Small(image.FileName) +
+            embedField +
             deleteForm;
 
         return Html.Div("image-card", cardBody);
