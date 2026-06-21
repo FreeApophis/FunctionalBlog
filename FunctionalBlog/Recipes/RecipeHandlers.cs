@@ -24,10 +24,8 @@ public static class RecipeHandlers
                 return Response.Html(RecipeViews.Show(recipe, authorName, ingredients, env.Ctx));
             });
 
-    public static App NewRecipeForm => _ => async env =>
-    {
-        var availableIngredients = await env.Ingredients.All();
-        return Response.Html(RecipeViews.Form(
+    public static App NewRecipeForm => _ => env =>
+        ValueTask.FromResult(Response.Html(RecipeViews.Form(
             errors: [],
             name: string.Empty,
             description: string.Empty,
@@ -37,14 +35,11 @@ public static class RecipeHandlers
             hints: string.Empty,
             ingredients: [(string.Empty, string.Empty, "g")],
             steps: [string.Empty],
-            availableIngredients: availableIngredients,
-            ctx: env.Ctx));
-    };
+            ctx: env.Ctx)));
 
     public static App CreateRecipe => request => async env =>
     {
         var action = request.Form.GetValueOrDefault("action", string.Empty);
-        var availableIngredients = await env.Ingredients.All();
 
         if (action == "add-ingredient" || action.StartsWith("remove-ingredient-"))
         {
@@ -70,7 +65,6 @@ public static class RecipeHandlers
                 ReadHints(request),
                 formIngredients,
                 formSteps,
-                availableIngredients,
                 env.Ctx));
         }
 
@@ -98,7 +92,6 @@ public static class RecipeHandlers
                 ReadHints(request),
                 formIngredients,
                 formSteps,
-                availableIngredients,
                 env.Ctx));
         }
 
@@ -114,7 +107,6 @@ public static class RecipeHandlers
                     ReadHints(request),
                     RecipeForm.ParseIngredients(request),
                     RecipeForm.ParseRawSteps(request),
-                    availableIngredients,
                     env.Ctx,
                     existingImages: RecipeForm.ParseKeptImages(request)),
                 400)),
@@ -129,7 +121,7 @@ public static class RecipeHandlers
                     difficulty: s.Value.Form.Difficulty,
                     tags: s.Value.Form.Tags,
                     portions: s.Value.Form.Portions,
-                    ingredients: s.Value.Form.Ingredients,
+                    ingredients: await ResolveIngredients(env, s.Value.Form.Ingredients),
                     images: await SaveImages(env, s.Value.Images),
                     hints: s.Value.Form.Hints);
 
@@ -139,11 +131,10 @@ public static class RecipeHandlers
             });
     };
 
-    public static App IngredientsSection => request => async env =>
+    public static App IngredientsSection => request => env =>
     {
         var action = request.Form.GetValueOrDefault("action", string.Empty);
         var ingredients = RecipeForm.ParseIngredients(request);
-        var availableIngredients = await env.Ingredients.All();
 
         if (action == "add-ingredient")
         {
@@ -156,7 +147,7 @@ public static class RecipeHandlers
             ingredients.RemoveAt(removeIdx);
         }
 
-        return Response.Html(RecipeViews.IngredientSection(ingredients, availableIngredients, env.T));
+        return ValueTask.FromResult(Response.Html(RecipeViews.IngredientSection(ingredients, env.T)));
     };
 
     public static App StepsSection => request => env =>
@@ -178,6 +169,28 @@ public static class RecipeHandlers
         return ValueTask.FromResult(Response.Html(RecipeViews.StepSection(steps, env.T)));
     };
 
+    public static App IngredientSearch => request => async env =>
+    {
+        var index = request.Form.GetValueOrDefault("index", "0");
+        var query = request.Form.GetValueOrDefault($"ingredient_name_{index}", string.Empty).Trim();
+
+        var matches = query.Length == 0
+            ? []
+            : (await env.Ingredients.All())
+                .Where(i => i.Name.Value.Contains(query, StringComparison.OrdinalIgnoreCase))
+                .Take(8)
+                .ToList();
+
+        return Response.Html(RecipeViews.IngredientMatches(index, query, matches, env.T));
+    };
+
+    public static App IngredientSelect => request => env =>
+    {
+        var index = request.Form.GetValueOrDefault("index", "0");
+        var name = request.Form.GetValueOrDefault("name", string.Empty);
+        return ValueTask.FromResult(Response.Html(RecipeViews.IngredientCombobox(index, name, env.T)));
+    };
+
     public static App DeleteRecipe(RecipeId id) => _ => async env =>
     {
         if ((await env.Recipes.Find(id)) == Option<Recipe>.None)
@@ -196,10 +209,14 @@ public static class RecipeHandlers
             some: async recipe =>
             {
                 var availableIngredients = await env.Ingredients.All();
+                var nameById = availableIngredients.ToDictionary(i => i.Id, i => i.Name.Value);
 
                 var ingredients = recipe.Ingredients
-                    .Select(ri => (ri.IngredientId.Value.ToString(), ri.Amount.ToString(CultureInfo.InvariantCulture), ri.Unit.Abbreviation))
-                    .ToList<(string Id, string Amount, string Unit)>();
+                    .Select(ri => (
+                        nameById.GetValueOrNone(ri.IngredientId).GetOrElse(string.Empty),
+                        ri.Amount.ToString(CultureInfo.InvariantCulture),
+                        ri.Unit.Abbreviation))
+                    .ToList<(string Name, string Amount, string Unit)>();
 
                 var steps = recipe.PreparationSteps
                     .OrderBy(s => s.SortOrder)
@@ -216,7 +233,6 @@ public static class RecipeHandlers
                     hints: string.Join("\n", recipe.Hints.Select(h => h.Text)),
                     ingredients: ingredients,
                     steps: steps,
-                    availableIngredients: availableIngredients,
                     ctx: env.Ctx,
                     formAction: $"/recipes/{id.Value}",
                     titleKey: "recipe.edit_title",
@@ -231,7 +247,6 @@ public static class RecipeHandlers
         }
 
         var action = request.Form.GetValueOrDefault("action", string.Empty);
-        var availableIngredients = await env.Ingredients.All();
         var formAction = $"/recipes/{id.Value}";
 
         if (action == "add-ingredient" || action.StartsWith("remove-ingredient-"))
@@ -258,7 +273,6 @@ public static class RecipeHandlers
                 ReadHints(request),
                 formIngredients,
                 formSteps,
-                availableIngredients,
                 env.Ctx,
                 formAction,
                 "recipe.edit_title",
@@ -289,7 +303,6 @@ public static class RecipeHandlers
                 ReadHints(request),
                 formIngredients,
                 formSteps,
-                availableIngredients,
                 env.Ctx,
                 formAction,
                 "recipe.edit_title",
@@ -308,7 +321,6 @@ public static class RecipeHandlers
                     ReadHints(request),
                     RecipeForm.ParseIngredients(request),
                     RecipeForm.ParseRawSteps(request),
-                    availableIngredients,
                     env.Ctx,
                     formAction,
                     "recipe.edit_title",
@@ -328,7 +340,7 @@ public static class RecipeHandlers
                     difficulty: s.Value.Form.Difficulty,
                     tags: s.Value.Form.Tags,
                     portions: s.Value.Form.Portions,
-                    ingredients: s.Value.Form.Ingredients,
+                    ingredients: await ResolveIngredients(env, s.Value.Form.Ingredients),
                     images: [.. keptImages, .. newImages],
                     hints: s.Value.Form.Hints);
 
@@ -348,6 +360,59 @@ public static class RecipeHandlers
         return combine
             .Apply(RecipeForm.Decode(request), CombineErrors)
             .Apply(ImageUploadForm.DecodeMany(request, "images"), CombineErrors);
+    }
+
+    // Resolves each typed ingredient line to an IngredientId, quick-creating a new ingredient
+    // (with default nutrition) whenever the name doesn't match an existing one. Runs in the
+    // handler because it needs the repository — the form decoder stays pure.
+    private static async Task<IReadOnlyList<RecipeIngredient>> ResolveIngredients(
+        Env env, IReadOnlyList<RecipeForm.IngredientLine> lines)
+    {
+        // Imported data can hold several ingredients with the same name (e.g. two "Apfel"),
+        // so build the lookup tolerantly — first occurrence wins — rather than ToDictionary,
+        // which would throw on a duplicate key.
+        var byName = new Dictionary<string, IngredientId>(StringComparer.OrdinalIgnoreCase);
+        foreach (var ing in await env.Ingredients.All())
+        {
+            if (!byName.ContainsKey(ing.Name.Value))
+            {
+                byName[ing.Name.Value] = ing.Id;
+            }
+        }
+
+        var result = new List<RecipeIngredient>();
+        foreach (var line in lines)
+        {
+            IngredientId id;
+            if (byName.GetValueOrNone(line.Name) is [var existing])
+            {
+                id = existing;
+            }
+            else
+            {
+                var created = Ingredient.Create(
+                    id: await env.Ingredients.NextId(),
+                    name: new IngredientName(line.Name),
+                    image: string.Empty,
+                    description: string.Empty,
+                    density: 1,
+                    pieceCount: 0,
+                    calorificValue: 0,
+                    protein: 0,
+                    fat: 0,
+                    carbohydrates: 0,
+                    sugar: 0,
+                    fiber: 0);
+                await env.Ingredients.Save(created);
+                env.Search?.IndexIngredient(created);
+                byName[line.Name] = created.Id;
+                id = created.Id;
+            }
+
+            result.Add(new RecipeIngredient(id, line.Amount, line.Unit));
+        }
+
+        return result;
     }
 
     private static async Task<IReadOnlyList<string>> SaveImages(Env env, IReadOnlyList<ImageUploadForm.Valid> uploads)

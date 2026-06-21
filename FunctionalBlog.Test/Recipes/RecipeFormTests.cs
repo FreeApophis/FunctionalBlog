@@ -10,7 +10,7 @@ public sealed class RecipeFormTests
             "Ein klassischer Rührkuchen.",
             "4",
             "0",
-            ingredients: [("1", "200", "g")],
+            ingredients: [("Mehl", "200", "g")],
             steps: ["Alles verrühren."]);
 
         var form = ValidatedAssert.IsSuccess(RecipeForm.Decode(request));
@@ -19,6 +19,8 @@ public sealed class RecipeFormTests
         Assert.Equal(4, form.Portions);
         Assert.Equal(Difficulty.Easy, form.Difficulty);
         Assert.Single(form.Ingredients);
+        Assert.Equal("Mehl", form.Ingredients[0].Name);
+        Assert.Equal(200m, form.Ingredients[0].Amount);
         Assert.Single(form.Steps);
     }
 
@@ -110,7 +112,7 @@ public sealed class RecipeFormTests
             "Ein klassischer Rührkuchen.",
             "4",
             "0",
-            ingredients: [("1", "abc", "g")],
+            ingredients: [("Mehl", "abc", "g")],
             steps: ["Backen."]);
 
         var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request));
@@ -155,13 +157,13 @@ public sealed class RecipeFormTests
             "X",
             "1",
             "0",
-            ingredients: [("2", "100", "g"), ("5", "1.5", "EL")]);
+            ingredients: [("Mehl", "100", "g"), ("Zucker", "1.5", "EL")]);
 
         var ings = RecipeForm.ParseIngredients(request);
 
         Assert.Equal(2, ings.Count);
-        Assert.Equal(("2", "100", "g"), ings[0]);
-        Assert.Equal(("5", "1.5", "EL"), ings[1]);
+        Assert.Equal(("Mehl", "100", "g"), ings[0]);
+        Assert.Equal(("Zucker", "1.5", "EL"), ings[1]);
     }
 
     [Fact]
@@ -187,7 +189,7 @@ public sealed class RecipeFormTests
         string description,
         string portions,
         string difficulty,
-        IReadOnlyList<(string Id, string Amount, string Unit)>? ingredients = null,
+        IReadOnlyList<(string Name, string Amount, string Unit)>? ingredients = null,
         IReadOnlyList<string>? steps = null)
     {
         var form = new Dictionary<string, string>
@@ -198,9 +200,9 @@ public sealed class RecipeFormTests
             ["difficulty"] = difficulty,
         };
 
-        foreach (var (i, (id, amount, unit)) in (ingredients ?? []).Select((x, i) => (i, x)))
+        foreach (var (i, (ingName, amount, unit)) in (ingredients ?? []).Select((x, i) => (i, x)))
         {
-            form[$"ingredient_id_{i}"] = id;
+            form[$"ingredient_name_{i}"] = ingName;
             form[$"ingredient_amount_{i}"] = amount;
             form[$"ingredient_unit_{i}"] = unit;
         }

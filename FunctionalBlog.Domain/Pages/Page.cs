@@ -5,6 +5,6 @@ public sealed record Page(
     PageTitle Title,
     PageContent Content)
 {
-    public static Page Create(PageId id, PageTitle title, PageContent content) =>
-        new(id, title, content);
+    public static Page Create(PageId id, PageTitle title, PageContent content)
+        => new(id, title, content);
 }

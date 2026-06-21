@@ -91,6 +91,100 @@ public sealed class RecipeHandlerTests
         Assert.Contains("/images/4", response.Body);
     }
 
+    [Fact]
+    public async Task CreateRecipe_with_a_known_ingredient_name_reuses_the_existing_ingredient()
+    {
+        var env = BuildEnv();
+        var mehl = await SeedIngredient(env, "Mehl");
+        var request = ARecipeRequest("/recipes") with { Form = RecipeForm(IngredientFields("Mehl", "200", "g")) };
+
+        var response = await RecipeHandlers.CreateRecipe(request)(env);
+
+        Assert.Equal(303, response.Status);
+        var recipe = Assert.Single(await env.Recipes.All());
+        Assert.Equal(mehl.Id, Assert.Single(recipe.Ingredients).IngredientId);
+        Assert.Single(await env.Ingredients.All());
+    }
+
+    [Fact]
+    public async Task CreateRecipe_with_an_unknown_ingredient_name_creates_a_new_ingredient()
+    {
+        var env = BuildEnv();
+        var request = ARecipeRequest("/recipes") with { Form = RecipeForm(IngredientFields("Dinkelmehl", "200", "g")) };
+
+        var response = await RecipeHandlers.CreateRecipe(request)(env);
+
+        Assert.Equal(303, response.Status);
+        var created = Assert.Single(await env.Ingredients.All());
+        Assert.Equal("Dinkelmehl", created.Name.Value);
+        var recipe = Assert.Single(await env.Recipes.All());
+        Assert.Equal(created.Id, Assert.Single(recipe.Ingredients).IngredientId);
+    }
+
+    [Fact]
+    public async Task CreateRecipe_succeeds_when_existing_ingredients_share_a_name()
+    {
+        var env = BuildEnv();
+        await SeedIngredient(env, "Apfel");
+        await SeedIngredient(env, "apfel");
+        var request = ARecipeRequest("/recipes") with { Form = RecipeForm(IngredientFields("Koriander", "20", "g")) };
+
+        var response = await RecipeHandlers.CreateRecipe(request)(env);
+
+        Assert.Equal(303, response.Status);
+        Assert.Single(await env.Recipes.All());
+    }
+
+    [Fact]
+    public async Task IngredientSearch_returns_only_matching_ingredient_names()
+    {
+        var env = BuildEnv();
+        await SeedIngredient(env, "Mehl");
+        await SeedIngredient(env, "Zucker");
+        var form = new Dictionary<string, string> { ["index"] = "0", ["ingredient_name_0"] = "Me" };
+        var request = new Request(HttpMethod.Post, "/recipes/form/ingredient-search", Empty, Empty, form, Empty);
+
+        var response = await RecipeHandlers.IngredientSearch(request)(env);
+
+        Assert.Contains("Mehl", response.Body);
+        Assert.DoesNotContain("Zucker", response.Body);
+    }
+
+    [Fact]
+    public async Task IngredientSelect_renders_the_combobox_input_with_the_chosen_name()
+    {
+        var env = BuildEnv();
+        var form = new Dictionary<string, string> { ["index"] = "0", ["name"] = "Mehl" };
+        var request = new Request(HttpMethod.Post, "/recipes/form/ingredient-select", Empty, Empty, form, Empty);
+
+        var response = await RecipeHandlers.IngredientSelect(request)(env);
+
+        Assert.Contains("ingredient_name_0", response.Body);
+        Assert.Contains("value=\"Mehl\"", response.Body);
+    }
+
+    private static async Task<Ingredient> SeedIngredient(Env env, string name)
+    {
+        var ingredient = Ingredient.Create(
+            await env.Ingredients.NextId(),
+            new IngredientName(name),
+            image: string.Empty,
+            description: string.Empty,
+            density: 1,
+            pieceCount: 0,
+            calorificValue: 0,
+            protein: 0,
+            fat: 0,
+            carbohydrates: 0,
+            sugar: 0,
+            fiber: 0);
+        await env.Ingredients.Save(ingredient);
+        return ingredient;
+    }
+
+    private static (string, string)[] IngredientFields(string name, string amount, string unit) =>
+        [("ingredient_name_0", name), ("ingredient_amount_0", amount), ("ingredient_unit_0", unit)];
+
     private static async Task<RecipeId> SeedRecipe(Env env, IReadOnlyList<string> images)
     {
         var id = await env.Recipes.NextId();

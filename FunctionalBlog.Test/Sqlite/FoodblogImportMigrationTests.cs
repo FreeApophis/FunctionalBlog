@@ -41,7 +41,8 @@ public sealed class FoodblogImportMigrationTests : IDisposable
 
         var all = await ingredients.All();
 
-        Assert.Equal(148, all.Count);
+        // 147, not 148: migration 0005 drops the duplicate placeholder "Apfel" (id 141).
+        Assert.Equal(147, all.Count);
     }
 
     [Fact]

@@ -11,8 +11,13 @@ public static class RecipeForm
         Difficulty Difficulty,
         IReadOnlyList<RecipeTag> Tags,
         IReadOnlyList<RecipeHint> Hints,
-        IReadOnlyList<RecipeIngredient> Ingredients,
+        IReadOnlyList<IngredientLine> Ingredients,
         IReadOnlyList<PreparationStep> Steps);
+
+    // A validated ingredient row carrying the typed/selected ingredient name. The name is
+    // resolved to an IngredientId (creating a new ingredient when unknown) in the handler,
+    // where the repository is available — decoding stays pure.
+    public sealed record IngredientLine(string Name, decimal Amount, FunctionalBlog.Domain.Recipes.Unit Unit);
 
     public static Validated<IReadOnlyList<string>, Valid> Decode(Request request)
     {
@@ -29,7 +34,7 @@ public static class RecipeForm
         var tags = ParseTags(tagsRaw);
         var hints = ParseHints(hintsRaw);
 
-        Func<RecipeName, RecipeDescription, int, Difficulty, IReadOnlyList<RecipeIngredient>, IReadOnlyList<PreparationStep>, Valid> create =
+        Func<RecipeName, RecipeDescription, int, Difficulty, IReadOnlyList<IngredientLine>, IReadOnlyList<PreparationStep>, Valid> create =
             (n, d, p, diff, ings, steps) => new Valid(n, d, p, diff, tags, hints, ings, steps);
 
         return create
@@ -41,13 +46,13 @@ public static class RecipeForm
             .Apply(TryParseSteps(rawSteps), Combine);
     }
 
-    public static List<(string Id, string Amount, string Unit)> ParseIngredients(Request request)
+    public static List<(string Name, string Amount, string Unit)> ParseIngredients(Request request)
     {
         var result = new List<(string, string, string)>();
-        for (var i = 0; request.Form.ContainsKey($"ingredient_id_{i}"); i++)
+        for (var i = 0; request.Form.ContainsKey($"ingredient_name_{i}"); i++)
         {
             result.Add((
-                request.Form.GetValueOrDefault($"ingredient_id_{i}", string.Empty),
+                request.Form.GetValueOrDefault($"ingredient_name_{i}", string.Empty).Trim(),
                 request.Form.GetValueOrDefault($"ingredient_amount_{i}", string.Empty),
                 request.Form.GetValueOrDefault($"ingredient_unit_{i}", string.Empty)));
         }
@@ -105,13 +110,13 @@ public static class RecipeForm
             ? Validated.Succeed<IReadOnlyList<string>, Difficulty>((Difficulty)difficultyInt)
             : Validated.Fail<IReadOnlyList<string>, Difficulty>(["recipe.error.difficulty_invalid"]);
 
-    private static Validated<IReadOnlyList<string>, IReadOnlyList<RecipeIngredient>> TryParseIngredients(
-        List<(string Id, string Amount, string Unit)> ingredients)
+    private static Validated<IReadOnlyList<string>, IReadOnlyList<IngredientLine>> TryParseIngredients(
+        List<(string Name, string Amount, string Unit)> ingredients)
     {
-        var result = new List<RecipeIngredient>();
-        foreach (var (id, amount, unit) in ingredients)
+        var result = new List<IngredientLine>();
+        foreach (var (name, amount, unit) in ingredients)
         {
-            if (string.IsNullOrEmpty(id))
+            if (string.IsNullOrEmpty(name))
             {
                 continue;
             }
@@ -119,13 +124,13 @@ public static class RecipeForm
             if (!decimal.TryParse(amount, NumberStyles.Any, CultureInfo.InvariantCulture, out var amt) || amt <= 0
                 || FunctionalBlog.Domain.Recipes.Unit.ParseByAbbreviation(unit) is not [var parsedUnit])
             {
-                return Validated.Fail<IReadOnlyList<string>, IReadOnlyList<RecipeIngredient>>(["recipe.error.ingredient_invalid"]);
+                return Validated.Fail<IReadOnlyList<string>, IReadOnlyList<IngredientLine>>(["recipe.error.ingredient_invalid"]);
             }
 
-            result.Add(new RecipeIngredient(new IngredientId(int.Parse(id)), amt, parsedUnit));
+            result.Add(new IngredientLine(name, amt, parsedUnit));
         }
 
-        return Validated.Succeed<IReadOnlyList<string>, IReadOnlyList<RecipeIngredient>>(result);
+        return Validated.Succeed<IReadOnlyList<string>, IReadOnlyList<IngredientLine>>(result);
     }
 
     private static Validated<IReadOnlyList<string>, IReadOnlyList<PreparationStep>> TryParseSteps(List<string> rawSteps)

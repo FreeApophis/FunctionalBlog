@@ -40,6 +40,8 @@ public static class Routes
         .Get("/recipes", RecipeHandlers.Index)
         .Post("/recipes", Auth.RequirePermission<Create>(new RecipeResource(), RecipeHandlers.CreateRecipe))
         .Post("/recipes/form/ingredients", Auth.RequirePermission<Create>(new RecipeResource(), RecipeHandlers.IngredientsSection))
+        .Post("/recipes/form/ingredient-search", Auth.RequirePermission<Create>(new RecipeResource(), RecipeHandlers.IngredientSearch))
+        .Post("/recipes/form/ingredient-select", Auth.RequirePermission<Create>(new RecipeResource(), RecipeHandlers.IngredientSelect))
         .Post("/recipes/form/steps", Auth.RequirePermission<Create>(new RecipeResource(), RecipeHandlers.StepsSection))
         .Get("/recipes/{id}/edit", p => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.EditRecipeForm(new RecipeId(int.Parse(p[0])))))
         .Post("/recipes/{id}/delete", p => Auth.RequirePermission<Delete>(new RecipeResource(), RecipeHandlers.DeleteRecipe(new RecipeId(int.Parse(p[0])))))

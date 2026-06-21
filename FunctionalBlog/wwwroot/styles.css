@@ -461,6 +461,72 @@ button {
 button:hover { transform: translateY(-2px); filter: brightness(1.05); box-shadow: 0 12px 24px color-mix(in srgb, var(--accent) 45%, transparent); }
 button:active { transform: translateY(0); }
 
+/* ---- Recipe ingredient editor ------------------------------------------- */
+
+.ingredient-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    align-items: flex-start;
+    margin: .5rem 0;
+}
+
+/* Cancel the block-level margins inputs/selects inherit inside a flex row. */
+.ingredient-row input,
+.ingredient-row select { margin: 0; }
+
+.ingredient-row input[name^="ingredient_amount_"] { flex: 0 0 6rem; width: 6rem; }
+.ingredient-unit { flex: 0 0 8rem; width: 8rem; }
+
+.ingredient-combobox { position: relative; flex: 1 1 12rem; min-width: 10rem; }
+.ingredient-name-input { width: 100%; }
+
+.ingredient-matches {
+    position: absolute;
+    z-index: 5;
+    left: 0;
+    right: 0;
+    margin-top: .25rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: .8rem;
+    box-shadow: 0 12px 24px rgba(0, 0, 0, .18);
+    overflow: hidden;
+}
+
+.ingredient-matches:empty { display: none; }
+
+.ingredient-match {
+    display: block;
+    width: 100%;
+    text-align: left;
+    border-radius: 0;
+    padding: .55rem .8rem;
+    font-weight: 500;
+    color: var(--fg);
+    background: transparent;
+    box-shadow: none;
+}
+
+.ingredient-match:hover {
+    transform: none;
+    filter: none;
+    box-shadow: none;
+    background: var(--accent-soft);
+}
+
+.ingredient-create-hint {
+    padding: .55rem .8rem;
+    font-size: .9rem;
+    color: var(--muted);
+}
+
+.ingredient-remove {
+    padding: .4rem .7rem;
+    font-size: .85rem;
+    box-shadow: none;
+}
+
 /* ---- Inline nav forms (search / language / logout) ----------------------- */
 
 .search-form, .lang-form {

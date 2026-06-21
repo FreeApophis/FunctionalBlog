@@ -167,7 +167,6 @@ INSERT INTO ingredients (id, name, image, description, density, piece_count, cal
 INSERT INTO ingredients (id, name, image, description, density, piece_count, calorific_value, protein, fat, carbohydrates, sugar, fiber) VALUES (138, 'Schweineschnitzel', '', '', 1, 1, 1, 0, 0, 0, 0, 0);
 INSERT INTO ingredients (id, name, image, description, density, piece_count, calorific_value, protein, fat, carbohydrates, sugar, fiber) VALUES (139, 'Älplermagronen', '', 'Teigwaren, Schweizer Variante der Makkaroni', 1, 1, 1529, 14, 3, 68, 3, 0);
 INSERT INTO ingredients (id, name, image, description, density, piece_count, calorific_value, protein, fat, carbohydrates, sugar, fiber) VALUES (140, 'Speckwürfel', '', '', 1, 1, 1120, 17, 22, 1, 0, 1);
-INSERT INTO ingredients (id, name, image, description, density, piece_count, calorific_value, protein, fat, carbohydrates, sugar, fiber) VALUES (141, 'Apfel', '', '', 1, 1, 1, 0, 0, 0, 0, 0);
 INSERT INTO ingredients (id, name, image, description, density, piece_count, calorific_value, protein, fat, carbohydrates, sugar, fiber) VALUES (142, 'Hefe', '', '', 1, 1, 1, 0, 0, 0, 0, 0);
 INSERT INTO ingredients (id, name, image, description, density, piece_count, calorific_value, protein, fat, carbohydrates, sugar, fiber) VALUES (143, 'lauwarmes Wasser', '', '', 1, 1, 1, 0, 0, 0, 0, 0);
 INSERT INTO ingredients (id, name, image, description, density, piece_count, calorific_value, protein, fat, carbohydrates, sugar, fiber) VALUES (144, 'Brokkoli', '', 'Kreuzblütengewächsen verwandt mit dem Blumenkohl', 1, 250, 92, 3, 0, 2, 0, 0);

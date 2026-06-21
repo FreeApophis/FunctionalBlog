@@ -100,9 +100,8 @@ public static class RecipeViews
         string difficulty,
         string tags,
         string hints,
-        IReadOnlyList<(string Id, string Amount, string Unit)> ingredients,
+        IReadOnlyList<(string Name, string Amount, string Unit)> ingredients,
         IReadOnlyList<string> steps,
-        IReadOnlyList<Ingredient> availableIngredients,
         ViewContext ctx,
         string formAction = "/recipes",
         string titleKey = "recipe.new_title",
@@ -128,7 +127,7 @@ public static class RecipeViews
             Html.Label(Html.Text(t("recipe.field.portions")) + Html.InputNumber("portions", portions, min: "1")) +
             Html.Label(Html.Text(t("recipe.field.difficulty")) + Html.Raw($"""<select name="difficulty">{difficultyOptions}</select>""")) +
             Html.Label(Html.Text(t("recipe.field.tags")) + Html.Input("tags", tags)) +
-            Html.Raw(IngredientSection(ingredients, availableIngredients, t)) +
+            Html.Raw(IngredientSection(ingredients, t)) +
             Html.Raw(StepSection(steps, t)) +
             ImagesField(existingImages ?? [], t) +
             Html.Label(Html.Text(t("recipe.field.hints")) + Html.Raw($"""<textarea name="hints" rows="4">{Html.Encode(hints)}</textarea>""")) +
@@ -144,19 +143,11 @@ public static class RecipeViews
     }
 
     public static string IngredientSection(
-        IReadOnlyList<(string Id, string Amount, string Unit)> ingredients,
-        IReadOnlyList<Ingredient> availableIngredients,
+        IReadOnlyList<(string Name, string Amount, string Unit)> ingredients,
         Translate t)
     {
-        string IngredientRow(int i, string id, string amount, string unit)
+        string IngredientRow(int i, string name, string amount, string unit)
         {
-            var idOptions = $"""<option value="">{Html.Encode(t("recipe.select_ingredient"))}</option>""" +
-                string.Concat(availableIngredients.Select(ing =>
-                {
-                    var selected = ing.Id.Value.ToString() == id ? " selected" : string.Empty;
-                    return $"""<option value="{ing.Id.Value}"{selected}>{Html.Encode(ing.Name.Value)}</option>""";
-                }));
-
             var unitOptions = string.Concat(FunctionalBlog.Domain.Recipes.Unit.All.Select(u =>
             {
                 var selected = u.Abbreviation == unit ? " selected" : string.Empty;
@@ -165,10 +156,11 @@ public static class RecipeViews
 
             return $"""
                 <div class="ingredient-row" id="ingredient-row-{i}">
-                    <select name="ingredient_id_{i}">{idOptions}</select>
                     {Html.InputNumber($"ingredient_amount_{i}", amount, step: "any")}
-                    <select name="ingredient_unit_{i}">{unitOptions}</select>
+                    <select name="ingredient_unit_{i}" class="ingredient-unit">{unitOptions}</select>
+                    {IngredientCombobox(i.ToString(), name, t)}
                     <button type="submit" name="action" value="remove-ingredient-{i}"
+                            class="ingredient-remove"
                             hx-post="/recipes/form/ingredients"
                             hx-target="#ingredients-section"
                             hx-swap="outerHTML"
@@ -179,7 +171,7 @@ public static class RecipeViews
                 """;
         }
 
-        var rows = string.Concat(ingredients.Select((ing, i) => IngredientRow(i, ing.Id, ing.Amount, ing.Unit)));
+        var rows = string.Concat(ingredients.Select((ing, i) => IngredientRow(i, ing.Name, ing.Amount, ing.Unit)));
 
         return $"""
             <div id="ingredients-section">
@@ -194,6 +186,46 @@ public static class RecipeViews
                 </button>
             </div>
             """;
+    }
+
+    // A searchable ingredient combobox: a free-text input whose keystrokes htmx-post to the
+    // search endpoint, rendering matching suggestions into the adjacent dropdown. The typed
+    // text is what gets submitted — an unknown name becomes a new ingredient on save.
+    public static string IngredientCombobox(string index, string name, Translate t) =>
+        $$"""
+            <div class="ingredient-combobox" id="ingredient-combobox-{{Html.Encode(index)}}">
+                <input name="ingredient_name_{{Html.Encode(index)}}" value="{{Html.Encode(name)}}"
+                       class="ingredient-name-input" autocomplete="off"
+                       placeholder="{{Html.Encode(t("recipe.select_ingredient"))}}"
+                       hx-post="/recipes/form/ingredient-search"
+                       hx-trigger="keyup changed delay:200ms"
+                       hx-target="#ing-matches-{{Html.Encode(index)}}"
+                       hx-swap="innerHTML"
+                       hx-vals='{"index": "{{Html.Encode(index)}}"}' />
+                <div id="ing-matches-{{Html.Encode(index)}}" class="ingredient-matches"></div>
+            </div>
+            """;
+
+    // Inner HTML for one combobox's dropdown: a clickable suggestion per match, or a hint that
+    // the typed name will be created as a new ingredient when nothing matches.
+    public static string IngredientMatches(string index, string query, IReadOnlyList<Ingredient> matches, Translate t)
+    {
+        if (matches.Count > 0)
+        {
+            return string.Concat(matches.Select(m =>
+                $$"""
+                    <button type="button" name="name" value="{{Html.Encode(m.Name.Value)}}"
+                            class="ingredient-match"
+                            hx-post="/recipes/form/ingredient-select"
+                            hx-vals='{"index": "{{Html.Encode(index)}}"}'
+                            hx-target="#ingredient-combobox-{{Html.Encode(index)}}"
+                            hx-swap="outerHTML">{{Html.Encode(m.Name.Value)}}</button>
+                    """));
+        }
+
+        return query.Length == 0
+            ? string.Empty
+            : $"""<div class="ingredient-create-hint">{Html.Encode(t("recipe.ingredient_will_be_created"))}: «{Html.Encode(query)}»</div>""";
     }
 
     public static string StepSection(IReadOnlyList<string> steps, Translate t)
