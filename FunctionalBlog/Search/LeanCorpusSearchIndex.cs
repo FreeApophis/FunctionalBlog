@@ -15,24 +15,34 @@ namespace FunctionalBlog.Search;
 
 public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
 {
+    // The underlying IndexWriter is not safe for concurrent use and the directory/writer/manager
+    // are swapped wholesale on every rebuild, so all access is serialised through this gate.
+    // A single lock is plenty for the traffic here; a ReaderWriterLockSlim would be the next step
+    // if concurrent search throughput ever mattered.
+    private readonly object _gate = new();
+
+    private readonly string _indexPath;
+
+    private readonly IAnalyser _analyser;
+
+    private readonly Highlighter _highlighter;
+
     private readonly MMapDirectory _directory;
 
     private readonly IndexWriter _writer;
 
     private readonly SearcherManager _manager;
 
-    private readonly IAnalyser _analyser;
-
-    private readonly Highlighter _highlighter;
-
     public LeanCorpusSearchIndex(string indexPath)
     {
-        PrepareCleanDirectory(indexPath);
-        _directory = new MMapDirectory(indexPath);
-        _writer = new IndexWriter(_directory, new IndexWriterConfig());
-        _manager = new SearcherManager(_directory, null);
+        _indexPath = indexPath;
         _analyser = new StandardAnalyser(40, []);
         _highlighter = new Highlighter("<mark>", "</mark>", _analyser);
+
+        PrepareCleanDirectory(_indexPath);
+        _directory = new MMapDirectory(_indexPath);
+        _writer = new IndexWriter(_directory, new IndexWriterConfig());
+        _manager = new SearcherManager(_directory, null);
     }
 
     public void IndexArticle(Article article) =>
@@ -59,109 +69,134 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
 
         var parsedQuery = ParseQuery(query);
 
-        return _manager.UsingSearcher(searcher =>
+        lock (_gate)
         {
-            var topDocs = searcher.Search(parsedQuery, topN);
-            var queryTerms = Highlighter.ExtractTerms(parsedQuery);
+            return _manager.UsingSearcher(searcher =>
+            {
+                var topDocs = searcher.Search(parsedQuery, topN);
+                var queryTerms = Highlighter.ExtractTerms(parsedQuery);
 
-            return (IReadOnlyList<SearchResult>)topDocs.ScoreDocs
-                .Select(hit =>
-                {
-                    var fields = searcher.GetStoredFields(hit.DocId);
-                    var type = fields["type"]?[0] ?? string.Empty;
-                    var id = int.Parse(fields["id"]?[0] ?? "0");
-                    var title = fields["title"]?[0] ?? string.Empty;
-                    var body = fields["body"]?[0] ?? string.Empty;
-                    var snippet = _highlighter.GetBestFragment(body, queryTerms, 200);
-                    return new SearchResult(type, id, title, snippet, hit.Score);
-                })
-                .ToList();
-        });
+                return (IReadOnlyList<SearchResult>)topDocs.ScoreDocs
+                    .Select(hit =>
+                    {
+                        var fields = searcher.GetStoredFields(hit.DocId);
+                        var type = fields["type"]?[0] ?? string.Empty;
+                        var id = int.Parse(fields["id"]?[0] ?? "0");
+                        var title = fields["title"]?[0] ?? string.Empty;
+                        var body = fields["body"]?[0] ?? string.Empty;
+                        var snippet = _highlighter.GetBestFragment(body, queryTerms, 200);
+                        return new SearchResult(type, id, title, snippet, hit.Score);
+                    })
+                    .ToList();
+            });
+        }
     }
 
     public IReadOnlyList<string> Suggestions(string query)
     {
         var terms = query.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 
-        return _manager.UsingSearcher(searcher =>
-            (IReadOnlyList<string>)terms
-                .SelectMany(term =>
-                    DidYouMeanSuggester.Suggest(searcher, "title", term, maxEdits: 2, topN: 3)
-                        .Concat(DidYouMeanSuggester.Suggest(searcher, "body", term, maxEdits: 2, topN: 3)))
-                .OrderByDescending(s => s.Score)
-                .Take(5)
-                .Select(s => s.Term)
-                .Distinct()
-                .ToList());
+        lock (_gate)
+        {
+            return _manager.UsingSearcher(searcher =>
+                (IReadOnlyList<string>)terms
+                    .SelectMany(term =>
+                        DidYouMeanSuggester.Suggest(searcher, "title", term, maxEdits: 2, topN: 3)
+                            .Concat(DidYouMeanSuggester.Suggest(searcher, "body", term, maxEdits: 2, topN: 3)))
+                    .OrderByDescending(s => s.Score)
+                    .Take(5)
+                    .Select(s => s.Term)
+                    .Distinct()
+                    .ToList());
+        }
     }
 
+    // Re-syncs the index with the database (the single source of truth): drops every indexed
+    // document and re-adds the current rows, healing any drift left by a swallowed live-write
+    // failure. Documents are built up front from the async repositories, then applied to the writer
+    // under the gate with no await held. (The directory is cleared only on a fresh process start in
+    // the constructor — disposing and deleting a memory-mapped directory in-process is not reliable
+    // on Windows, where the files linger delete-pending and corrupt a re-opened index.)
     public async ValueTask RebuildAsync(
         IArticleRepository articles,
         IRecipeRepository recipes,
         IIngredientRepository ingredients,
         IPageRepository pages)
     {
-        _writer.DeleteDocuments(new TermQuery("type", "article"));
-        _writer.DeleteDocuments(new TermQuery("type", "recipe"));
-        _writer.DeleteDocuments(new TermQuery("type", "ingredient"));
-        _writer.DeleteDocuments(new TermQuery("type", "page"));
+        var documents = new List<(string Key, LeanDocument Document)>();
 
         foreach (var article in await articles.All())
         {
-            _writer.UpdateDocument("_key", $"article_{article.Id.Value}", BuildArticleDocument(article));
+            documents.Add(($"article_{article.Id.Value}", BuildArticleDocument(article)));
         }
 
         foreach (var recipe in await recipes.All())
         {
-            _writer.UpdateDocument("_key", $"recipe_{recipe.Id.Value}", BuildRecipeDocument(recipe));
+            documents.Add(($"recipe_{recipe.Id.Value}", BuildRecipeDocument(recipe)));
         }
 
         foreach (var ingredient in await ingredients.All())
         {
-            _writer.UpdateDocument("_key", $"ingredient_{ingredient.Id.Value}", BuildIngredientDocument(ingredient));
+            documents.Add(($"ingredient_{ingredient.Id.Value}", BuildIngredientDocument(ingredient)));
         }
 
         foreach (var page in await pages.All())
         {
-            _writer.UpdateDocument("_key", $"page_{page.Id.Value}", BuildPageDocument(page));
+            documents.Add(($"page_{page.Id.Value}", BuildPageDocument(page)));
         }
 
-        _writer.Commit();
-        _manager.MaybeRefresh();
+        lock (_gate)
+        {
+            _writer.DeleteDocuments(new TermQuery("type", "article"));
+            _writer.DeleteDocuments(new TermQuery("type", "recipe"));
+            _writer.DeleteDocuments(new TermQuery("type", "ingredient"));
+            _writer.DeleteDocuments(new TermQuery("type", "page"));
+
+            foreach (var (key, document) in documents)
+            {
+                _writer.UpdateDocument("_key", key, document);
+            }
+
+            _writer.Commit();
+            _manager.MaybeRefresh();
+        }
     }
 
     public void Dispose()
     {
-        _manager.Dispose();
-        _writer.Dispose();
-        _directory.Dispose();
+        lock (_gate)
+        {
+            _manager.Dispose();
+            _writer.Dispose();
+            _directory.Dispose();
+        }
     }
 
-    // The on-disk index is a rebuildable cache: Program.Main repopulates it from the
-    // database via RebuildAsync on every startup, so nothing persisted here is ever read.
-    // Starting from a clean directory stops superseded segment files from accumulating
-    // across restarts (which grew the production index to seg_186 and triggered a
-    // file-lock crash on startup). It also surfaces a leftover/second instance early:
-    // the delete fails fast if another process still holds the index files memory-mapped.
-    // A single live write + commit. The on-disk index is a best-effort cache that is cleared
-    // and fully rebuilt from the database on every startup (see PrepareCleanDirectory /
-    // RebuildAsync), so a transient segment inconsistency during an incremental commit must
-    // never bubble up and fail the user's underlying create/update/delete — the change is
-    // simply picked up on the next rebuild.
+    // A single live write + commit so new content is searchable within the request. The on-disk
+    // index is a best-effort cache rebuilt from the database (RebuildAsync), so a transient segment
+    // inconsistency on an incremental commit must never fail the user's create/update/delete — it
+    // is healed by the next (periodic) rebuild.
     private void TryWrite(Action write)
     {
-        try
+        lock (_gate)
         {
-            write();
-            _writer.Commit();
-            _manager.MaybeRefresh();
-        }
-        catch (IOException)
-        {
-            // Best-effort: the database remains the source of truth; the index self-heals on restart.
+            try
+            {
+                write();
+                _writer.Commit();
+                _manager.MaybeRefresh();
+            }
+            catch (IOException)
+            {
+                // Best-effort: the database remains the source of truth; a later rebuild heals the index.
+            }
         }
     }
 
+    // Clears the index directory. Across restarts this stops superseded segment files from
+    // accumulating (which grew the production index to seg_186 and caused a file-lock crash), and
+    // it surfaces a leftover/second instance early: the delete fails fast if another process still
+    // holds the files memory-mapped.
     private static void PrepareCleanDirectory(string indexPath)
     {
         Directory.CreateDirectory(indexPath);

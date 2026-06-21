@@ -179,6 +179,58 @@ public sealed class SearchIndexTests : IDisposable
         }
     }
 
+    [Fact]
+    public async Task Rebuild_makes_the_index_match_the_repositories()
+    {
+        // A doc that exists only in the live index (e.g. left over after a failed commit / drift).
+        _index.IndexArticle(AnArticle(99, "Geisterartikel", "verwaister Eintrag"));
+
+        var articles = new InMemoryArticleRepository();
+        var id = await articles.NextId();
+        await articles.Save(AnArticleEntity(id, "Bratapfel"));
+
+        await _index.RebuildAsync(
+            articles,
+            new InMemoryRecipeRepository(),
+            new InMemoryIngredientRepository(),
+            new InMemoryPageRepository());
+
+        Assert.NotEmpty(_index.Search("Bratapfel"));      // repository content is present
+        Assert.Empty(_index.Search("Geisterartikel"));    // drift is healed away
+    }
+
+    [Fact]
+    public async Task Concurrent_search_index_and_rebuild_are_serialised_safely()
+    {
+        var articles = new InMemoryArticleRepository();
+        for (var i = 1; i <= 5; i++)
+        {
+            var id = await articles.NextId();
+            await articles.Save(AnArticleEntity(id, $"Stollen {i}"));
+        }
+
+        // Exercises the gate: concurrent writes/searches/rebuild must not corrupt or throw. Kept
+        // to a handful of commits so the run stays below the library's merge threshold — this is a
+        // thread-safety test, not a stress test of LeanCorpus's segment merging under churn.
+        var tasks = new List<Task>();
+        for (var i = 0; i < 6; i++)
+        {
+            var n = i;
+            tasks.Add(Task.Run(() => _index.IndexArticle(AnArticle(1000 + n, $"Parallel {n}", "Inhalt"))));
+            tasks.Add(Task.Run(() => _index.Search("Parallel")));
+        }
+
+        tasks.Add(Task.Run(async () => await _index.RebuildAsync(
+            articles,
+            new InMemoryRecipeRepository(),
+            new InMemoryIngredientRepository(),
+            new InMemoryPageRepository())));
+
+        await Task.WhenAll(tasks);
+
+        Assert.NotEmpty(_index.Search("Stollen"));
+    }
+
     public void Dispose()
     {
         _index.Dispose();
