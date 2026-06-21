@@ -70,6 +70,7 @@ public static class ImageUploadForm
         {
             [var contentType] => Validated.Succeed<IReadOnlyList<string>, ImageContentType>(contentType),
             [] => Validated.Fail<IReadOnlyList<string>, ImageContentType>(["image.error.unsupported_type"]),
+            _ => throw new InvalidOperationException("Option matches at most one element."),
         };
 
     private static Validated<IReadOnlyList<string>, byte[]> TrySize(byte[] content) =>

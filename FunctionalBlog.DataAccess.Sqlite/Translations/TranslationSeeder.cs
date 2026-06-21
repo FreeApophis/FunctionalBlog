@@ -87,10 +87,10 @@ public static class TranslationSeeder
         ("search.results_for", "en", "results for"),
         ("search.results_for", "it", "risultati per"),
         ("search.results_for", "fr", "résultats pour"),
-        ("search.did_you_mean","de", "Meinten Sie"),
-        ("search.did_you_mean","en", "Did you mean"),
-        ("search.did_you_mean","it", "Forse cercavi"),
-        ("search.did_you_mean","fr", "Vouliez-vous dire"),
+        ("search.did_you_mean", "de", "Meinten Sie"),
+        ("search.did_you_mean", "en", "Did you mean"),
+        ("search.did_you_mean", "it", "Forse cercavi"),
+        ("search.did_you_mean", "fr", "Vouliez-vous dire"),
 
         // Common
         ("common.back",        "de", "← Zurück"),
