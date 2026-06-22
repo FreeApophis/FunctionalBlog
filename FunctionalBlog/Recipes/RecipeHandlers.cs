@@ -7,12 +7,24 @@ public static class RecipeHandlers
     // Default unit id for a freshly added ingredient row (Gramm).
     private const string DefaultUnitId = "1";
 
-    public static App Index => _ => async env =>
+    // Recipe cards shown per page on the index.
+    private const int PageSize = 12;
+
+    public static App Index => request => async env =>
     {
         var recipes = await env.Recipes.All();
         var users = await env.Users.All();
         var authorNames = users.ToDictionary(u => u.Id, u => u.DisplayName.Value);
-        return Response.Html(RecipeViews.Index(recipes, authorNames, env.Ctx));
+
+        var totalPages = Math.Max(1, (int)Math.Ceiling(recipes.Count / (double)PageSize));
+        var requestedPage = request.Query.GetValueOrNone("page")
+            .Select(raw => int.TryParse(raw, out var n) ? n : 1)
+            .GetOrElse(1);
+        var page = Math.Clamp(requestedPage, 1, totalPages);
+
+        var pageRecipes = recipes.Skip((page - 1) * PageSize).Take(PageSize).ToList();
+
+        return Response.Html(RecipeViews.Index(pageRecipes, authorNames, env.Ctx, page, totalPages));
     };
 
     public static App ShowRecipe(RecipeId id) => _ => async env =>

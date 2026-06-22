@@ -5,7 +5,9 @@ public static class RecipeViews
     public static string Index(
         IReadOnlyList<Recipe> recipes,
         IReadOnlyDictionary<UserId, string> authorNames,
-        ViewContext ctx)
+        ViewContext ctx,
+        int currentPage = 1,
+        int totalPages = 1)
     {
         var (principal, t, _) = ctx;
 
@@ -47,6 +49,8 @@ public static class RecipeViews
             ? Html.P(Html.Text(t("recipe.no_recipes")))
             : Html.Raw($"""<div class="recipe-grid">{string.Concat(recipes.Select(Card))}</div>""");
 
+        var pagination = Pagination(currentPage, totalPages, t);
+
         var newButton = principal.Can<Create>(new RecipeResource())
             ? Html.Raw($"""<a class="btn" href="/recipes/new">{Html.Encode(t("recipe.new_recipe"))}</a>""")
             : HtmlString.Empty;
@@ -57,7 +61,7 @@ public static class RecipeViews
                 <div class="page-head-row"><h1>{Html.Encode(t("recipe.title"))}</h1>
             """) + newButton + Html.Raw("</div></div>");
 
-        var body = head + grid;
+        var body = head + grid + pagination;
 
         return Layout.Page(t("recipe.title"), body, ctx);
     }
@@ -344,6 +348,44 @@ public static class RecipeViews
                 </button>
             </section>
             """;
+    }
+
+    // A page navigation bar: previous/next plus a numbered link per page. Renders nothing when
+    // everything fits on a single page. Each link points at /recipes?page=N.
+    private static HtmlString Pagination(int currentPage, int totalPages, Translate t)
+    {
+        if (totalPages <= 1)
+        {
+            return HtmlString.Empty;
+        }
+
+        string Link(int page, string label, string? rel = null)
+        {
+            var relAttr = rel is null ? string.Empty : $" rel=\"{rel}\"";
+            return $"""<a class="page-link" href="/recipes?page={page}"{relAttr}>{Html.Encode(label)}</a>""";
+        }
+
+        string Disabled(string label) =>
+            $"""<span class="page-link is-disabled" aria-hidden="true">{Html.Encode(label)}</span>""";
+
+        var prev = currentPage > 1
+            ? Link(currentPage - 1, "‹", rel: "prev")
+            : Disabled("‹");
+
+        var next = currentPage < totalPages
+            ? Link(currentPage + 1, "›", rel: "next")
+            : Disabled("›");
+
+        var numbers = string.Concat(Enumerable.Range(1, totalPages).Select(page =>
+            page == currentPage
+                ? $"""<span class="page-link is-current" aria-current="page">{page}</span>"""
+                : Link(page, page.ToString())));
+
+        return Html.Raw($"""
+            <nav class="pagination" aria-label="{Html.Encode(t("recipe.pagination"))}">
+                {prev}{numbers}{next}
+            </nav>
+            """);
     }
 
     // A CSS-only slider: a horizontal scroll-snap track plus anchor-link dots that

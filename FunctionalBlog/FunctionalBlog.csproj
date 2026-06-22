@@ -4,6 +4,7 @@
   
 	<ItemGroup>
 		<Content Remove="wwwroot\styles.css" />
+		<EmbeddedResource Include="wwwroot\favicon.png" />
 		<EmbeddedResource Include="wwwroot\styles.css" />
 		<Content Remove="wwwroot\htmx.min.js" />
 		<EmbeddedResource Include="wwwroot\htmx.min.js" />

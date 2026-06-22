@@ -136,6 +136,52 @@ public sealed class RecipeHandlerTests
     }
 
     [Fact]
+    public async Task Index_shows_at_most_twelve_cards_on_the_first_page()
+    {
+        var env = BuildEnv();
+        await SeedRecipes(env, 13);
+
+        var response = await RecipeHandlers.Index(ARequest("/recipes"))(env);
+
+        Assert.Equal(12, CountCards(response.Body));
+        Assert.Contains("/recipes?page=2", response.Body);
+    }
+
+    [Fact]
+    public async Task Index_shows_the_remaining_cards_on_the_second_page()
+    {
+        var env = BuildEnv();
+        await SeedRecipes(env, 13);
+
+        var response = await RecipeHandlers.Index(ARequest("/recipes", ("page", "2")))(env);
+
+        Assert.Equal(1, CountCards(response.Body));
+    }
+
+    [Fact]
+    public async Task Index_omits_pagination_when_everything_fits_on_one_page()
+    {
+        var env = BuildEnv();
+        await SeedRecipes(env, 5);
+
+        var response = await RecipeHandlers.Index(ARequest("/recipes"))(env);
+
+        Assert.Equal(5, CountCards(response.Body));
+        Assert.DoesNotContain("class=\"pagination\"", response.Body);
+    }
+
+    [Fact]
+    public async Task Index_clamps_an_out_of_range_page_to_the_last_page()
+    {
+        var env = BuildEnv();
+        await SeedRecipes(env, 13);
+
+        var response = await RecipeHandlers.Index(ARequest("/recipes", ("page", "99")))(env);
+
+        Assert.Equal(1, CountCards(response.Body));
+    }
+
+    [Fact]
     public async Task IngredientSearch_returns_only_matching_ingredient_names()
     {
         var env = BuildEnv();
@@ -180,6 +226,40 @@ public sealed class RecipeHandlerTests
             fiber: 0);
         await env.Ingredients.Save(ingredient);
         return ingredient;
+    }
+
+    private static int CountCards(string body)
+    {
+        var count = 0;
+        var index = 0;
+        const string marker = "class=\"recipe-card\"";
+        while ((index = body.IndexOf(marker, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += marker.Length;
+        }
+
+        return count;
+    }
+
+    private static async Task SeedRecipes(Env env, int count)
+    {
+        for (var i = 0; i < count; i++)
+        {
+            var id = await env.Recipes.NextId();
+            await env.Recipes.Save(Recipe.Create(
+                id,
+                new RecipeName($"Rezept {i:D2}"),
+                new RecipeDescription("Beschreibung."),
+                [new PreparationStep(1, "Schritt.")],
+                new UserId(1),
+                Difficulty.Easy,
+                [],
+                4,
+                [],
+                [],
+                []));
+        }
     }
 
     private static (string, string)[] IngredientFields(string name, string amount, string unit) =>
@@ -227,6 +307,9 @@ public sealed class RecipeHandlerTests
 
     private static Request AnEmptyRequest() =>
         new(HttpMethod.Get, "/", Empty, Empty, Empty, Empty);
+
+    private static Request ARequest(string path, params (string Key, string Value)[] query) =>
+        new(HttpMethod.Get, path, Empty, query.ToDictionary(q => q.Key, q => q.Value), Empty, Empty);
 
     private static AuthenticatedUser AuthUser()
     {
