@@ -74,10 +74,13 @@ public static class RecipeViews
     {
         var (principal, t, csrfToken) = ctx;
 
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("recipe.title"), "/recipes"),
+            Crumb.Current(recipe.Name.Value));
+
         var deleteButton = Html.Raw($"""<button type="submit" class="btn-secondary">{Html.Encode(t("common.delete"))}</button>""");
         var actions =
             Html.Raw("""<div class="recipe-actions">""") +
-            Html.Link("/recipes", t("common.back")) +
             (principal.Can<Edit>(new RecipeResource())
                 ? Html.Link($"/recipes/{recipe.Id.Value}/edit", t("recipe.edit_link"))
                 : HtmlString.Empty) +
@@ -140,7 +143,8 @@ public static class RecipeViews
                 Html.Raw("</section>")
             : HtmlString.Empty;
 
-        var body = actions +
+        var body = breadcrumb +
+            actions +
             Html.H1(recipe.Name.Value) +
             meta +
             tags +
@@ -212,7 +216,17 @@ public static class RecipeViews
             saveBar;
         var form = Html.Form(formAction, formBody, cssClass: "recipe-form", enctype: "multipart/form-data");
 
-        var body = Html.P(Html.Link("/recipes", t("common.back"))) +
+        // Edit reuses the form with a recipe-scoped formAction (/recipes/{id}); new posts to /recipes.
+        var breadcrumb = titleKey == "recipe.edit_title"
+            ? Html.Breadcrumb(
+                Crumb.Link(t("recipe.title"), "/recipes"),
+                Crumb.Link(name, formAction),
+                Crumb.Current(t("common.edit")))
+            : Html.Breadcrumb(
+                Crumb.Link(t("recipe.title"), "/recipes"),
+                Crumb.Current(t("common.new")));
+
+        var body = breadcrumb +
             Html.H1(t(titleKey)) +
             errorHtml +
             form;

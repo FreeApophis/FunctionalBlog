@@ -30,6 +30,21 @@ public static class Html
 
     public static HtmlString Link(string href, string text) => new HtmlString.Safe($"<a href=\"{Encode(href)}\">{Encode(text)}</a>");
 
+    // A breadcrumb trail rendered as the design's mono eyebrow row: muted links joined by "/",
+    // with the current (href-less) crumb accented. Replaces the old per-page "Back" links.
+    public static HtmlString Breadcrumb(params Crumb[] crumbs)
+    {
+        string Render(Crumb c) => c.Href is { } href
+            ? $"""<a href="{Encode(href)}">{Encode(c.Label)}</a>"""
+            : $"""<span class="crumb-current" aria-current="page">{Encode(c.Label)}</span>""";
+
+        var trail = string.Join(
+            """<span class="crumb-sep" aria-hidden="true">/</span>""",
+            crumbs.Select(Render));
+
+        return new HtmlString.Safe($"""<nav class="breadcrumb" aria-label="Breadcrumb">{trail}</nav>""");
+    }
+
     public static HtmlString Button(string text) => new HtmlString.Safe($"<button type=\"submit\">{Encode(text)}</button>");
 
     public static HtmlString Form(string action, HtmlString body, Option<string> cssClass = default, Option<string> style = default, Option<string> enctype = default)

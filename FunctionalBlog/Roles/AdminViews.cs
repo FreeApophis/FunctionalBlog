@@ -36,7 +36,11 @@ public static class AdminViews
             </section>
             """;
 
-        var body = Html.P(Html.Link("/admin", t("common.back_to_admin"))) + Html.Raw(section);
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("nav.admin"), "/admin"),
+            Crumb.Current(t("admin.users.title")));
+
+        var body = breadcrumb + Html.Raw(section);
         return Layout.Page(t("admin.users.title"), body, ctx);
     }
 
@@ -55,8 +59,13 @@ public static class AdminViews
         var formBody = Html.CsrfField(csrfToken) + Html.Fieldset(t("admin.users.roles_label"), roleCheckboxes) + Html.Button(t("admin.users.save"));
         var form = Html.Form($"/admin/users/{user.Id.Value}/roles", formBody);
 
-        var body = Html.H1(user.Email.Value) +
-            Html.P(Html.Link("/admin/users", t("common.back"))) +
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("nav.admin"), "/admin"),
+            Crumb.Link(t("admin.users.title"), "/admin/users"),
+            Crumb.Current(user.Email.Value));
+
+        var body = breadcrumb +
+            Html.H1(user.Email.Value) +
             errorHtml +
             form;
         return Layout.Page($"{t("admin.users.detail_title")}: {user.Email.Value}", body, ctx);
@@ -70,7 +79,12 @@ public static class AdminViews
             Html.Link($"/admin/roles/{r.Id.Value}", r.Name) +
             Html.Raw($" ({r.Rules.Count})");
 
-        var body = Html.H1(t("admin.roles.title")) +
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("nav.admin"), "/admin"),
+            Crumb.Current(t("admin.roles.title")));
+
+        var body = breadcrumb +
+            Html.H1(t("admin.roles.title")) +
             Html.P(Html.Link("/admin/roles/new", t("admin.roles.new"))) +
             Html.P(Html.Link("/admin/users", t("admin.roles.manage_users"))) +
             Html.Ul(roles.Select(RoleRow));
@@ -86,8 +100,12 @@ public static class AdminViews
             : Html.Div("errors", Html.Ul(errors.Select(Html.Text)));
 
         var formBody = Html.CsrfField(csrfToken) + Html.Label(Html.Text(t("admin.roles.name")) + Html.Input("name")) + Html.Button(t("admin.roles.create"));
-        var body = Html.H1(t("admin.roles.new")) +
-            Html.P(Html.Link("/admin/roles", t("common.back"))) +
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("nav.admin"), "/admin"),
+            Crumb.Link(t("admin.roles.title"), "/admin/roles"),
+            Crumb.Current(t("common.new")));
+        var body = breadcrumb +
+            Html.H1(t("admin.roles.new")) +
             errorHtml +
             Html.Form("/admin/roles", formBody);
         return Layout.Page(t("admin.roles.new"), body, ctx);
@@ -132,8 +150,13 @@ public static class AdminViews
         var addForm = Html.Form($"/admin/roles/{role.Id.Value}/rules", addFormBody);
         var deleteForm = Html.Form($"/admin/roles/{role.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Button(t("admin.roles.delete")));
 
-        var body = Html.H1(role.Name) +
-            Html.P(Html.Link("/admin/roles", t("common.back"))) +
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("nav.admin"), "/admin"),
+            Crumb.Link(t("admin.roles.title"), "/admin/roles"),
+            Crumb.Current(role.Name));
+
+        var body = breadcrumb +
+            Html.H1(role.Name) +
             Html.P(deleteForm) +
             Html.H2(Html.Text(t("admin.roles.rules"))) +
             ruleRows +

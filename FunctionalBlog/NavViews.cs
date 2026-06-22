@@ -7,7 +7,7 @@ public static class NavViews
         """
         <div class="utility-bar"><div class="utility-inner">
             <span>FOODBLOG.CH — KOCHEN · BACKEN · GENIESSEN</span>
-            <span class="utility-meta"><span>SEIT 2014</span><span class="dot">·</span><span>ZÜRICH</span></span>
+            <span class="utility-meta"><span>SEIT 2016</span><span class="dot">·</span><span>ZÜRICH</span></span>
         </div></div>
         """;
 

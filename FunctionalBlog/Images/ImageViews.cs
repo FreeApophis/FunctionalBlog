@@ -19,7 +19,11 @@ public static class ImageViews
             ? Html.P(Html.Text(t("image.empty")))
             : Html.Div("image-gallery", HtmlString.Concat(images.Select(image => Card(image, t, csrfToken))));
 
-        var body = Html.P(Html.Link("/", t("common.back"))) +
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("nav.admin"), "/admin"),
+            Crumb.Current(t("image.library_title")));
+
+        var body = breadcrumb +
             Html.H1(t("image.library_title")) +
             errorHtml +
             uploadForm +

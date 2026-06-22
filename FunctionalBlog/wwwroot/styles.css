@@ -303,6 +303,25 @@ small, .eyebrow {
     margin-bottom: .6rem;
 }
 
+/* Breadcrumb trail — the design's mono eyebrow row above page titles. */
+.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted2);
+    margin: 0 0 14px;
+}
+
+.breadcrumb a { color: var(--muted2); text-decoration: none; transition: color .15s ease; }
+.breadcrumb a:hover { color: var(--accent); }
+.breadcrumb .crumb-current { color: var(--tomato); }
+.breadcrumb .crumb-sep { color: var(--muted2); opacity: .55; }
+
 /* ---- Cards: articles, forms, errors ------------------------------------- */
 
 article, form.card, .card, .errors, form:not(.search-form):not(.lang-form):not(.theme-form):not([style]) {

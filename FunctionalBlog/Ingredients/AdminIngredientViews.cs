@@ -26,9 +26,13 @@ public static class AdminIngredientViews
                 Html.Th(string.Empty))) +
             Html.Tbody(HtmlString.Concat(ingredients.Select(Row))));
 
-        var body = Html.H1(t("ingredient.list_title")) +
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("nav.admin"), "/admin"),
+            Crumb.Current(t("ingredient.list_title")));
+
+        var body = breadcrumb +
+            Html.H1(t("ingredient.list_title")) +
             Html.P(Html.Link("/admin/ingredients/new", t("ingredient.new_ingredient"))) +
-            Html.P(Html.Link("/admin", t("common.back_to_admin"))) +
             errorHtml +
             (ingredients.Count == 0 ? Html.P(Html.Text(t("ingredient.no_ingredients"))) : table);
 
@@ -77,7 +81,13 @@ public static class AdminIngredientViews
             Html.Button(t("ingredient.submit"));
         var form = Html.Form(formAction, formBody);
 
-        var body = Html.P(Html.Link("/admin/ingredients", t("ingredient.list_title"))) +
+        var leaf = titleKey == "ingredient.edit_title" ? t("common.edit") : t("common.new");
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("nav.admin"), "/admin"),
+            Crumb.Link(t("ingredient.list_title"), "/admin/ingredients"),
+            Crumb.Current(leaf));
+
+        var body = breadcrumb +
             Html.H1(t(titleKey)) +
             errorHtml +
             form;

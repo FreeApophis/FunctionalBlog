@@ -16,6 +16,18 @@ public sealed class AdminUnitHandlersTests
     }
 
     [Fact]
+    public async Task List_renders_an_admin_breadcrumb_instead_of_a_back_link()
+    {
+        var env = await BuildEnv();
+
+        var response = await AdminUnitHandlers.List(AnEmptyRequest())(env);
+
+        Assert.Contains("class=\"breadcrumb\"", response.Body);
+        Assert.Contains("href=\"/admin\"", response.Body);
+        Assert.DoesNotContain("common.back_to_admin", response.Body);
+    }
+
+    [Fact]
     public async Task Create_persists_a_new_unit_with_category_and_factor()
     {
         var env = await BuildEnv();

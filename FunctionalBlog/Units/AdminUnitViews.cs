@@ -36,7 +36,11 @@ public static class AdminUnitViews
             </section>
             """;
 
-        var body = Html.P(Html.Link("/admin", t("common.back_to_admin"))) + Html.Raw(section);
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("nav.admin"), "/admin"),
+            Crumb.Current(t("unit.list_title")));
+
+        var body = breadcrumb + Html.Raw(section);
         return Layout.Page(t("unit.list_title"), body, ctx);
     }
 

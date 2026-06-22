@@ -98,19 +98,29 @@ public static class BlogViews
     {
         var (principal, t, csrfToken) = ctx;
 
-        var editLink = principal.Can<Edit>(new ArticleResource())
-            ? Html.Raw(" · ") + Html.Link($"/articles/{article.Id.Value}/edit", t("common.edit"))
-            : HtmlString.Empty;
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("blog.title"), "/"),
+            Crumb.Current(article.Title.Value));
 
-        var deleteForm = principal.Can<Delete>(new ArticleResource())
-            ? Html.Form($"/articles/{article.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Raw(" · ") + Html.Button(t("common.delete")), style: "display:inline")
-            : HtmlString.Empty;
+        var actions = new List<HtmlString>();
+        if (principal.Can<Edit>(new ArticleResource()))
+        {
+            actions.Add(Html.Link($"/articles/{article.Id.Value}/edit", t("common.edit")));
+        }
+
+        if (principal.Can<Delete>(new ArticleResource()))
+        {
+            actions.Add(Html.Form($"/articles/{article.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Button(t("common.delete")), style: "display:inline"));
+        }
+
+        var actionsBar = actions.Count > 0 ? Html.P(HtmlString.Join(" · ", actions)) : HtmlString.Empty;
 
         var cover = article.CoverImageId.Match(
             none: () => HtmlString.Empty,
             some: imageId => Html.Div("cover", Html.Img($"/images/{imageId.Value}", article.Title.Value, cssClass: "cover-image")));
 
-        var body = Html.P(Html.Link("/", t("common.back")) + editLink + deleteForm) +
+        var body = breadcrumb +
+            actionsBar +
             Html.H1(article.Title.Value) +
             Html.Small($"{t("article.by")} {authorName} · {article.PublishedAt.LocalDateTime:g}") +
             cover +
@@ -152,7 +162,16 @@ public static class BlogViews
             Html.Button(t("article.submit"));
         var form = Html.Form(formAction, formBody, enctype: "multipart/form-data");
 
-        var body = Html.P(Html.Link("/", t("common.back"))) +
+        var breadcrumb = titleKey == "article.edit_title"
+            ? Html.Breadcrumb(
+                Crumb.Link(t("blog.title"), "/"),
+                Crumb.Link(title, formAction),
+                Crumb.Current(t("common.edit")))
+            : Html.Breadcrumb(
+                Crumb.Link(t("blog.title"), "/"),
+                Crumb.Current(t("common.new")));
+
+        var body = breadcrumb +
             Html.H1(t(titleKey)) +
             errorHtml +
             form;

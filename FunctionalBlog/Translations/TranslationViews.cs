@@ -35,8 +35,12 @@ public static class TranslationViews
             Html.Thead(Html.Tr(Html.Th(t("translations.key")) + langHeaders)) +
             Html.Tbody(rows));
 
-        var body = Html.H1(t("translations.title")) +
-            Html.P(Html.Link("/admin", t("common.back_to_admin"))) +
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("nav.admin"), "/admin"),
+            Crumb.Current(t("translations.title")));
+
+        var body = breadcrumb +
+            Html.H1(t("translations.title")) +
             Html.P(Html.Link("/admin/translations/export.json", t("translations.export"))) +
             table;
 

@@ -182,6 +182,45 @@ public sealed class RecipeHandlerTests
     }
 
     [Fact]
+    public async Task ShowRecipe_renders_a_breadcrumb_instead_of_a_back_link()
+    {
+        var env = BuildEnv();
+        var id = await SeedRecipe(env, []);
+
+        var response = await RecipeHandlers.ShowRecipe(id)(AnEmptyRequest())(env);
+
+        Assert.Contains("class=\"breadcrumb\"", response.Body);
+        Assert.Contains("class=\"crumb-current\"", response.Body);
+        Assert.DoesNotContain("common.back", response.Body);
+    }
+
+    [Fact]
+    public async Task NewRecipeForm_breadcrumb_ends_in_the_new_leaf()
+    {
+        var env = BuildEnv();
+
+        var response = await RecipeHandlers.NewRecipeForm(AnEmptyRequest())(env);
+
+        Assert.Contains("class=\"breadcrumb\"", response.Body);
+        Assert.Contains("common.new", response.Body);
+        Assert.DoesNotContain("common.back", response.Body);
+    }
+
+    [Fact]
+    public async Task EditRecipeForm_breadcrumb_links_the_recipe_name_back_to_its_detail_page()
+    {
+        var env = BuildEnv();
+        var id = await SeedRecipe(env, []);
+
+        var response = await RecipeHandlers.EditRecipeForm(id)(AnEmptyRequest())(env);
+
+        Assert.Contains("class=\"breadcrumb\"", response.Body);
+        Assert.Contains($"href=\"/recipes/{id.Value}\"", response.Body);
+        Assert.Contains("common.edit", response.Body);
+        Assert.DoesNotContain("common.back", response.Body);
+    }
+
+    [Fact]
     public async Task IngredientSearch_returns_only_matching_ingredient_names()
     {
         var env = BuildEnv();

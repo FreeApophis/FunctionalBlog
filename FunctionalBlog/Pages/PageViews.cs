@@ -23,15 +23,25 @@ public static class PageViews
     {
         var (principal, t, csrfToken) = ctx;
 
-        var editLink = principal.Can<Edit>(new PageResource())
-            ? Html.Raw(" · ") + Html.Link($"/pages/{page.Id.Value}/edit", t("common.edit"))
-            : HtmlString.Empty;
+        var breadcrumb = Html.Breadcrumb(
+            Crumb.Link(t("page.list_title"), "/pages"),
+            Crumb.Current(page.Title.Value));
 
-        var deleteForm = principal.Can<Delete>(new PageResource())
-            ? Html.Form($"/pages/{page.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Raw(" · ") + Html.Button(t("common.delete")), style: "display:inline")
-            : HtmlString.Empty;
+        var actions = new List<HtmlString>();
+        if (principal.Can<Edit>(new PageResource()))
+        {
+            actions.Add(Html.Link($"/pages/{page.Id.Value}/edit", t("common.edit")));
+        }
 
-        var body = Html.P(Html.Link("/pages", t("common.back")) + editLink + deleteForm) +
+        if (principal.Can<Delete>(new PageResource()))
+        {
+            actions.Add(Html.Form($"/pages/{page.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Button(t("common.delete")), style: "display:inline"));
+        }
+
+        var actionsBar = actions.Count > 0 ? Html.P(HtmlString.Join(" · ", actions)) : HtmlString.Empty;
+
+        var body = breadcrumb +
+            actionsBar +
             Html.H1(page.Title.Value) +
             Html.Div("post-text", Html.Raw(BbcodeRenderer.RenderToHtml(page.Content.Value)));
 
@@ -60,7 +70,16 @@ public static class PageViews
             Html.Button(t("page.submit"));
         var form = Html.Form(formAction, formBody);
 
-        var body = Html.P(Html.Link("/pages", t("common.back"))) +
+        var breadcrumb = titleKey == "page.edit_title"
+            ? Html.Breadcrumb(
+                Crumb.Link(t("page.list_title"), "/pages"),
+                Crumb.Link(title, formAction),
+                Crumb.Current(t("common.edit")))
+            : Html.Breadcrumb(
+                Crumb.Link(t("page.list_title"), "/pages"),
+                Crumb.Current(t("common.new")));
+
+        var body = breadcrumb +
             Html.H1(t(titleKey)) +
             errorHtml +
             form;
