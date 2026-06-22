@@ -113,6 +113,7 @@ public sealed class PageHandlerTests
         CurrentUser: Guest.Instance,
         Recipes: new InMemoryRecipeRepository(),
         Ingredients: new InMemoryIngredientRepository(),
+        Units: new InMemoryUnitRepository(),
         Images: new InMemoryImageRepository(),
         Pages: new InMemoryPageRepository());
 

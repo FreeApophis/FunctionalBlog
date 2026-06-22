@@ -10,10 +10,10 @@ public sealed class RecipeFormTests
             "Ein klassischer Rührkuchen.",
             "4",
             "0",
-            ingredients: [("Mehl", "200", "g")],
+            ingredients: [("Mehl", "200", "1")],
             steps: ["Alles verrühren."]);
 
-        var form = ValidatedAssert.IsSuccess(RecipeForm.Decode(request));
+        var form = ValidatedAssert.IsSuccess(RecipeForm.Decode(request, Units));
 
         Assert.Equal(new RecipeName("Rührkuchen"), form.Name);
         Assert.Equal(4, form.Portions);
@@ -29,7 +29,7 @@ public sealed class RecipeFormTests
     {
         var request = Build("AB", "Ein klassischer Rührkuchen.", "4", "0");
 
-        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request));
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
 
         Assert.Contains("recipe.error.name_too_short", errors);
     }
@@ -39,7 +39,7 @@ public sealed class RecipeFormTests
     {
         var request = Build("Rührkuchen", "Zu kurz", "4", "0");
 
-        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request));
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
 
         Assert.Contains("recipe.error.description_too_short", errors);
     }
@@ -49,7 +49,7 @@ public sealed class RecipeFormTests
     {
         var request = Build("Rührkuchen", "Ein klassischer Rührkuchen.", "0", "0");
 
-        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request));
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
 
         Assert.Contains("recipe.error.portions_invalid", errors);
     }
@@ -59,7 +59,7 @@ public sealed class RecipeFormTests
     {
         var request = Build("Rührkuchen", "Ein klassischer Rührkuchen.", "abc", "0");
 
-        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request));
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
 
         Assert.Contains("recipe.error.portions_invalid", errors);
     }
@@ -69,7 +69,7 @@ public sealed class RecipeFormTests
     {
         var request = Build("Rührkuchen", "Ein klassischer Rührkuchen.", "4", "99");
 
-        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request));
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
 
         Assert.Contains("recipe.error.difficulty_invalid", errors);
     }
@@ -84,7 +84,7 @@ public sealed class RecipeFormTests
             "0",
             steps: []);
 
-        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request));
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
 
         Assert.Contains("recipe.error.no_steps", errors);
     }
@@ -99,7 +99,7 @@ public sealed class RecipeFormTests
             "0",
             steps: ["   "]);
 
-        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request));
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
 
         Assert.Contains("recipe.error.no_steps", errors);
     }
@@ -115,7 +115,7 @@ public sealed class RecipeFormTests
             ingredients: [("Mehl", "abc", "g")],
             steps: ["Backen."]);
 
-        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request));
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
 
         Assert.Contains("recipe.error.ingredient_invalid", errors);
     }
@@ -131,7 +131,7 @@ public sealed class RecipeFormTests
             ingredients: [(string.Empty, string.Empty, "g")],
             steps: ["Backen."]);
 
-        var form = ValidatedAssert.IsSuccess(RecipeForm.Decode(request));
+        var form = ValidatedAssert.IsSuccess(RecipeForm.Decode(request, Units));
 
         Assert.Empty(form.Ingredients);
     }
@@ -141,7 +141,7 @@ public sealed class RecipeFormTests
     {
         var request = Build("AB", "Zu kurz", "0", "99");
 
-        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request));
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
 
         Assert.Contains("recipe.error.name_too_short", errors);
         Assert.Contains("recipe.error.description_too_short", errors);
@@ -214,6 +214,9 @@ public sealed class RecipeFormTests
 
         return new Request(HttpMethod.Post, "/recipes", Empty, Empty, form, Empty);
     }
+
+    private static readonly IReadOnlyList<Unit> Units =
+        [Gram, Kilogram, Milliliter, Liter, Deciliter, Tablespoon, Teaspoon, Pinch, Piece];
 
     private static readonly IReadOnlyDictionary<string, string> Empty = new Dictionary<string, string>();
 }

@@ -18,6 +18,7 @@
     <EmbeddedResource Include="Migrations\0003_images.sql" />
     <EmbeddedResource Include="Migrations\0004_pages.sql" />
     <EmbeddedResource Include="Migrations\0005_remove_duplicate_apfel.sql" />
+    <EmbeddedResource Include="Migrations\0006_units.sql" />
   </ItemGroup>
 
   <ItemGroup>

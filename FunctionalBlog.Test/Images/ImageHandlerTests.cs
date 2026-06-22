@@ -107,6 +107,7 @@ public sealed class ImageHandlerTests
         CurrentUser: AuthUser(),
         Recipes: new InMemoryRecipeRepository(),
         Ingredients: new InMemoryIngredientRepository(),
+        Units: new InMemoryUnitRepository(),
         Images: new InMemoryImageRepository(),
         Pages: new InMemoryPageRepository());
 

@@ -4,6 +4,9 @@ namespace FunctionalBlog.Recipes;
 
 public static class RecipeHandlers
 {
+    // Default unit id for a freshly added ingredient row (Gramm).
+    private const string DefaultUnitId = "1";
+
     public static App Index => _ => async env =>
     {
         var recipes = await env.Recipes.All();
@@ -24,8 +27,8 @@ public static class RecipeHandlers
                 return Response.Html(RecipeViews.Show(recipe, authorName, ingredients, env.Ctx));
             });
 
-    public static App NewRecipeForm => _ => env =>
-        ValueTask.FromResult(Response.Html(RecipeViews.Form(
+    public static App NewRecipeForm => _ => async env =>
+        Response.Html(RecipeViews.Form(
             errors: [],
             name: string.Empty,
             description: string.Empty,
@@ -33,13 +36,15 @@ public static class RecipeHandlers
             difficulty: "0",
             tags: string.Empty,
             hints: string.Empty,
-            ingredients: [(string.Empty, string.Empty, "g")],
+            ingredients: [(string.Empty, string.Empty, DefaultUnitId)],
             steps: [string.Empty],
-            ctx: env.Ctx)));
+            ctx: env.Ctx,
+            units: await env.Units.All()));
 
     public static App CreateRecipe => request => async env =>
     {
         var action = request.Form.GetValueOrDefault("action", string.Empty);
+        var units = await env.Units.All();
 
         if (action == "add-ingredient" || action.StartsWith("remove-ingredient-"))
         {
@@ -48,7 +53,7 @@ public static class RecipeHandlers
 
             if (action == "add-ingredient")
             {
-                formIngredients.Add((string.Empty, string.Empty, "g"));
+                formIngredients.Add((string.Empty, string.Empty, DefaultUnitId));
             }
             else if (int.TryParse(action["remove-ingredient-".Length..], out var removeIdx) && removeIdx < formIngredients.Count)
             {
@@ -65,7 +70,8 @@ public static class RecipeHandlers
                 ReadHints(request),
                 formIngredients,
                 formSteps,
-                env.Ctx));
+                env.Ctx,
+                units));
         }
 
         if (action == "add-step" || action.StartsWith("remove-step-"))
@@ -92,10 +98,11 @@ public static class RecipeHandlers
                 ReadHints(request),
                 formIngredients,
                 formSteps,
-                env.Ctx));
+                env.Ctx,
+                units));
         }
 
-        return await DecodeWithImages(request).Match(
+        return await DecodeWithImages(request, units).Match(
             failure: f => Task.FromResult(Response.Html(
                 RecipeViews.Form(
                     f.Error,
@@ -108,6 +115,7 @@ public static class RecipeHandlers
                     RecipeForm.ParseIngredients(request),
                     RecipeForm.ParseRawSteps(request),
                     env.Ctx,
+                    units,
                     existingImages: RecipeForm.ParseKeptImages(request)),
                 400)),
             success: async s =>
@@ -131,14 +139,14 @@ public static class RecipeHandlers
             });
     };
 
-    public static App IngredientsSection => request => env =>
+    public static App IngredientsSection => request => async env =>
     {
         var action = request.Form.GetValueOrDefault("action", string.Empty);
         var ingredients = RecipeForm.ParseIngredients(request);
 
         if (action == "add-ingredient")
         {
-            ingredients.Add((string.Empty, string.Empty, "g"));
+            ingredients.Add((string.Empty, string.Empty, DefaultUnitId));
         }
         else if (action.StartsWith("remove-ingredient-") &&
                  int.TryParse(action["remove-ingredient-".Length..], out var removeIdx) &&
@@ -147,7 +155,7 @@ public static class RecipeHandlers
             ingredients.RemoveAt(removeIdx);
         }
 
-        return ValueTask.FromResult(Response.Html(RecipeViews.IngredientSection(ingredients, env.T)));
+        return Response.Html(RecipeViews.IngredientSection(ingredients, env.T, await env.Units.All()));
     };
 
     public static App StepsSection => request => env =>
@@ -215,7 +223,7 @@ public static class RecipeHandlers
                     .Select(ri => (
                         nameById.GetValueOrNone(ri.IngredientId).GetOrElse(string.Empty),
                         ri.Amount.ToString(CultureInfo.InvariantCulture),
-                        ri.Unit.Abbreviation))
+                        ri.Unit.Id.Value.ToString()))
                     .ToList<(string Name, string Amount, string Unit)>();
 
                 var steps = recipe.PreparationSteps
@@ -234,6 +242,7 @@ public static class RecipeHandlers
                     ingredients: ingredients,
                     steps: steps,
                     ctx: env.Ctx,
+                    units: await env.Units.All(),
                     formAction: $"/recipes/{id.Value}",
                     titleKey: "recipe.edit_title",
                     existingImages: recipe.Images));
@@ -248,6 +257,7 @@ public static class RecipeHandlers
 
         var action = request.Form.GetValueOrDefault("action", string.Empty);
         var formAction = $"/recipes/{id.Value}";
+        var units = await env.Units.All();
 
         if (action == "add-ingredient" || action.StartsWith("remove-ingredient-"))
         {
@@ -256,7 +266,7 @@ public static class RecipeHandlers
 
             if (action == "add-ingredient")
             {
-                formIngredients.Add((string.Empty, string.Empty, "g"));
+                formIngredients.Add((string.Empty, string.Empty, DefaultUnitId));
             }
             else if (int.TryParse(action["remove-ingredient-".Length..], out var removeIdx) && removeIdx < formIngredients.Count)
             {
@@ -274,6 +284,7 @@ public static class RecipeHandlers
                 formIngredients,
                 formSteps,
                 env.Ctx,
+                units,
                 formAction,
                 "recipe.edit_title",
                 RecipeForm.ParseKeptImages(request)));
@@ -304,12 +315,13 @@ public static class RecipeHandlers
                 formIngredients,
                 formSteps,
                 env.Ctx,
+                units,
                 formAction,
                 "recipe.edit_title",
                 RecipeForm.ParseKeptImages(request)));
         }
 
-        return await DecodeWithImages(request).Match(
+        return await DecodeWithImages(request, units).Match(
             failure: f => Task.FromResult(Response.Html(
                 RecipeViews.Form(
                     f.Error,
@@ -322,6 +334,7 @@ public static class RecipeHandlers
                     RecipeForm.ParseIngredients(request),
                     RecipeForm.ParseRawSteps(request),
                     env.Ctx,
+                    units,
                     formAction,
                     "recipe.edit_title",
                     RecipeForm.ParseKeptImages(request)),
@@ -352,13 +365,13 @@ public static class RecipeHandlers
 
     private sealed record RecipeWithImages(RecipeForm.Valid Form, IReadOnlyList<ImageUploadForm.Valid> Images);
 
-    private static Validated<IReadOnlyList<string>, RecipeWithImages> DecodeWithImages(Request request)
+    private static Validated<IReadOnlyList<string>, RecipeWithImages> DecodeWithImages(Request request, IReadOnlyList<Unit> units)
     {
         Func<RecipeForm.Valid, IReadOnlyList<ImageUploadForm.Valid>, RecipeWithImages> combine =
             (form, images) => new RecipeWithImages(form, images);
 
         return combine
-            .Apply(RecipeForm.Decode(request), CombineErrors)
+            .Apply(RecipeForm.Decode(request, units), CombineErrors)
             .Apply(ImageUploadForm.DecodeMany(request, "images"), CombineErrors);
     }
 

@@ -96,7 +96,7 @@ public sealed class RecipeHandlerTests
     {
         var env = BuildEnv();
         var mehl = await SeedIngredient(env, "Mehl");
-        var request = ARecipeRequest("/recipes") with { Form = RecipeForm(IngredientFields("Mehl", "200", "g")) };
+        var request = ARecipeRequest("/recipes") with { Form = RecipeForm(IngredientFields("Mehl", "200", "1")) };
 
         var response = await RecipeHandlers.CreateRecipe(request)(env);
 
@@ -110,7 +110,7 @@ public sealed class RecipeHandlerTests
     public async Task CreateRecipe_with_an_unknown_ingredient_name_creates_a_new_ingredient()
     {
         var env = BuildEnv();
-        var request = ARecipeRequest("/recipes") with { Form = RecipeForm(IngredientFields("Dinkelmehl", "200", "g")) };
+        var request = ARecipeRequest("/recipes") with { Form = RecipeForm(IngredientFields("Dinkelmehl", "200", "1")) };
 
         var response = await RecipeHandlers.CreateRecipe(request)(env);
 
@@ -127,7 +127,7 @@ public sealed class RecipeHandlerTests
         var env = BuildEnv();
         await SeedIngredient(env, "Apfel");
         await SeedIngredient(env, "apfel");
-        var request = ARecipeRequest("/recipes") with { Form = RecipeForm(IngredientFields("Koriander", "20", "g")) };
+        var request = ARecipeRequest("/recipes") with { Form = RecipeForm(IngredientFields("Koriander", "20", "1")) };
 
         var response = await RecipeHandlers.CreateRecipe(request)(env);
 
@@ -252,6 +252,7 @@ public sealed class RecipeHandlerTests
         CurrentUser: AuthUser(),
         Recipes: new InMemoryRecipeRepository(),
         Ingredients: new InMemoryIngredientRepository(),
+        Units: new InMemoryUnitRepository(),
         Images: new InMemoryImageRepository(),
         Pages: new InMemoryPageRepository());
 

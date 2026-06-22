@@ -34,7 +34,7 @@ public sealed class DomainEqualityTests
             Difficulty.Easy,
             [new RecipeTag("Backen")],
             4,
-            [new RecipeIngredient(new IngredientId(1), 200m, WeightUnit.Gram)],
+            [new RecipeIngredient(new IngredientId(1), 200m, Gram)],
             ["http://img.example.com/1.jpg"],
             [new RecipeHint("Tipp!")]);
         var b = Recipe.Create(
@@ -46,7 +46,7 @@ public sealed class DomainEqualityTests
             Difficulty.Easy,
             [new RecipeTag("Backen")],
             4,
-            [new RecipeIngredient(new IngredientId(1), 200m, WeightUnit.Gram)],
+            [new RecipeIngredient(new IngredientId(1), 200m, Gram)],
             ["http://img.example.com/1.jpg"],
             [new RecipeHint("Tipp!")]);
 

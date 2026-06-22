@@ -25,13 +25,14 @@ public sealed class FoodblogImportMigrationTests : IDisposable
     {
         var recipes = new SqliteRecipeRepository(_db.Connection);
 
-        // All() parses every recipe_ingredient unit; an unmapped abbreviation throws.
+        // All() joins each recipe_ingredient to units; every unit_id must resolve to a seeded unit.
         var all = await recipes.All();
+        var unitIds = (await new SqliteUnitRepository(_db.Connection).All()).Select(u => u.Id.Value).ToHashSet();
 
         Assert.Equal(34, all.Count);
         Assert.Contains(all, r => r.Name.Value == "Älpler One-Pot");
         Assert.Contains(all, r => r.Name.Value == "The Hamburger");
-        Assert.All(all, r => Assert.All(r.Ingredients, i => Assert.Contains(i.Unit, FunctionalBlog.Domain.Recipes.Unit.All)));
+        Assert.All(all, r => Assert.All(r.Ingredients, i => Assert.Contains(i.Unit.Id.Value, unitIds)));
     }
 
     [Fact]

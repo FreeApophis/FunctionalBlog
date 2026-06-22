@@ -106,7 +106,7 @@ public static class RecipeViews
         var ingredientItems = string.Concat(recipe.Ingredients.Select(ri =>
         {
             var name = ingredientMap.TryGetValue(ri.IngredientId, out var ing) ? Html.Encode(ing.Name.Value) : "?";
-            return $"""<li><span class="amount">{ri.Amount:G29} {Html.Encode(ri.Unit.Abbreviation)}</span><span class="name">{name}</span></li>""";
+            return $"""<li><span class="amount">{ri.Amount:G29} {Html.Encode(t(ri.Unit.AbbreviationKey))}</span><span class="name">{name}</span></li>""";
         }));
         var ingredientsAside = recipe.Ingredients.Count > 0
             ? Html.Raw($"""
@@ -159,6 +159,7 @@ public static class RecipeViews
         IReadOnlyList<(string Name, string Amount, string Unit)> ingredients,
         IReadOnlyList<string> steps,
         ViewContext ctx,
+        IReadOnlyList<Unit> units,
         string formAction = "/recipes",
         string titleKey = "recipe.new_title",
         IReadOnlyList<string>? existingImages = null)
@@ -200,7 +201,7 @@ public static class RecipeViews
             Html.CsrfField(csrfToken) +
             Html.Raw("""<button type="submit" hidden></button>""") +
             basics +
-            Html.Raw(IngredientSection(ingredients, t)) +
+            Html.Raw(IngredientSection(ingredients, t, units)) +
             Html.Raw(StepSection(steps, t)) +
             ImagesField(existingImages ?? [], t) +
             hintsCard +
@@ -217,14 +218,15 @@ public static class RecipeViews
 
     public static string IngredientSection(
         IReadOnlyList<(string Name, string Amount, string Unit)> ingredients,
-        Translate t)
+        Translate t,
+        IReadOnlyList<Unit> units)
     {
         string IngredientRow(int i, string name, string amount, string unit)
         {
-            var unitOptions = string.Concat(FunctionalBlog.Domain.Recipes.Unit.All.Select(u =>
+            var unitOptions = string.Concat(units.Select(u =>
             {
-                var selected = u.Abbreviation == unit ? " selected" : string.Empty;
-                return $"""<option value="{Html.Encode(u.Abbreviation)}"{selected}>{Html.Encode(u.Name)}</option>""";
+                var selected = u.Id.Value.ToString() == unit ? " selected" : string.Empty;
+                return $"""<option value="{u.Id.Value}"{selected}>{Html.Encode(t(u.NameKey))}</option>""";
             }));
 
             return $"""

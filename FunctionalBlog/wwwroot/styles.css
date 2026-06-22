@@ -669,6 +669,67 @@ button:hover, .btn:hover { filter: brightness(1.07); }
     border-color: var(--tomato);
 }
 
+/* ---- Units admin: inline-editable rows ---------------------------------- */
+
+.unit-editor .card-section-head { margin-bottom: .4rem; }
+
+.unit-head {
+    display: grid;
+    padding: 0 2px 8px;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted2);
+}
+
+.unit-row {
+    display: grid;
+    align-items: center;
+    margin: .45rem 0;
+}
+
+.unit-head, .unit-row {
+    grid-template-columns: minmax(0, 1.5fr) 7rem 9rem 6.5rem 90px;
+    gap: .7rem;
+}
+
+.unit-row input, .unit-row select { margin: 0; }
+.unit-cell { min-width: 0; overflow-wrap: anywhere; }
+.unit-cell.mono { font-family: var(--mono); font-size: 13px; color: var(--muted); }
+
+.unit-actions { display: flex; gap: .4rem; align-items: center; justify-content: flex-end; }
+
+/* Square icon buttons shared by the unit rows (edit/save green, cancel muted). */
+.icon-btn, .icon-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: var(--field);
+    border: 1px solid var(--border-input);
+}
+
+.unit-actions .icon-remove { width: 40px; }
+
+.icon-btn { color: var(--green); }
+.icon-btn:hover { filter: none; background: var(--green); color: var(--on-green); border-color: var(--green); }
+
+.icon-cancel { color: var(--muted); }
+.icon-cancel:hover { filter: none; background: var(--row-alt); color: var(--ink); border-color: var(--border-input); }
+
+.unit-error { margin-bottom: .5rem; }
+.unit-error:empty { display: none; }
+.unit-error .errors { margin: 0; }
+
+@media (max-width: 640px) {
+    .unit-head { display: none; }
+    .unit-row { grid-template-columns: 1fr 1fr; gap: .45rem .7rem; }
+    .unit-row .unit-actions { grid-column: 1 / -1; }
+}
+
 /* ---- Recipe form: card sections, step rows, save bar -------------------- */
 
 .recipe-form { display: flex; flex-direction: column; gap: 24px; }

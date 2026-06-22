@@ -63,6 +63,7 @@ internal class Program
             CurrentUser: Guest.Instance,
             Recipes: new SqliteRecipeRepository(connection),
             Ingredients: new SqliteIngredientRepository(connection),
+            Units: new SqliteUnitRepository(connection),
             Images: new SqliteImageRepository(connection),
             Pages: new SqlitePageRepository(connection),
             Translations: translations);

@@ -13,4 +13,4 @@ global using FunctionalBlog.Domain.Pages;
 global using FunctionalBlog.Domain.Recipes;
 global using FunctionalBlog.Domain.Roles;
 global using FunctionalBlog.Domain.Translations;
-global using static FunctionalBlog.Domain.Recipes.Unit;
+global using Unit = FunctionalBlog.Domain.Recipes.Unit;

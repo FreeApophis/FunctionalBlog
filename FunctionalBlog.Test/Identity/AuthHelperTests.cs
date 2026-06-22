@@ -78,6 +78,7 @@ public sealed class AuthHelperTests
         CurrentUser: principal,
         Recipes: new InMemoryRecipeRepository(),
         Ingredients: new InMemoryIngredientRepository(),
+        Units: new InMemoryUnitRepository(),
         Images: new InMemoryImageRepository(),
         Pages: new InMemoryPageRepository());
 

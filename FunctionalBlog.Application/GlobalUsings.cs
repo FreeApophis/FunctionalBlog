@@ -8,3 +8,4 @@ global using FunctionalBlog.Domain.Pages;
 global using FunctionalBlog.Domain.Recipes;
 global using FunctionalBlog.Domain.Roles;
 global using FunctionalBlog.Domain.Translations;
+global using Unit = FunctionalBlog.Domain.Recipes.Unit;

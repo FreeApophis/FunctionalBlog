@@ -3,100 +3,76 @@ namespace FunctionalBlog.Test.Recipes;
 public sealed class UnitTests
 {
     [Fact]
-    public void WeightUnit_Gram_is_the_base_unit_with_factor_1()
+    public void Gram_is_a_weight_unit()
     {
-        Assert.Equal(1m, WeightUnit.Gram.Factor);
+        Assert.Equal(UnitCategory.Weight, Gram.Category);
     }
 
     [Fact]
-    public void VolumeUnit_Milliliter_is_the_base_unit_with_factor_1()
+    public void Milliliter_is_a_volume_unit()
     {
-        Assert.Equal(1m, VolumeUnit.Milliliter.Factor);
+        Assert.Equal(UnitCategory.Volume, Milliliter.Category);
     }
 
     [Fact]
-    public void PieceUnit_Piece_is_the_base_unit_with_factor_1()
+    public void Piece_is_a_piece_unit()
     {
-        Assert.Equal(1m, PieceUnit.Piece.Factor);
+        Assert.Equal(UnitCategory.Piece, Piece.Category);
     }
 
     [Fact]
-    public void WeightUnit_Convert_grams_to_kilograms()
+    public void Gram_name_and_abbreviation_are_translation_keys()
     {
-        var result = WeightUnit.Convert(250m, WeightUnit.Gram, WeightUnit.Kilogram);
-
-        Assert.Equal(0.25m, result);
+        Assert.Equal("unit.1.name", Gram.NameKey);
+        Assert.Equal("unit.1.abbr", Gram.AbbreviationKey);
     }
 
     [Fact]
-    public void WeightUnit_Convert_kilograms_to_grams()
+    public void ConvertAmount_grams_to_kilograms()
     {
-        var result = WeightUnit.Convert(0.5m, WeightUnit.Kilogram, WeightUnit.Gram);
-
-        Assert.Equal(500m, result);
+        Assert.Equal(0.25m, FunctionalBlog.Domain.Recipes.Unit.ConvertAmount(250m, Gram, Kilogram));
     }
 
     [Fact]
-    public void VolumeUnit_Convert_liters_to_milliliters()
+    public void ConvertAmount_kilograms_to_grams()
     {
-        var result = VolumeUnit.Convert(0.4m, VolumeUnit.Liter, VolumeUnit.Milliliter);
-
-        Assert.Equal(400m, result);
+        Assert.Equal(500m, FunctionalBlog.Domain.Recipes.Unit.ConvertAmount(0.5m, Kilogram, Gram));
     }
 
     [Fact]
-    public void VolumeUnit_Convert_tablespoons_to_milliliters()
+    public void ConvertAmount_liters_to_milliliters()
     {
-        var result = VolumeUnit.Convert(2m, VolumeUnit.Tablespoon, VolumeUnit.Milliliter);
-
-        Assert.Equal(30m, result);
+        Assert.Equal(400m, FunctionalBlog.Domain.Recipes.Unit.ConvertAmount(0.4m, Liter, Milliliter));
     }
 
     [Fact]
-    public void WeightUnit_has_correct_abbreviations()
+    public void ConvertAmount_tablespoons_to_milliliters()
     {
-        Assert.Equal("g", WeightUnit.Gram.Abbreviation);
-        Assert.Equal("kg", WeightUnit.Kilogram.Abbreviation);
+        Assert.Equal(30m, FunctionalBlog.Domain.Recipes.Unit.ConvertAmount(2m, Tablespoon, Milliliter));
     }
 
     [Fact]
-    public void VolumeUnit_has_correct_abbreviations()
+    public void ConvertAmount_across_categories_throws()
     {
-        Assert.Equal("ml", VolumeUnit.Milliliter.Abbreviation);
-        Assert.Equal("l", VolumeUnit.Liter.Abbreviation);
-        Assert.Equal("EL", VolumeUnit.Tablespoon.Abbreviation);
-        Assert.Equal("TL", VolumeUnit.Teaspoon.Abbreviation);
+        Assert.Throws<InvalidOperationException>(
+            () => FunctionalBlog.Domain.Recipes.Unit.ConvertAmount(1m, Gram, Liter));
     }
 
     [Fact]
-    public void WeightUnit_and_VolumeUnit_with_same_values_are_not_equal()
+    public void Units_with_same_values_are_equal()
     {
-        var weight = new WeightUnit("X", "x", 1m);
-        var volume = new VolumeUnit("X", "x", 1m);
+        var a = new FunctionalBlog.Domain.Recipes.Unit(new UnitId(42), "unit.42.name", "unit.42.abbr", UnitCategory.Weight, 1m);
+        var b = new FunctionalBlog.Domain.Recipes.Unit(new UnitId(42), "unit.42.name", "unit.42.abbr", UnitCategory.Weight, 1m);
 
-        Assert.NotEqual<FunctionalBlog.Domain.Recipes.Unit>(weight, volume);
+        Assert.Equal(a, b);
     }
 
     [Fact]
-    public void All_contains_nine_units()
+    public void Units_with_different_category_are_not_equal()
     {
-        Assert.Equal(9, FunctionalBlog.Domain.Recipes.Unit.All.Count);
-    }
+        var weight = new FunctionalBlog.Domain.Recipes.Unit(new UnitId(42), "k.name", "k.abbr", UnitCategory.Weight, 1m);
+        var volume = new FunctionalBlog.Domain.Recipes.Unit(new UnitId(42), "k.name", "k.abbr", UnitCategory.Volume, 1m);
 
-    [Fact]
-    public void ParseByAbbreviation_round_trips_for_every_unit_in_All()
-    {
-        foreach (var unit in FunctionalBlog.Domain.Recipes.Unit.All)
-        {
-            var result = FunctionalBlog.Domain.Recipes.Unit.ParseByAbbreviation(unit.Abbreviation);
-            Assert.Equal(Option.Some(unit), result);
-        }
-    }
-
-    [Fact]
-    public void ParseByAbbreviation_returns_None_for_unknown_abbreviation()
-    {
-        var result = FunctionalBlog.Domain.Recipes.Unit.ParseByAbbreviation("unknown");
-        FunctionalAssert.None(result);
+        Assert.NotEqual(weight, volume);
     }
 }

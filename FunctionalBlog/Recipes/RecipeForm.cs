@@ -19,7 +19,7 @@ public static class RecipeForm
     // where the repository is available — decoding stays pure.
     public sealed record IngredientLine(string Name, decimal Amount, FunctionalBlog.Domain.Recipes.Unit Unit);
 
-    public static Validated<IReadOnlyList<string>, Valid> Decode(Request request)
+    public static Validated<IReadOnlyList<string>, Valid> Decode(Request request, IReadOnlyList<Unit> units)
     {
         var name = request.Form.GetValueOrNone("name").GetOrElse(string.Empty).Trim();
         var description = request.Form.GetValueOrNone("description").GetOrElse(string.Empty).Trim();
@@ -42,7 +42,7 @@ public static class RecipeForm
             .Apply(TryParseDescription(description), Combine)
             .Apply(TryParsePortions(portionsRaw), Combine)
             .Apply(TryParseDifficulty(difficultyRaw), Combine)
-            .Apply(TryParseIngredients(rawIngredients), Combine)
+            .Apply(TryParseIngredients(rawIngredients, units), Combine)
             .Apply(TryParseSteps(rawSteps), Combine);
     }
 
@@ -111,7 +111,8 @@ public static class RecipeForm
             : Validated.Fail<IReadOnlyList<string>, Difficulty>(["recipe.error.difficulty_invalid"]);
 
     private static Validated<IReadOnlyList<string>, IReadOnlyList<IngredientLine>> TryParseIngredients(
-        List<(string Name, string Amount, string Unit)> ingredients)
+        List<(string Name, string Amount, string Unit)> ingredients,
+        IReadOnlyList<Unit> units)
     {
         var result = new List<IngredientLine>();
         foreach (var (name, amount, unit) in ingredients)
@@ -122,7 +123,8 @@ public static class RecipeForm
             }
 
             if (!decimal.TryParse(amount, NumberStyles.Any, CultureInfo.InvariantCulture, out var amt) || amt <= 0
-                || FunctionalBlog.Domain.Recipes.Unit.ParseByAbbreviation(unit) is not [var parsedUnit])
+                || !int.TryParse(unit, out var unitId)
+                || units.FirstOrNone(u => u.Id.Value == unitId) is not [var parsedUnit])
             {
                 return Validated.Fail<IReadOnlyList<string>, IReadOnlyList<IngredientLine>>(["recipe.error.ingredient_invalid"]);
             }

@@ -5,6 +5,12 @@ namespace FunctionalBlog.DataAccess.Sqlite;
 
 public sealed class SqliteRecipeRepository : IRecipeRepository
 {
+    // recipe_ingredients joined to units so each ingredient line hydrates a full Unit.
+    private const string IngredientSelect =
+        "SELECT ri.recipe_id AS RecipeId, ri.sort_order AS SortOrder, ri.ingredient_id AS IngredientId, ri.amount AS Amount, " +
+        "ri.unit_id AS UnitId, u.category AS Category, u.unit_factor AS Factor, u.name_key AS NameKey, u.abbreviation_key AS AbbreviationKey " +
+        "FROM recipe_ingredients ri JOIN units u ON u.id = ri.unit_id";
+
     private readonly IDbConnection _connection;
     private int _nextId = -1;
 
@@ -31,7 +37,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
             new { ids })).ToLookup(t => t.RecipeId);
 
         var ingredients = (await _connection.QueryAsync<IngredientRow>(
-            "SELECT recipe_id AS RecipeId, sort_order AS SortOrder, ingredient_id AS IngredientId, amount AS Amount, unit_abbreviation AS UnitAbbreviation FROM recipe_ingredients WHERE recipe_id IN @ids ORDER BY sort_order",
+            $"{IngredientSelect} WHERE ri.recipe_id IN @ids ORDER BY ri.sort_order",
             new { ids })).ToLookup(i => i.RecipeId);
 
         var images = (await _connection.QueryAsync<ImageRow>(
@@ -71,7 +77,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
             new { id = id.Value })).ToList();
 
         var ingredients = (await _connection.QueryAsync<IngredientRow>(
-            "SELECT recipe_id AS RecipeId, sort_order AS SortOrder, ingredient_id AS IngredientId, amount AS Amount, unit_abbreviation AS UnitAbbreviation FROM recipe_ingredients WHERE recipe_id = @id ORDER BY sort_order",
+            $"{IngredientSelect} WHERE ri.recipe_id = @id ORDER BY ri.sort_order",
             new { id = id.Value })).ToList();
 
         var images = (await _connection.QueryAsync<ImageRow>(
@@ -134,14 +140,14 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
         if (recipe.Ingredients.Count > 0)
         {
             await _connection.ExecuteAsync(
-                "INSERT INTO recipe_ingredients (recipe_id, sort_order, ingredient_id, amount, unit_abbreviation) VALUES (@RecipeId, @SortOrder, @IngredientId, @Amount, @UnitAbbreviation)",
+                "INSERT INTO recipe_ingredients (recipe_id, sort_order, ingredient_id, amount, unit_id) VALUES (@RecipeId, @SortOrder, @IngredientId, @Amount, @UnitId)",
                 recipe.Ingredients.Select((ri, i) => new
                 {
                     RecipeId = recipe.Id.Value,
                     SortOrder = i + 1,
                     IngredientId = ri.IngredientId.Value,
                     ri.Amount,
-                    UnitAbbreviation = ri.Unit.Abbreviation,
+                    UnitId = ri.Unit.Id.Value,
                 }),
                 transaction);
         }
@@ -189,23 +195,14 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
             ingredients.Select(i => new RecipeIngredient(
                 new IngredientId((int)i.IngredientId),
                 i.Amount,
-                ParseUnit(i.UnitAbbreviation))).ToList(),
+                new FunctionalBlog.Domain.Recipes.Unit(
+                    new UnitId((int)i.UnitId),
+                    i.NameKey,
+                    i.AbbreviationKey,
+                    (UnitCategory)i.Category,
+                    i.Factor))).ToList(),
             images.Select(i => i.Url).ToList(),
             hints.Select(h => new RecipeHint(h.Text)).ToList());
-
-    private static FunctionalBlog.Domain.Recipes.Unit ParseUnit(string abbreviation) => abbreviation switch
-    {
-        "g" => WeightUnit.Gram,
-        "kg" => WeightUnit.Kilogram,
-        "ml" => VolumeUnit.Milliliter,
-        "dl" => VolumeUnit.Deciliter,
-        "l" => VolumeUnit.Liter,
-        "EL" => VolumeUnit.Tablespoon,
-        "TL" => VolumeUnit.Teaspoon,
-        "Stück" => PieceUnit.Piece,
-        "Prise" => PieceUnit.Pinch,
-        _ => throw new InvalidOperationException($"Unknown unit abbreviation: {abbreviation}"),
-    };
 
     private sealed record RecipeRow(long Id, string Name, string Description, long AuthorId, long Difficulty, long Portions);
 
@@ -213,7 +210,16 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
 
     private sealed record TagRow(long RecipeId, string Tag);
 
-    private sealed record IngredientRow(long RecipeId, long SortOrder, long IngredientId, decimal Amount, string UnitAbbreviation);
+    private sealed record IngredientRow(
+        long RecipeId,
+        long SortOrder,
+        long IngredientId,
+        decimal Amount,
+        long UnitId,
+        long Category,
+        decimal Factor,
+        string NameKey,
+        string AbbreviationKey);
 
     private sealed record ImageRow(long RecipeId, string Url);
 

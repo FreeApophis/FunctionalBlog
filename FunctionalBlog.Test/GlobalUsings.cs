@@ -36,5 +36,7 @@ global using FunctionalBlog.Test.Roles;
 global using FunctionalBlog.Test.Translations;
 global using FunctionalBlog.Theme;
 global using FunctionalBlog.Translations;
+global using FunctionalBlog.Units;
 global using static FunctionalBlog.Domain.Recipes.Unit;
 global using App = FunctionalBlog.Pipeline.App<FunctionalBlog.Env, FunctionalBlog.Request, FunctionalBlog.Response>;
+global using Unit = FunctionalBlog.Domain.Recipes.Unit;
