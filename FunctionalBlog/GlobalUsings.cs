@@ -26,6 +26,7 @@ global using FunctionalBlog.Ingredients;
 global using FunctionalBlog.Pages;
 global using FunctionalBlog.Recipes;
 global using FunctionalBlog.Roles;
+global using FunctionalBlog.Theme;
 global using FunctionalBlog.Translations;
 global using static FunctionalBlog.Domain.Recipes.Unit;
 global using App = FunctionalBlog.Pipeline.App<FunctionalBlog.Env, FunctionalBlog.Request, FunctionalBlog.Response>;

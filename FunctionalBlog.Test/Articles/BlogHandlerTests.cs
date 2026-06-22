@@ -45,7 +45,7 @@ public sealed class BlogHandlerTests
     }
 
     [Fact]
-    public async Task Index_shows_cover_images_and_rotates_through_four_card_designs()
+    public async Task Index_renders_a_featured_post_and_a_card_grid_for_the_rest()
     {
         var env = BuildEnv();
         var coverId = await env.Images.NextId();
@@ -67,10 +67,9 @@ public sealed class BlogHandlerTests
         var response = await BlogHandlers.Index(AnEmptyRequest())(env);
 
         Assert.Contains($"/images/{coverId.Value}", response.Body);
-        Assert.Contains("design-1", response.Body);
-        Assert.Contains("design-2", response.Body);
-        Assert.Contains("design-3", response.Body);
-        Assert.Contains("design-4", response.Body);
+        Assert.Contains("blog-featured", response.Body);
+        Assert.Contains("blog-grid", response.Body);
+        Assert.Contains("blog-card", response.Body);
     }
 
     [Fact]

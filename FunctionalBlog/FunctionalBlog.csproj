@@ -7,6 +7,8 @@
 		<EmbeddedResource Include="wwwroot\styles.css" />
 		<Content Remove="wwwroot\htmx.min.js" />
 		<EmbeddedResource Include="wwwroot\htmx.min.js" />
+		<Content Remove="wwwroot\fonts\*.woff2" />
+		<EmbeddedResource Include="wwwroot\fonts\*.woff2" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Funcky.DiscriminatedUnion" PrivateAssets="all" />

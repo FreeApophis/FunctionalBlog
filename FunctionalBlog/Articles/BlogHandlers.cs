@@ -6,8 +6,9 @@ public static class BlogHandlers
     {
         var articles = await env.Articles.All();
         var users = await env.Users.All();
+        var recipes = await env.Recipes.All();
         var authorNames = users.ToDictionary(u => u.Id, u => u.DisplayName.Value);
-        return Response.Html(BlogViews.Index(articles, authorNames, env.Ctx));
+        return Response.Html(BlogViews.Index(articles, authorNames, recipes, env.Ctx));
     };
 
     public static App ShowArticle(ArticleId id) => _ => async env =>

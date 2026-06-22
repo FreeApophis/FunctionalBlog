@@ -6,7 +6,7 @@ public static class Layout
     {
         return $$"""
         <!doctype html>
-        <html lang="de">
+        <html lang="de" data-theme="{{Html.Encode(ctx.Theme)}}">
         <head>
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -15,8 +15,10 @@ public static class Layout
             <script src="/htmx.min.js" defer></script>
         </head>
         <body>
-            {{NavViews.Nav(ctx)}}
+            {{NavViews.UtilityBar()}}
+            {{NavViews.Masthead(ctx)}}
             <main>{{body.Render()}}</main>
+            {{NavViews.Footer(ctx)}}
         </body>
         </html>
         """;

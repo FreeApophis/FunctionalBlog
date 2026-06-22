@@ -1,46 +1,95 @@
+using System.Globalization;
+
 namespace FunctionalBlog.Articles;
 
 public static class BlogViews
 {
-    public static string Index(IReadOnlyList<Article> articles, IReadOnlyDictionary<UserId, string> authorNames, ViewContext ctx)
+    public static string Index(
+        IReadOnlyList<Article> articles,
+        IReadOnlyDictionary<UserId, string> authorNames,
+        IReadOnlyList<Recipe> recipes,
+        ViewContext ctx)
     {
         var (principal, t, _) = ctx;
 
-        // Four card layouts that rotate down the feed: banner (image on top),
-        // split-left, split-right, and a text-over-image overlay.
-        HtmlString ArticleHtml(Article article, int position)
+        string DateBadge(Article a)
         {
-            var authorName = authorNames
-                .GetValueOrNone(article.AuthorId)
-                .GetOrElse("?");
-
-            var href = $"/articles/{article.Id.Value}";
-
-            var bodyContent = Html.H2(Html.Link(href, article.Title.Value)) +
-                Html.Small($"{t("article.by")} {authorName} · {article.PublishedAt.LocalDateTime:d}") +
-                Html.P(Html.Text(article.Teaser.Value));
-            var body = Html.Div("card-body", bodyContent);
-
-            var media = article.CoverImageId.Match(
-                none: () => HtmlString.Empty,
-                some: imageId => Html.LinkBlock(href, "card-media", Html.Img($"/images/{imageId.Value}", article.Title.Value)));
-
-            var design = $"design-{(position % 4) + 1}";
-            var hasCover = article.CoverImageId.Match(none: false, some: _ => true);
-            var cssClass = $"post-card {design}{(hasCover ? string.Empty : " no-cover")}";
-
-            return Html.Article(cssClass, media + body);
+            var d = a.PublishedAt.LocalDateTime;
+            var month = d.ToString("MMM", CultureInfo.InvariantCulture).ToUpperInvariant();
+            return $"""<span class="date-badge"><span class="day">{d.Day}</span><span class="month">{Html.Encode(month)}</span></span>""";
         }
 
-        var items = articles.Count == 0
-            ? Html.P(Html.Text(t("blog.no_articles")))
-            : HtmlString.Concat(articles.Select(ArticleHtml));
+        string Media(Article a)
+        {
+            var img = a.CoverImageId.Match(
+                none: () => string.Empty,
+                some: id => $"""<img src="/images/{id.Value}" alt="{Html.Encode(a.Title.Value)}" />""");
+            return $"""<div class="blog-media">{img}{DateBadge(a)}</div>""";
+        }
 
-        var body = Html.H1(t("blog.title")) +
-            (principal.Can<Create>(new ArticleResource())
-                ? Html.P(Html.Link("/articles/new", t("blog.new_article")))
-                : HtmlString.Empty) +
-            items;
+        string Author(Article a)
+        {
+            var name = authorNames.GetValueOrNone(a.AuthorId).GetOrElse("?");
+            var initial = name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
+            return $"""<span class="blog-author"><span class="avatar">{Html.Encode(initial)}</span>{Html.Encode(name)}</span>""";
+        }
+
+        string Featured(Article a) =>
+            $"""
+            <a class="blog-featured" href="/articles/{a.Id.Value}">
+                {Media(a)}
+                <div class="blog-featured-body">
+                    <h2>{Html.Encode(a.Title.Value)}</h2>
+                    <p class="blog-excerpt">{Html.Encode(a.Teaser.Value)}</p>
+                    <div class="blog-foot">
+                        {Author(a)}
+                        <span class="blog-readmore">{Html.Encode(t("blog.read_more"))} →</span>
+                    </div>
+                </div>
+            </a>
+            """;
+
+        string Card(Article a) =>
+            $"""
+            <a class="blog-card" href="/articles/{a.Id.Value}">
+                {Media(a)}
+                <div class="blog-card-body">
+                    <h3>{Html.Encode(a.Title.Value)}</h3>
+                    <p class="blog-excerpt">{Html.Encode(a.Teaser.Value)}</p>
+                    <div class="blog-foot">{Author(a)}<span>{a.PublishedAt.LocalDateTime:d}</span></div>
+                </div>
+            </a>
+            """;
+
+        HtmlString feed;
+        if (articles.Count == 0)
+        {
+            feed = Html.P(Html.Text(t("blog.no_articles")));
+        }
+        else
+        {
+            var rest = articles.Skip(1).ToList();
+            var grid = rest.Count > 0
+                ? Html.Raw($"""<div class="blog-grid">{string.Concat(rest.Select(Card))}</div>""")
+                : HtmlString.Empty;
+            feed = Html.Raw(Featured(articles[0])) + grid;
+        }
+
+        var newButton = principal.Can<Create>(new ArticleResource())
+            ? Html.Raw($"""<a class="btn" href="/articles/new">{Html.Encode(t("blog.new_article"))}</a>""")
+            : HtmlString.Empty;
+
+        var head = Html.Raw($"""
+            <div class="page-head">
+                <div class="eyebrow eyebrow-accent">{Html.Encode(t("blog.eyebrow"))}</div>
+                <div class="page-head-row"><h1>{Html.Encode(t("blog.title"))}</h1>
+            """) + newButton + Html.Raw("</div></div>");
+
+        var layout = Html.Raw("""<div class="blog-layout"><div class="blog-main">""") +
+            feed +
+            Html.Raw($"""</div><aside class="blog-sidebar">{Sidebar(recipes, t)}</aside></div>""");
+
+        var body = head + layout;
 
         return Layout.Page(t("blog.title"), body, ctx);
     }
@@ -109,5 +158,35 @@ public static class BlogViews
             form;
 
         return Layout.Page(t(titleKey), body, ctx);
+    }
+
+    // Home sidebar backed by real data: the newest recipes and the most common recipe tags
+    // (tags link into search, since there is no dedicated tag-filter page).
+    private static string Sidebar(IReadOnlyList<Recipe> recipes, Translate t)
+    {
+        var recent = recipes
+            .OrderByDescending(r => r.Id.Value)
+            .Take(5)
+            .Select((r, i) => $"""<li><a href="/recipes/{r.Id.Value}"><span class="num">{i + 1:D2}</span><span>{Html.Encode(r.Name.Value)}</span></a></li>""")
+            .ToList();
+
+        var recentCard = recent.Count > 0
+            ? $"""<section class="sidebar-card"><h4 class="sidebar-head">{Html.Encode(t("blog.sidebar.recent_recipes"))}</h4><ul class="sidebar-recipes">{string.Concat(recent)}</ul></section>"""
+            : string.Empty;
+
+        var tags = recipes
+            .SelectMany(r => r.Tags)
+            .GroupBy(tag => tag.Value, StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(g => g.Count())
+            .Select(g => g.First().Value)
+            .Take(14)
+            .Select(tag => $"""<a class="sidebar-tag" href="/search?q={Uri.EscapeDataString(tag)}">{Html.Encode(tag)}</a>""")
+            .ToList();
+
+        var tagsCard = tags.Count > 0
+            ? $"""<section class="sidebar-card"><h4 class="sidebar-head">{Html.Encode(t("blog.sidebar.popular_tags"))}</h4><div class="sidebar-tags">{string.Concat(tags)}</div></section>"""
+            : string.Empty;
+
+        return recentCard + tagsCard;
     }
 }

@@ -33,6 +33,7 @@ internal class Program
         App app = Functional.Compose(
             _ => env => ValueTask.FromResult(Response.NotFound(env.Ctx)),
             LanguageMiddleware.Create(),
+            ThemeMiddleware.Create(),
             Middlewares.Recover,
             Middlewares.RequestLogging,
             AuthMiddleware.Create(),

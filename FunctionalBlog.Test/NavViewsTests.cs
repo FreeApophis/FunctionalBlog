@@ -5,7 +5,7 @@ public sealed class NavViewsTests
     [Fact]
     public void Nav_for_guest_contains_login_link()
     {
-        var nav = NavViews.Nav(new ViewContext(Guest.Instance, NoOp, string.Empty));
+        var nav = NavViews.Masthead(new ViewContext(Guest.Instance, NoOp, string.Empty));
 
         Assert.Contains("/login", nav);
         Assert.Contains("nav.login", nav);
@@ -14,7 +14,7 @@ public sealed class NavViewsTests
     [Fact]
     public void Nav_for_guest_contains_register_link()
     {
-        var nav = NavViews.Nav(new ViewContext(Guest.Instance, NoOp, string.Empty));
+        var nav = NavViews.Masthead(new ViewContext(Guest.Instance, NoOp, string.Empty));
 
         Assert.Contains("/register", nav);
         Assert.Contains("nav.register", nav);
@@ -25,7 +25,7 @@ public sealed class NavViewsTests
     {
         var user = BuildAuthUser([]);
 
-        var nav = NavViews.Nav(new ViewContext(user, NoOp, string.Empty));
+        var nav = NavViews.Masthead(new ViewContext(user, NoOp, string.Empty));
 
         Assert.Contains("/logout", nav);
         Assert.Contains("nav.logout", nav);
@@ -36,7 +36,7 @@ public sealed class NavViewsTests
     {
         var user = BuildAuthUser([]);
 
-        var nav = NavViews.Nav(new ViewContext(user, NoOp, string.Empty));
+        var nav = NavViews.Masthead(new ViewContext(user, NoOp, string.Empty));
 
         Assert.Contains("Testbenutzer", nav);
     }
@@ -48,7 +48,7 @@ public sealed class NavViewsTests
         var role = new Role(new RoleId(1), "Admin", [rule]);
         var user = BuildAuthUser([role]);
 
-        var nav = NavViews.Nav(new ViewContext(user, NoOp, string.Empty));
+        var nav = NavViews.Masthead(new ViewContext(user, NoOp, string.Empty));
 
         Assert.Contains("/admin/users", nav);
         Assert.Contains("nav.admin", nav);
@@ -59,9 +59,25 @@ public sealed class NavViewsTests
     {
         var user = BuildAuthUser([]);
 
-        var nav = NavViews.Nav(new ViewContext(user, NoOp, string.Empty));
+        var nav = NavViews.Masthead(new ViewContext(user, NoOp, string.Empty));
 
         Assert.DoesNotContain("/admin/users", nav);
+    }
+
+    [Fact]
+    public void Language_selector_marks_current_language_as_selected()
+    {
+        var nav = NavViews.Masthead(new ViewContext(Guest.Instance, NoOp, string.Empty, Language: "en"));
+
+        Assert.Contains("<option value=\"en\" selected>English</option>", nav);
+    }
+
+    [Fact]
+    public void Language_selector_does_not_mark_other_languages_as_selected()
+    {
+        var nav = NavViews.Masthead(new ViewContext(Guest.Instance, NoOp, string.Empty, Language: "en"));
+
+        Assert.Contains("<option value=\"de\">Deutsch</option>", nav);
     }
 
     private static AuthenticatedUser BuildAuthUser(IReadOnlyList<Role> roles)
