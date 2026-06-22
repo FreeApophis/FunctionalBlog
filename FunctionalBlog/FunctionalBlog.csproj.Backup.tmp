@@ -9,8 +9,6 @@
 		<EmbeddedResource Include="wwwroot\htmx.min.js" />
 		<Content Remove="wwwroot\fonts\*.woff2" />
 		<EmbeddedResource Include="wwwroot\fonts\*.woff2" />
-		<Content Remove="wwwroot\images\*.png" />
-		<EmbeddedResource Include="wwwroot\images\*.png" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Funcky.DiscriminatedUnion" PrivateAssets="all" />

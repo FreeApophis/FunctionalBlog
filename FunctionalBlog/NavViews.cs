@@ -15,29 +15,18 @@ public static class NavViews
     {
         var (principal, t, csrfToken) = ctx;
 
-        var chips = Html.Link("/", t("nav.blog")) +
-            Html.Link("/recipes", t("nav.recipes")) +
-            Html.Link("/pages", t("nav.pages")) +
-            (principal is AuthenticatedUser ? Html.Link("/users", t("nav.users")) : HtmlString.Empty) +
-            (principal.Can<Manage>(new ImageResource()) ? Html.Link("/images", t("nav.images")) : HtmlString.Empty) +
-            (principal.Can<Manage>(new UserResource()) ? Html.Link("/admin/users", t("nav.admin")) : HtmlString.Empty);
+        var chips = Html.Link("/recipes", t("nav.recipes")) +
+            (principal is AuthenticatedUser ? Html.Link("/users", t("nav.users")) : HtmlString.Empty);
 
-        HtmlString account = principal is AuthenticatedUser user
-            ? Html.Raw($"""<span class="mast-user">{Html.Encode(user.DisplayName.Value)}</span>""") +
-                Html.Link("/settings", t("nav.settings")) +
-                Html.Form("/logout", Html.CsrfField(csrfToken) + Html.Button(t("nav.logout")), style: "display:inline")
-            : Html.Link("/login", t("nav.login")) + Html.Link("/register", t("nav.register"));
-
-        var actions = account +
+        var actions = SearchBox(t) +
             LanguageSelector(t, csrfToken, ctx.Language) +
-            SearchBox(t) +
-            ThemeToggle(ctx.Theme, t, csrfToken);
+            ThemeToggle(ctx.Theme, t, csrfToken) +
+            UserMenu(ctx);
 
         return $"""
             <header class="masthead"><div class="masthead-inner">
                 <a class="brand" href="/">
-                    <span class="brand-logo">{BrandLogo}</span>
-                    <span class="brand-text"><span class="brand-name">Foodblog</span><span class="brand-tag">SELBER MACHEN</span></span>
+                    <img class="brand-banner" src="/assets/foodblog-banner.png" alt="Foodblog" />
                 </a>
                 <nav class="mast-nav">{chips.Render()}</nav>
                 <div class="mast-actions">{actions.Render()}</div>
@@ -72,11 +61,56 @@ public static class NavViews
             """;
     }
 
+    // Circular trigger (same footprint as the theme toggle) revealing a hover/focus dropdown.
+    // Authenticated: initial avatar → Settings, Admin (when permitted), Logout. Guest: person
+    // icon → Login, Register.
+    private static HtmlString UserMenu(ViewContext ctx)
+    {
+        var (principal, t, csrfToken) = ctx;
+
+        if (principal is AuthenticatedUser user)
+        {
+            var name = user.DisplayName.Value;
+            var initial = name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
+
+            var adminItem = AdminDashboardViews.HasAnyAccess(principal)
+                ? $"""<a href="/admin" role="menuitem">{Html.Encode(t("nav.admin"))}</a>"""
+                : string.Empty;
+
+            return Html.Raw($"""
+                <div class="user-menu">
+                    <button type="button" class="user-trigger is-auth" aria-haspopup="true" aria-label="{Html.Encode(name)}">{Html.Encode(initial)}</button>
+                    <div class="user-dropdown"><div class="user-panel">
+                        <div class="user-panel-name">{Html.Encode(name)}</div>
+                        <a href="/settings" role="menuitem">{Html.Encode(t("nav.settings"))}</a>
+                        {adminItem}
+                        <form method="post" action="/logout" style="margin:0;display:block">
+                            {Html.CsrfField(csrfToken).Render()}
+                            <button type="submit" role="menuitem">{Html.Encode(t("nav.logout"))}</button>
+                        </form>
+                    </div></div>
+                </div>
+                """);
+        }
+
+        return Html.Raw($"""
+            <div class="user-menu">
+                <button type="button" class="user-trigger" aria-haspopup="true" aria-label="{Html.Encode(t("nav.account"))}">{PersonIcon}</button>
+                <div class="user-dropdown"><div class="user-panel">
+                    <a href="/login" role="menuitem">{Html.Encode(t("nav.login"))}</a>
+                    <a href="/register" role="menuitem">{Html.Encode(t("nav.register"))}</a>
+                </div></div>
+            </div>
+            """);
+    }
+
     private static HtmlString SearchBox(Translate t) =>
-        Html.Raw("""<form action="/search" method="get" class="search-form">""") +
-        Html.Input("q") +
-        Html.Button(t("nav.search")) +
-        Html.Raw("</form>");
+        Html.Raw($"""
+            <form action="/search" method="get" class="search-form" role="search">
+                <input name="q" placeholder="{Html.Encode(t("nav.search"))}" aria-label="{Html.Encode(t("nav.search"))}" />
+                <button type="submit" aria-label="{Html.Encode(t("nav.search"))}">{SearchIcon}</button>
+            </form>
+            """);
 
     private static HtmlString LanguageSelector(Translate t, string csrfToken, string current)
     {
@@ -100,8 +134,11 @@ public static class NavViews
         return Html.Form("/theme", body, cssClass: "theme-form");
     }
 
-    private const string BrandLogo =
-        """<svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 3c-2.2 0-4 1.8-4 4 0 1.3.6 2.4 1.5 3.2L8 21h8l-1.5-10.8C15.4 9.4 16 8.3 16 7c0-2.2-1.8-4-4-4Z" fill="#fffefb"/><circle cx="12" cy="7" r="1.3" fill="#5b7b53"/></svg>""";
+    private const string SearchIcon =
+        """<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>""";
+
+    private const string PersonIcon =
+        """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>""";
 
     private const string MoonIcon =
         """<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>""";

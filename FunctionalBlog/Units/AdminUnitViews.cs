@@ -36,7 +36,7 @@ public static class AdminUnitViews
             </section>
             """;
 
-        var body = Html.P(Html.Link("/admin/users", t("common.back_to_admin"))) + Html.Raw(section);
+        var body = Html.P(Html.Link("/admin", t("common.back_to_admin"))) + Html.Raw(section);
         return Layout.Page(t("unit.list_title"), body, ctx);
     }
 

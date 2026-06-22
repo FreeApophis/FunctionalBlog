@@ -1,4 +1,5 @@
 global using Bbcode;
+global using FunctionalBlog.Admin;
 global using FunctionalBlog.Application.Articles;
 global using FunctionalBlog.Application.Identity;
 global using FunctionalBlog.Application.Images;

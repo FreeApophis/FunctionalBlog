@@ -28,7 +28,7 @@ public static class AdminIngredientViews
 
         var body = Html.H1(t("ingredient.list_title")) +
             Html.P(Html.Link("/admin/ingredients/new", t("ingredient.new_ingredient"))) +
-            Html.P(Html.Link("/admin/users", t("common.back_to_admin"))) +
+            Html.P(Html.Link("/admin", t("common.back_to_admin"))) +
             errorHtml +
             (ingredients.Count == 0 ? Html.P(Html.Text(t("ingredient.no_ingredients"))) : table);
 

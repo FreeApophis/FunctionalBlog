@@ -42,6 +42,36 @@ public sealed class NavViewsTests
     }
 
     [Fact]
+    public void Nav_keeps_recipes_chip_and_drops_pages_chip()
+    {
+        var nav = NavViews.Masthead(new ViewContext(Guest.Instance, NoOp, string.Empty));
+
+        Assert.Contains("href=\"/recipes\"", nav);
+        Assert.DoesNotContain("href=\"/pages\"", nav);
+    }
+
+    [Fact]
+    public void Nav_renders_user_menu_for_authenticated_user()
+    {
+        var user = BuildAuthUser([]);
+
+        var nav = NavViews.Masthead(new ViewContext(user, NoOp, string.Empty));
+
+        Assert.Contains("user-menu", nav);
+        Assert.Contains("/settings", nav);
+    }
+
+    [Fact]
+    public void Nav_user_menu_for_guest_offers_login_and_register()
+    {
+        var nav = NavViews.Masthead(new ViewContext(Guest.Instance, NoOp, string.Empty));
+
+        Assert.Contains("user-menu", nav);
+        Assert.Contains("/login", nav);
+        Assert.Contains("/register", nav);
+    }
+
+    [Fact]
     public void Nav_for_admin_contains_admin_link()
     {
         var rule = new PermissionRule("Manage", "user");
@@ -50,7 +80,7 @@ public sealed class NavViewsTests
 
         var nav = NavViews.Masthead(new ViewContext(user, NoOp, string.Empty));
 
-        Assert.Contains("/admin/users", nav);
+        Assert.Contains("href=\"/admin\"", nav);
         Assert.Contains("nav.admin", nav);
     }
 
@@ -61,7 +91,7 @@ public sealed class NavViewsTests
 
         var nav = NavViews.Masthead(new ViewContext(user, NoOp, string.Empty));
 
-        Assert.DoesNotContain("/admin/users", nav);
+        Assert.DoesNotContain("href=\"/admin\"", nav);
     }
 
     [Fact]

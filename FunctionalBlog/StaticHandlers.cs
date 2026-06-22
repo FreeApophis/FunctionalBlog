@@ -6,7 +6,7 @@ public static class StaticHandlers
 {
     private static readonly Lazy<string> StylesContent = new(LoadStyles);
     private static readonly Lazy<string> HtmxContent = new(LoadHtmx);
-    private static readonly ConcurrentDictionary<string, byte[]> FontCache = new();
+    private static readonly ConcurrentDictionary<string, byte[]> BinaryCache = new();
 
     // Self-hosted design fonts (latin subset, variable weight). Whitelist of servable files.
     private static readonly IReadOnlyDictionary<string, string> Fonts = new Dictionary<string, string>
@@ -17,7 +17,13 @@ public static class StaticHandlers
         ["newsreader-italic.woff2"] = "FunctionalBlog.wwwroot.fonts.newsreader-italic.woff2",
     };
 
-    private static readonly IReadOnlyDictionary<string, string> FontHeaders =
+    // Static design assets (logos, banners). Whitelist of servable files.
+    private static readonly IReadOnlyDictionary<string, string> Assets = new Dictionary<string, string>
+    {
+        ["foodblog-banner.png"] = "FunctionalBlog.wwwroot.images.foodblog-banner.png",
+    };
+
+    private static readonly IReadOnlyDictionary<string, string> ImmutableHeaders =
         new Dictionary<string, string> { ["Cache-Control"] = "public, max-age=31536000, immutable" };
 
     public static App Styles => _ => _ =>
@@ -30,8 +36,16 @@ public static class StaticHandlers
         Fonts.GetValueOrNone(file) is [var resourceName]
             ? ValueTask.FromResult(Response.Bytes(
                 "font/woff2",
-                FontCache.GetOrAdd(resourceName, LoadResourceBytes),
-                FontHeaders))
+                BinaryCache.GetOrAdd(resourceName, LoadResourceBytes),
+                ImmutableHeaders))
+            : ValueTask.FromResult(Response.NotFound());
+
+    public static App Asset(string file) => _ => _ =>
+        Assets.GetValueOrNone(file) is [var resourceName]
+            ? ValueTask.FromResult(Response.Bytes(
+                "image/png",
+                BinaryCache.GetOrAdd(resourceName, LoadResourceBytes),
+                ImmutableHeaders))
             : ValueTask.FromResult(Response.NotFound());
 
     private static string LoadStyles()

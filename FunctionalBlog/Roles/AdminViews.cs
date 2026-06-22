@@ -2,22 +2,41 @@ namespace FunctionalBlog.Roles;
 
 public static class AdminViews
 {
+    private const string PencilIcon =
+        """<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>""";
+
     private static readonly string[] AllActions = ["View", "Create", "Edit", "Delete", "Manage"];
     private static readonly string[] AllResources = ["article", "user", "role", "rule"];
 
+    // Read-only roster styled like the units admin: a single card with a header row and one
+    // line per user (name, e-mail, roles). The pencil opens the per-user role editor. Section
+    // navigation lives on the /admin dashboard, not here.
     public static string UserList(IReadOnlyList<User> users, ViewContext ctx)
     {
         var (_, t, _) = ctx;
 
-        static HtmlString UserRow(User u) =>
-            Html.Link($"/admin/users/{u.Id.Value}", $"{u.DisplayName.Value} ({u.Email.Value})") +
-            Html.Raw(" – ") + Html.Text(string.Join(", ", u.RoleNames));
+        var head = $"""
+            <div class="admin-user-head">
+                <span>{Html.Encode(t("admin.users.col_user"))}</span>
+                <span>{Html.Encode(t("admin.users.col_email"))}</span>
+                <span>{Html.Encode(t("admin.users.col_roles"))}</span>
+                <span></span>
+            </div>
+            """;
 
-        var body = Html.H1(t("admin.users.title")) +
-            Html.P(Html.Link("/admin/roles", t("admin.users.manage_roles"))) +
-            Html.P(Html.Link("/admin/ingredients", t("ingredient.list_title"))) +
-            Html.P(Html.Link("/admin/translations", t("translations.title"))) +
-            Html.Ul(users.Select(UserRow));
+        var rows = users.Count > 0
+            ? string.Concat(users.Select(u => UserRow(u, t)))
+            : $"""<p class="admin-user-empty">{Html.Encode(t("admin.users.empty"))}</p>""";
+
+        var section = $"""
+            <section class="card admin-users">
+                <div class="card-section-head"><h3>{Html.Encode(t("admin.users.title"))}</h3><span class="rule"></span><span class="count">{users.Count}</span></div>
+                {head}
+                <div class="admin-user-list">{rows}</div>
+            </section>
+            """;
+
+        var body = Html.P(Html.Link("/admin", t("common.back_to_admin"))) + Html.Raw(section);
         return Layout.Page(t("admin.users.title"), body, ctx);
     }
 
@@ -121,5 +140,23 @@ public static class AdminViews
             errorHtml +
             addForm;
         return Layout.Page($"{t("admin.roles.detail_title")}: {role.Name}", body, ctx);
+    }
+
+    private static string UserRow(User u, Translate t)
+    {
+        var hasRoles = u.RoleNames.Count > 0;
+        var roles = hasRoles ? string.Join(", ", u.RoleNames) : t("admin.users.no_roles");
+        var rolesClass = hasRoles ? "admin-user-cell" : "admin-user-cell muted";
+
+        return $"""
+            <div class="admin-user-row">
+                <span class="admin-user-cell" data-label="{Html.Encode(t("admin.users.col_user"))}">{Html.Encode(u.DisplayName.Value)}</span>
+                <span class="admin-user-cell mono" data-label="{Html.Encode(t("admin.users.col_email"))}">{Html.Encode(u.Email.Value)}</span>
+                <span class="{rolesClass}" data-label="{Html.Encode(t("admin.users.col_roles"))}">{Html.Encode(roles)}</span>
+                <span class="unit-actions">
+                    <a class="icon-btn" href="/admin/users/{u.Id.Value}" title="{Html.Encode(t("common.edit"))}" aria-label="{Html.Encode(t("common.edit"))}">{PencilIcon}</a>
+                </span>
+            </div>
+            """;
     }
 }

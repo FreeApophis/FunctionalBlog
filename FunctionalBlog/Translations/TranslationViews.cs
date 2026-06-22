@@ -36,7 +36,7 @@ public static class TranslationViews
             Html.Tbody(rows));
 
         var body = Html.H1(t("translations.title")) +
-            Html.P(Html.Link("/admin/users", t("common.back_to_admin"))) +
+            Html.P(Html.Link("/admin", t("common.back_to_admin"))) +
             Html.P(Html.Link("/admin/translations/export.json", t("translations.export"))) +
             table;
 

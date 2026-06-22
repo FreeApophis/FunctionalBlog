@@ -20,7 +20,6 @@ public static class SearchViews
         ViewContext ctx)
     {
         var (_, t, _) = ctx;
-        var form = SearchForm(query, t);
 
         var header = results.Count == 0
             ? Html.P(Html.Text(t("search.no_results")))
@@ -37,7 +36,7 @@ public static class SearchViews
             ? HtmlString.Empty
             : Html.Ul(results.Select(r => ResultItem(r, t)));
 
-        var body = Html.H1(t("search.title")) + form + header + suggestionHtml + resultList;
+        var body = Html.H1(t("search.title")) + header + suggestionHtml + resultList;
 
         return Layout.Page(t("search.title"), body, ctx);
     }

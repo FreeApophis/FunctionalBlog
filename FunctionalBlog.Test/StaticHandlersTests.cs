@@ -25,6 +25,25 @@ public sealed class StaticHandlersTests
         Assert.Equal(404, response.Status);
     }
 
+    [Fact]
+    public async Task Asset_serves_the_embedded_banner_png()
+    {
+        var response = await StaticHandlers.Asset("foodblog-banner.png")(Request())(Env());
+
+        Assert.Equal(200, response.Status);
+        Assert.Equal("image/png", response.ContentType);
+        Assert.NotNull(response.Binary);
+        Assert.NotEmpty(response.Binary!);
+    }
+
+    [Fact]
+    public async Task Asset_returns_404_for_an_unknown_file()
+    {
+        var response = await StaticHandlers.Asset("../secret.txt")(Request())(Env());
+
+        Assert.Equal(404, response.Status);
+    }
+
     private static Request Request() =>
         new(HttpMethod.Get, "/fonts/x", Empty, Empty, Empty, Empty);
 
