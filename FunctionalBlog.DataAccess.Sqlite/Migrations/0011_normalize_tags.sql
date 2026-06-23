@@ -42,20 +42,34 @@ FROM (
 INSERT INTO taggables (id) SELECT taggable_id FROM _taggable_map ORDER BY taggable_id;
 
 -- Migrate the existing free-text recipe tags into the normalized tables while
--- `recipe_tags` and `recipes` are still intact.
--- slug is the case-folded lookup key; name keeps a representative original spelling.
+-- `recipe_tags` and `recipes` are still intact. The slug mirrors
+-- FunctionalBlog.Domain.Tags.Slug: transliterate ä→ae ö→oe ü→ue ß→ss, lowercase, and
+-- turn spaces into hyphens (e.g. "süss" → "suess", "Schweizer Küche" → "schweizer-kueche").
+CREATE TEMP TABLE _tag_slugs AS
+SELECT
+    rt.recipe_id AS recipe_id,
+    trim(rt.tag) AS name,
+    replace(
+        lower(
+            replace(replace(replace(replace(replace(replace(replace(
+                trim(rt.tag),
+                'ä', 'ae'), 'ö', 'oe'), 'ü', 'ue'),
+                'Ä', 'ae'), 'Ö', 'oe'), 'Ü', 'ue'),
+                'ß', 'ss')
+        ),
+        ' ', '-') AS slug
+FROM recipe_tags rt
+WHERE trim(rt.tag) <> '';
+
+-- name keeps a representative original spelling for the deduplicated slug.
 INSERT INTO tags (slug, name)
-SELECT lower(trim(tag)), min(trim(tag))
-FROM recipe_tags
-WHERE trim(tag) <> ''
-GROUP BY lower(trim(tag));
+SELECT slug, min(name) FROM _tag_slugs GROUP BY slug;
 
 INSERT INTO taggings (taggable_id, tag_id)
 SELECT DISTINCT m.taggable_id, t.id
-FROM recipe_tags rt
-JOIN _taggable_map m ON m.kind = 'recipe' AND m.entity_id = rt.recipe_id
-JOIN tags t ON t.slug = lower(trim(rt.tag))
-WHERE trim(rt.tag) <> '';
+FROM _tag_slugs ts
+JOIN _taggable_map m ON m.kind = 'recipe' AND m.entity_id = ts.recipe_id
+JOIN tags t ON t.slug = ts.slug;
 
 -- Snapshot recipe child rows; dropping `recipes` below cascade-deletes them.
 CREATE TEMP TABLE _steps       AS SELECT * FROM recipe_steps;
@@ -112,6 +126,7 @@ INSERT INTO recipe_images      SELECT * FROM _images;
 INSERT INTO recipe_hints       SELECT * FROM _hints;
 
 DROP TABLE recipe_tags;
+DROP TABLE _tag_slugs;
 DROP TABLE _steps;
 DROP TABLE _ingredients;
 DROP TABLE _images;

@@ -18,6 +18,7 @@ public sealed record Env(
     ITranslationRepository? Translations = null,
     TranslationCache? TranslationCache = null,
     ISearchIndex? Search = null,
+    ITagRepository? Tags = null,
     string Language = Languages.Default,
     string Theme = "light",
     string CsrfToken = "")

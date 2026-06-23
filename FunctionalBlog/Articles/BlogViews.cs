@@ -12,28 +12,6 @@ public static class BlogViews
     {
         var (principal, t, _) = ctx;
 
-        string DateBadge(Article a)
-        {
-            var d = a.PublishedAt.LocalDateTime;
-            var month = d.ToString("MMM", CultureInfo.InvariantCulture).ToUpperInvariant();
-            return $"""<span class="date-badge"><span class="day">{d.Day}</span><span class="month">{Html.Encode(month)}</span></span>""";
-        }
-
-        string Media(Article a)
-        {
-            var img = a.CoverImageId.Match(
-                none: () => string.Empty,
-                some: id => $"""<img src="/images/{id.Value}" alt="{Html.Encode(a.Title.Value)}" />""");
-            return $"""<div class="blog-media">{img}{DateBadge(a)}</div>""";
-        }
-
-        string Author(Article a)
-        {
-            var name = authorNames.GetValueOrNone(a.AuthorId).GetOrElse("?");
-            var initial = name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
-            return $"""<span class="blog-author"><span class="avatar">{Html.Encode(initial)}</span>{Html.Encode(name)}</span>""";
-        }
-
         string Featured(Article a) =>
             $"""
             <a class="blog-featured" href="/articles/{a.Id.Value}">
@@ -42,21 +20,9 @@ public static class BlogViews
                     <h2>{Html.Encode(a.Title.Value)}</h2>
                     <p class="blog-excerpt">{Html.Encode(a.Teaser.Value)}</p>
                     <div class="blog-foot">
-                        {Author(a)}
+                        {Author(a, authorNames)}
                         <span class="blog-readmore">{Html.Encode(t("blog.read_more"))} →</span>
                     </div>
-                </div>
-            </a>
-            """;
-
-        string Card(Article a) =>
-            $"""
-            <a class="blog-card" href="/articles/{a.Id.Value}">
-                {Media(a)}
-                <div class="blog-card-body">
-                    <h3>{Html.Encode(a.Title.Value)}</h3>
-                    <p class="blog-excerpt">{Html.Encode(a.Teaser.Value)}</p>
-                    <div class="blog-foot">{Author(a)}<span>{a.PublishedAt.LocalDateTime:d}</span></div>
                 </div>
             </a>
             """;
@@ -70,7 +36,7 @@ public static class BlogViews
         {
             var rest = articles.Skip(1).ToList();
             var grid = rest.Count > 0
-                ? Html.Raw($"""<div class="blog-grid">{string.Concat(rest.Select(Card))}</div>""")
+                ? Html.Raw($"""<div class="blog-grid">{string.Concat(rest.Select(a => Card(a, authorNames, t)))}</div>""")
                 : HtmlString.Empty;
             feed = Html.Raw(Featured(articles[0])) + grid;
         }
@@ -189,8 +155,44 @@ public static class BlogViews
         return Layout.Page(t(titleKey), body, ctx);
     }
 
-    // Home sidebar backed by real data: the newest recipes and the most common recipe tags
-    // (tags link into search, since there is no dedicated tag-filter page).
+    // A blog grid card: cover media with date badge, title, excerpt and author. Shared by the
+    // home feed and the tag page.
+    public static string Card(Article a, IReadOnlyDictionary<UserId, string> authorNames, Translate t) =>
+        $"""
+        <a class="blog-card" href="/articles/{a.Id.Value}">
+            {Media(a)}
+            <div class="blog-card-body">
+                <h3>{Html.Encode(a.Title.Value)}</h3>
+                <p class="blog-excerpt">{Html.Encode(a.Teaser.Value)}</p>
+                <div class="blog-foot">{Author(a, authorNames)}<span>{a.PublishedAt.LocalDateTime:d}</span></div>
+            </div>
+        </a>
+        """;
+
+    private static string DateBadge(Article a)
+    {
+        var d = a.PublishedAt.LocalDateTime;
+        var month = d.ToString("MMM", CultureInfo.InvariantCulture).ToUpperInvariant();
+        return $"""<span class="date-badge"><span class="day">{d.Day}</span><span class="month">{Html.Encode(month)}</span></span>""";
+    }
+
+    private static string Media(Article a)
+    {
+        var img = a.CoverImageId.Match(
+            none: () => string.Empty,
+            some: id => $"""<img src="/images/{id.Value}" alt="{Html.Encode(a.Title.Value)}" />""");
+        return $"""<div class="blog-media">{img}{DateBadge(a)}</div>""";
+    }
+
+    private static string Author(Article a, IReadOnlyDictionary<UserId, string> authorNames)
+    {
+        var name = authorNames.GetValueOrNone(a.AuthorId).GetOrElse("?");
+        var initial = name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
+        return $"""<span class="blog-author"><span class="avatar">{Html.Encode(initial)}</span>{Html.Encode(name)}</span>""";
+    }
+
+    // Home sidebar backed by real data: the newest recipes and the most common recipe tags,
+    // each linking to its dedicated tag page (/tag/{slug}).
     private static string Sidebar(IReadOnlyList<Recipe> recipes, Translate t)
     {
         var recent = recipes
@@ -209,7 +211,7 @@ public static class BlogViews
             .OrderByDescending(g => g.Count())
             .Select(g => g.First().Value)
             .Take(14)
-            .Select(tag => $"""<a class="sidebar-tag" href="/search?q={Uri.EscapeDataString(tag)}">{Html.Encode(tag)}</a>""")
+            .Select(tag => $"""<a class="sidebar-tag" href="/tag/{Html.Encode(Slug.From(tag))}">{Html.Encode(tag)}</a>""")
             .ToList();
 
         var tagsCard = tags.Count > 0

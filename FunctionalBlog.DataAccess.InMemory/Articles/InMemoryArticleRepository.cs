@@ -11,6 +11,11 @@ public sealed class InMemoryArticleRepository : IArticleRepository
         ValueTask.FromResult<IReadOnlyList<Article>>(
             _articles.Values.OrderByDescending(x => x.PublishedAt).ToList());
 
+    // In-memory articles do not model tags (a test-double limitation): article tagging is a
+    // SQLite/production concern wired through taggables/taggings, so nothing matches here.
+    public ValueTask<IReadOnlyList<Article>> FindByTag(string slug) =>
+        ValueTask.FromResult<IReadOnlyList<Article>>([]);
+
     public ValueTask<Option<Article>> Find(ArticleId id) =>
         ValueTask.FromResult(_articles.GetValueOrNone(id.Value));
 

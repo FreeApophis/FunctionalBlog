@@ -4,6 +4,7 @@ public static class Routes
 {
     public static RouteTable Build() => RouteTable.Empty
         .Get("/search", Search.SearchHandlers.Search)
+        .Get("/tag/{slug}", p => TagHandlers.Show(p[0]))
         .Get("/styles.css", StaticHandlers.Styles)
         .Get("/htmx.min.js", StaticHandlers.HtmxScript)
         .Get("/fonts/{file}", p => StaticHandlers.Font(p[0]))

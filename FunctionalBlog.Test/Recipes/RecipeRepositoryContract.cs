@@ -139,6 +139,22 @@ public abstract class RecipeRepositoryContract
         Assert.Contains("kuchen", tags);
     }
 
+    [Fact]
+    public async Task FindByTag_returns_only_recipes_carrying_that_tag()
+    {
+        var repo = CreateRepository();
+        var tagged = ARecipe(await repo.NextId(), name: "Getaggt") with { Tags = [new RecipeTag("Süss")] };
+        var untagged = ARecipe(await repo.NextId(), name: "Schlicht");
+        await repo.Save(tagged);
+        await repo.Save(untagged);
+
+        // "Süss" slugifies to "suess".
+        var found = await repo.FindByTag("suess");
+
+        Assert.Contains(found, r => r.Id == tagged.Id);
+        Assert.DoesNotContain(found, r => r.Id == untagged.Id);
+    }
+
     protected abstract IRecipeRepository CreateRepository();
 
     private static Recipe ARecipe(RecipeId id, string name = "Rezept") =>

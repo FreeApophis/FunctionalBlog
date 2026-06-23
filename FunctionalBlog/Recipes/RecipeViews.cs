@@ -12,43 +12,9 @@ public static class RecipeViews
         var (principal, t, _) = ctx;
         var recipes = page.Items;
 
-        string Card(Recipe recipe)
-        {
-            var author = authorNames.TryGetValue(recipe.AuthorId, out var n) ? n : "?";
-            var initial = author.Length > 0 ? author[..1].ToUpperInvariant() : "?";
-
-            var categoryBadge = recipe.Tags.Count > 0
-                ? $"""<span class="recipe-card-cat">{Html.Encode(recipe.Tags[0].Value)}</span>"""
-                : string.Empty;
-
-            var media = recipe.Images.Count > 0
-                ? $"""<div class="recipe-card-media"><img src="{Html.Encode(recipe.Images[0])}" alt="{Html.Encode(recipe.Name.Value)}" />{categoryBadge}</div>"""
-                : $"""<div class="recipe-card-media">{categoryBadge}</div>""";
-
-            var diffClass = recipe.Difficulty switch
-            {
-                Difficulty.Hard => "diff-hard",
-                Difficulty.Medium => "diff-medium",
-                _ => "diff-easy",
-            };
-
-            return $"""
-                <a class="recipe-card" href="/recipes/{recipe.Id.Value}">
-                    {media}
-                    <div class="recipe-card-body">
-                        <h3>{Html.Encode(recipe.Name.Value)}</h3>
-                        <div class="recipe-card-foot">
-                            <span class="difficulty-pill {diffClass}">{Html.Encode(t(DifficultyKey(recipe.Difficulty)))}</span>
-                            <span class="recipe-card-author"><span class="avatar">{Html.Encode(initial)}</span>{Html.Encode(author)}</span>
-                        </div>
-                    </div>
-                </a>
-                """;
-        }
-
         var grid = recipes.Count == 0
             ? Html.P(Html.Text(t("recipe.no_recipes")))
-            : Html.Raw($"""<div class="recipe-grid">{string.Concat(recipes.Select(Card))}</div>""");
+            : Html.Raw($"""<div class="recipe-grid">{string.Concat(recipes.Select(r => Card(r, authorNames, t)))}</div>""");
 
         var pagination = Html.Pagination(page.CurrentPage, page.TotalPages, "/recipes", t("common.pagination"));
 
@@ -65,6 +31,42 @@ public static class RecipeViews
         var body = head + grid + pagination;
 
         return Layout.Page(t("recipe.title"), body, ctx);
+    }
+
+    // A recipe grid card: image with a category badge, name, difficulty pill and author.
+    // Shared by the recipe index and the tag page.
+    public static string Card(Recipe recipe, IReadOnlyDictionary<UserId, string> authorNames, Translate t)
+    {
+        var author = authorNames.TryGetValue(recipe.AuthorId, out var n) ? n : "?";
+        var initial = author.Length > 0 ? author[..1].ToUpperInvariant() : "?";
+
+        var categoryBadge = recipe.Tags.Count > 0
+            ? $"""<span class="recipe-card-cat">{Html.Encode(recipe.Tags[0].Value)}</span>"""
+            : string.Empty;
+
+        var media = recipe.Images.Count > 0
+            ? $"""<div class="recipe-card-media"><img src="{Html.Encode(recipe.Images[0])}" alt="{Html.Encode(recipe.Name.Value)}" />{categoryBadge}</div>"""
+            : $"""<div class="recipe-card-media">{categoryBadge}</div>""";
+
+        var diffClass = recipe.Difficulty switch
+        {
+            Difficulty.Hard => "diff-hard",
+            Difficulty.Medium => "diff-medium",
+            _ => "diff-easy",
+        };
+
+        return $"""
+            <a class="recipe-card" href="/recipes/{recipe.Id.Value}">
+                {media}
+                <div class="recipe-card-body">
+                    <h3>{Html.Encode(recipe.Name.Value)}</h3>
+                    <div class="recipe-card-foot">
+                        <span class="difficulty-pill {diffClass}">{Html.Encode(t(DifficultyKey(recipe.Difficulty)))}</span>
+                        <span class="recipe-card-author"><span class="avatar">{Html.Encode(initial)}</span>{Html.Encode(author)}</span>
+                    </div>
+                </div>
+            </a>
+            """;
     }
 
     public static string Show(
@@ -108,7 +110,7 @@ public static class RecipeViews
             Html.Raw("</div>");
 
         var tags = recipe.Tags.Count > 0
-            ? Html.Raw($"""<div class="tag-chips">{string.Concat(recipe.Tags.Select(tag => $"<span class=\"tag-chip\">{Html.Encode(tag.Value)}</span>"))}</div>""")
+            ? Html.Raw($"""<div class="tag-chips">{string.Concat(recipe.Tags.Select(tag => $"<a class=\"tag-chip\" href=\"/tag/{Html.Encode(Slug.From(tag.Value))}\">{Html.Encode(tag.Value)}</a>"))}</div>""")
             : HtmlString.Empty;
 
         var images = recipe.Images.Count > 0

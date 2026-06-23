@@ -17,6 +17,17 @@ public sealed class SqliteArticleRepository : IArticleRepository
         return rows.Select(ToArticle).ToList();
     }
 
+    public async ValueTask<IReadOnlyList<Article>> FindByTag(string slug)
+    {
+        var rows = await _connection.QueryAsync<ArticleRow>(
+            "SELECT id AS Id, title AS Title, teaser AS Teaser, text AS Text, author_id AS AuthorId, published_at AS PublishedAt, cover_image_id AS CoverImageId " +
+            "FROM articles WHERE taggable_id IN " +
+            "(SELECT tg.taggable_id FROM taggings tg JOIN tags t ON t.id = tg.tag_id WHERE t.slug = @slug) " +
+            "ORDER BY published_at DESC",
+            new { slug });
+        return rows.Select(ToArticle).ToList();
+    }
+
     public async ValueTask<Option<Article>> Find(ArticleId id)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<ArticleRow>(

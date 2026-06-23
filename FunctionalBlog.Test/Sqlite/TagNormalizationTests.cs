@@ -88,6 +88,18 @@ public sealed class TagNormalizationTests : IDisposable
         Assert.Equal(0, taggings);
     }
 
+    [Fact]
+    public async Task Suess_tag_has_transliterated_slug_and_tags_the_macaron_article()
+    {
+        var tags = new SqliteTagRepository(_db.Connection);
+        var tag = FunctionalAssert.Some(await tags.FindBySlug("suess"));
+        Assert.Equal("süss", tag.Name);
+
+        var articles = new SqliteArticleRepository(_db.Connection);
+        var tagged = await articles.FindByTag("suess");
+        Assert.Contains(tagged, a => a.Title.Value == "Macarons selbst backen");
+    }
+
     private static Recipe ARecipe(RecipeId id, string name, params string[] tags) =>
         Recipe.Create(
             id,

@@ -16,6 +16,9 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
         "SELECT r.id AS RecipeId, t.name AS Tag " +
         "FROM recipes r JOIN taggings tg ON tg.taggable_id = r.taggable_id JOIN tags t ON t.id = tg.tag_id";
 
+    private const string RecipeSelect =
+        "SELECT id AS Id, name AS Name, description AS Description, author_id AS AuthorId, difficulty AS Difficulty, portions AS Portions, preparation_time AS PreparationTime, cooking_time AS CookingTime, calorific_value AS CalorificValue FROM recipes";
+
     private readonly IDbConnection _connection;
     private int _nextId = -1;
 
@@ -23,43 +26,18 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
 
     public async ValueTask<IReadOnlyList<Recipe>> All()
     {
+        var rows = (await _connection.QueryAsync<RecipeRow>(RecipeSelect)).ToList();
+        return await Hydrate(rows);
+    }
+
+    public async ValueTask<IReadOnlyList<Recipe>> FindByTag(string slug)
+    {
         var rows = (await _connection.QueryAsync<RecipeRow>(
-            "SELECT id AS Id, name AS Name, description AS Description, author_id AS AuthorId, difficulty AS Difficulty, portions AS Portions, preparation_time AS PreparationTime, cooking_time AS CookingTime, calorific_value AS CalorificValue FROM recipes")).ToList();
-
-        if (rows.Count == 0)
-        {
-            return [];
-        }
-
-        var ids = rows.Select(r => r.Id).ToList();
-
-        var steps = (await _connection.QueryAsync<StepRow>(
-            "SELECT recipe_id AS RecipeId, sort_order AS SortOrder, text AS Text FROM recipe_steps WHERE recipe_id IN @ids ORDER BY sort_order",
-            new { ids })).ToLookup(s => s.RecipeId);
-
-        var tags = (await _connection.QueryAsync<TagRow>(
-            TagSelect + " WHERE r.id IN @ids ORDER BY t.name",
-            new { ids })).ToLookup(t => t.RecipeId);
-
-        var ingredients = (await _connection.QueryAsync<IngredientRow>(
-            $"{IngredientSelect} WHERE ri.recipe_id IN @ids ORDER BY ri.sort_order",
-            new { ids })).ToLookup(i => i.RecipeId);
-
-        var images = (await _connection.QueryAsync<ImageRow>(
-            "SELECT recipe_id AS RecipeId, url AS Url FROM recipe_images WHERE recipe_id IN @ids ORDER BY sort_order",
-            new { ids })).ToLookup(i => i.RecipeId);
-
-        var hints = (await _connection.QueryAsync<HintRow>(
-            "SELECT recipe_id AS RecipeId, text AS Text FROM recipe_hints WHERE recipe_id IN @ids ORDER BY sort_order",
-            new { ids })).ToLookup(h => h.RecipeId);
-
-        return rows.Select(r => BuildRecipe(
-            r,
-            steps[r.Id].ToList(),
-            tags[r.Id].ToList(),
-            ingredients[r.Id].ToList(),
-            images[r.Id].ToList(),
-            hints[r.Id].ToList())).ToList();
+            $"{RecipeSelect} WHERE taggable_id IN " +
+            "(SELECT tg.taggable_id FROM taggings tg JOIN tags t ON t.id = tg.tag_id WHERE t.slug = @slug) " +
+            "ORDER BY name",
+            new { slug })).ToList();
+        return await Hydrate(rows);
     }
 
     public async ValueTask<Option<Recipe>> Find(RecipeId id)
@@ -153,7 +131,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
             var tagParams = recipe.Tags
                 .Select(t => t.Value.Trim())
                 .Where(name => name.Length > 0)
-                .Select(name => new { TaggableId = taggableId, Slug = name.ToLowerInvariant(), Name = name })
+                .Select(name => new { TaggableId = taggableId, Slug = Slug.From(name), Name = name })
                 .ToList();
 
             await _connection.ExecuteAsync(
@@ -240,6 +218,46 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
 
         await _connection.ExecuteAsync("INSERT INTO taggables DEFAULT VALUES", transaction: transaction);
         return await _connection.ExecuteScalarAsync<long>("SELECT last_insert_rowid()", transaction: transaction);
+    }
+
+    // Loads the child rows (steps, tags, ingredients, images, hints) for a set of recipe rows
+    // and assembles full Recipe aggregates.
+    private async Task<IReadOnlyList<Recipe>> Hydrate(IReadOnlyList<RecipeRow> rows)
+    {
+        if (rows.Count == 0)
+        {
+            return [];
+        }
+
+        var ids = rows.Select(r => r.Id).ToList();
+
+        var steps = (await _connection.QueryAsync<StepRow>(
+            "SELECT recipe_id AS RecipeId, sort_order AS SortOrder, text AS Text FROM recipe_steps WHERE recipe_id IN @ids ORDER BY sort_order",
+            new { ids })).ToLookup(s => s.RecipeId);
+
+        var tags = (await _connection.QueryAsync<TagRow>(
+            TagSelect + " WHERE r.id IN @ids ORDER BY t.name",
+            new { ids })).ToLookup(t => t.RecipeId);
+
+        var ingredients = (await _connection.QueryAsync<IngredientRow>(
+            $"{IngredientSelect} WHERE ri.recipe_id IN @ids ORDER BY ri.sort_order",
+            new { ids })).ToLookup(i => i.RecipeId);
+
+        var images = (await _connection.QueryAsync<ImageRow>(
+            "SELECT recipe_id AS RecipeId, url AS Url FROM recipe_images WHERE recipe_id IN @ids ORDER BY sort_order",
+            new { ids })).ToLookup(i => i.RecipeId);
+
+        var hints = (await _connection.QueryAsync<HintRow>(
+            "SELECT recipe_id AS RecipeId, text AS Text FROM recipe_hints WHERE recipe_id IN @ids ORDER BY sort_order",
+            new { ids })).ToLookup(h => h.RecipeId);
+
+        return rows.Select(r => BuildRecipe(
+            r,
+            steps[r.Id].ToList(),
+            tags[r.Id].ToList(),
+            ingredients[r.Id].ToList(),
+            images[r.Id].ToList(),
+            hints[r.Id].ToList())).ToList();
     }
 
     private static Recipe BuildRecipe(

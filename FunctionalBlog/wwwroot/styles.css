@@ -1147,7 +1147,11 @@ button:hover, .btn:hover { filter: brightness(1.07); }
     padding: 4px 12px;
     font-family: var(--mono);
     font-size: 11.5px;
+    text-decoration: none;
+    transition: opacity .15s ease;
 }
+
+a.tag-chip:hover { opacity: .85; }
 
 /* Full-width section title above the ingredients/steps grid: serif title, rule, step count. */
 .recipe-section-head { display: flex; align-items: center; gap: 16px; margin-top: 2.5rem; }

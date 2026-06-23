@@ -4,6 +4,9 @@ public interface IRecipeRepository
 {
     ValueTask<IReadOnlyList<Recipe>> All();
 
+    // All recipes carrying the tag identified by its case-folded slug.
+    ValueTask<IReadOnlyList<Recipe>> FindByTag(string slug);
+
     ValueTask<Option<Recipe>> Find(RecipeId id);
 
     ValueTask<RecipeId> NextId();

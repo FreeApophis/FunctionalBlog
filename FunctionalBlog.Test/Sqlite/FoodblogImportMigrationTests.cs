@@ -51,8 +51,9 @@ public sealed class FoodblogImportMigrationTests : IDisposable
     {
         var users = new SqliteUserRepository(_db.Connection);
 
-        var thomas = FunctionalAssert.Some(await users.FindById(new UserId(1)));
-        var sabrina = FunctionalAssert.Some(await users.FindById(new UserId(2)));
+        // 0002 seeds a dedicated Admin at id 1, so the imported authors start at id 2.
+        var thomas = FunctionalAssert.Some(await users.FindById(new UserId(2)));
+        var sabrina = FunctionalAssert.Some(await users.FindById(new UserId(3)));
 
         Assert.Equal("Thomas", thomas!.DisplayName.Value);
         Assert.Equal("Sabrina", sabrina!.DisplayName.Value);

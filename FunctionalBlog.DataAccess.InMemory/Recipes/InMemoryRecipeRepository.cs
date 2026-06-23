@@ -11,6 +11,13 @@ public sealed class InMemoryRecipeRepository : IRecipeRepository
         ValueTask.FromResult<IReadOnlyList<Recipe>>(
             _recipes.Values.OrderBy(x => x.Name.Value).ToList());
 
+    public ValueTask<IReadOnlyList<Recipe>> FindByTag(string slug) =>
+        ValueTask.FromResult<IReadOnlyList<Recipe>>(
+            _recipes.Values
+                .Where(r => r.Tags.Any(tag => Slug.From(tag.Value) == slug))
+                .OrderBy(r => r.Name.Value)
+                .ToList());
+
     public ValueTask<Option<Recipe>> Find(RecipeId id) =>
         ValueTask.FromResult(_recipes.GetValueOrNone(id.Value));
 
