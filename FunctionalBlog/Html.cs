@@ -30,6 +30,35 @@ public static class Html
 
     public static HtmlString Link(string href, string text) => new HtmlString.Safe($"<a href=\"{Encode(href)}\">{Encode(text)}</a>");
 
+    // A page-navigation bar: previous/next plus a numbered link per page, each pointing at
+    // {basePath}?page=N. Renders nothing when everything fits on a single page.
+    public static HtmlString Pagination(int currentPage, int totalPages, string basePath, string ariaLabel)
+    {
+        if (totalPages <= 1)
+        {
+            return HtmlString.Empty;
+        }
+
+        string PageLink(int page, string label, string? rel = null)
+        {
+            var relAttr = rel is null ? string.Empty : $" rel=\"{rel}\"";
+            return $"""<a class="page-link" href="{Encode(basePath)}?page={page}"{relAttr}>{Encode(label)}</a>""";
+        }
+
+        string Disabled(string label) =>
+            $"""<span class="page-link is-disabled" aria-hidden="true">{Encode(label)}</span>""";
+
+        var prev = currentPage > 1 ? PageLink(currentPage - 1, "‹", "prev") : Disabled("‹");
+        var next = currentPage < totalPages ? PageLink(currentPage + 1, "›", "next") : Disabled("›");
+
+        var numbers = string.Concat(Enumerable.Range(1, totalPages).Select(page =>
+            page == currentPage
+                ? $"""<span class="page-link is-current" aria-current="page">{page}</span>"""
+                : PageLink(page, page.ToString())));
+
+        return new HtmlString.Safe($"""<nav class="pagination" aria-label="{Encode(ariaLabel)}">{prev}{numbers}{next}</nav>""");
+    }
+
     // A breadcrumb trail rendered as the design's mono eyebrow row: muted links joined by "/",
     // with the current (href-less) crumb accented. Replaces the old per-page "Back" links.
     public static HtmlString Breadcrumb(params Crumb[] crumbs)
