@@ -25,6 +25,62 @@ public sealed class RecipeFormTests
     }
 
     [Fact]
+    public void Valid_form_parses_preparation_time_and_cooking_time()
+    {
+        var request = Build(
+            "Rührkuchen",
+            "Ein klassischer Rührkuchen.",
+            "4",
+            "0",
+            ingredients: [("Mehl", "200", "1")],
+            steps: ["Alles verrühren."],
+            prepTime: "10",
+            cookTime: "20");
+
+        var form = ValidatedAssert.IsSuccess(RecipeForm.Decode(request, Units));
+
+        Assert.Equal(10, form.PreparationTime);
+        Assert.Equal(20, form.CookingTime);
+    }
+
+    [Fact]
+    public void Missing_times_default_to_zero()
+    {
+        var request = Build(
+            "Rührkuchen",
+            "Ein klassischer Rührkuchen.",
+            "4",
+            "0",
+            ingredients: [("Mehl", "200", "1")],
+            steps: ["Alles verrühren."]);
+
+        var form = ValidatedAssert.IsSuccess(RecipeForm.Decode(request, Units));
+
+        Assert.Equal(0, form.PreparationTime);
+        Assert.Equal(0, form.CookingTime);
+    }
+
+    [Fact]
+    public void Negative_preparation_time_returns_failure()
+    {
+        var request = Build("Rührkuchen", "Ein klassischer Rührkuchen.", "4", "0", prepTime: "-5");
+
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
+
+        Assert.Contains("recipe.error.time_invalid", errors);
+    }
+
+    [Fact]
+    public void Non_numeric_cooking_time_returns_failure()
+    {
+        var request = Build("Rührkuchen", "Ein klassischer Rührkuchen.", "4", "0", cookTime: "abc");
+
+        var errors = ValidatedAssert.IsFailure(RecipeForm.Decode(request, Units));
+
+        Assert.Contains("recipe.error.time_invalid", errors);
+    }
+
+    [Fact]
     public void Name_shorter_than_3_characters_returns_failure()
     {
         var request = Build("AB", "Ein klassischer Rührkuchen.", "4", "0");
@@ -190,7 +246,9 @@ public sealed class RecipeFormTests
         string portions,
         string difficulty,
         IReadOnlyList<(string Name, string Amount, string Unit)>? ingredients = null,
-        IReadOnlyList<string>? steps = null)
+        IReadOnlyList<string>? steps = null,
+        string? prepTime = null,
+        string? cookTime = null)
     {
         var form = new Dictionary<string, string>
         {
@@ -199,6 +257,16 @@ public sealed class RecipeFormTests
             ["portions"] = portions,
             ["difficulty"] = difficulty,
         };
+
+        if (prepTime is not null)
+        {
+            form["preparation_time"] = prepTime;
+        }
+
+        if (cookTime is not null)
+        {
+            form["cooking_time"] = cookTime;
+        }
 
         foreach (var (i, (ingName, amount, unit)) in (ingredients ?? []).Select((x, i) => (i, x)))
         {

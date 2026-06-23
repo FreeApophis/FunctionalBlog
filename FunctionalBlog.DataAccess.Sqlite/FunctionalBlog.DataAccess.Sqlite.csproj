@@ -19,6 +19,7 @@
     <EmbeddedResource Include="Migrations\0004_pages.sql" />
     <EmbeddedResource Include="Migrations\0005_remove_duplicate_apfel.sql" />
     <EmbeddedResource Include="Migrations\0006_units.sql" />
+    <EmbeddedResource Include="Migrations\0007_recipe_times.sql" />
   </ItemGroup>
 
   <ItemGroup>

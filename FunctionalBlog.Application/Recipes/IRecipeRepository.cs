@@ -10,5 +10,9 @@ public interface IRecipeRepository
 
     ValueTask Save(Recipe recipe);
 
+    // Updates only the derived per-serving calorie figure, leaving the rest of the recipe untouched.
+    // Used to recompute stored values without rewriting (and re-inserting) the recipe's child rows.
+    ValueTask UpdateCalorificValue(RecipeId id, int value);
+
     ValueTask Delete(RecipeId id);
 }

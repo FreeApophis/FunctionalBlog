@@ -52,4 +52,30 @@ public sealed class DomainEqualityTests
 
         Assert.Equal(a, b);
     }
+
+    [Fact]
+    public void Two_recipes_differing_only_in_times_or_calories_are_not_equal()
+    {
+        var id = new RecipeId(1);
+
+        Recipe Make(int prep, int cook, int calories) => Recipe.Create(
+            id,
+            new RecipeName("Kuchen"),
+            new RecipeDescription("Beschreibung"),
+            [new PreparationStep(1, "Backen.")],
+            new UserId(1),
+            Difficulty.Easy,
+            [],
+            4,
+            [],
+            [],
+            [],
+            preparationTime: prep,
+            cookingTime: cook,
+            calorificValue: calories);
+
+        Assert.NotEqual(Make(10, 20, 300), Make(15, 20, 300));
+        Assert.NotEqual(Make(10, 20, 300), Make(10, 25, 300));
+        Assert.NotEqual(Make(10, 20, 300), Make(10, 20, 350));
+    }
 }

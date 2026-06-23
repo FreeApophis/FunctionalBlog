@@ -15,8 +15,8 @@ public static class AdminIngredientHandlers
         return Response.Html(AdminIngredientViews.List(page, env.Ctx, error));
     };
 
-    public static App NewForm => _ => env =>
-        ValueTask.FromResult(Response.Html(AdminIngredientViews.Form(
+    public static App NewForm
+        => _ => env => ValueTask.FromResult(Response.Html(AdminIngredientViews.Form(
             errors: [],
             name: string.Empty,
             description: string.Empty,
@@ -31,8 +31,8 @@ public static class AdminIngredientHandlers
             fiber: "0",
             ctx: env.Ctx)));
 
-    public static App Create => request => async env =>
-        await IngredientForm.Decode(request).Match(
+    public static App Create
+        => request => async env => await IngredientForm.Decode(request).Match(
             failure: f => Task.FromResult(Response.Html(RenderForm(request, f.Error, env.Ctx), 400)),
             success: async s =>
             {

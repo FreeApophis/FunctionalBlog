@@ -18,7 +18,7 @@ public static class RecipeHandlers
         return Response.Html(RecipeViews.Index(page, authorNames, env.Ctx));
     };
 
-    public static App ShowRecipe(RecipeId id) => _ => async env =>
+    public static App ShowRecipe(RecipeId id) => request => async env =>
         await (await env.Recipes.Find(id)).Match(
             none: () => Task.FromResult(Response.NotFound(env.Ctx)),
             some: async recipe =>
@@ -27,8 +27,16 @@ public static class RecipeHandlers
                     .Select(u => u.DisplayName.Value)
                     .GetOrElse("?");
                 var ingredients = (await env.Ingredients.All()).ToDictionary(i => i.Id);
-                return Response.Html(RecipeViews.Show(recipe, authorName, ingredients, env.Ctx));
+                var displayPortions = RequestedPortions(request, recipe.Portions);
+                return Response.Html(RecipeViews.Show(recipe, authorName, ingredients, displayPortions, env.Ctx));
             });
+
+    // The detail page can be re-scaled to a different serving count via ?portions=N. Any positive
+    // integer is accepted; an absent or invalid value falls back to the recipe's stored portions.
+    private static int RequestedPortions(Request request, int fallback) =>
+        request.Query.GetValueOrNone("portions")
+            .Select(raw => int.TryParse(raw, out var n) && n >= 1 ? n : fallback)
+            .GetOrElse(fallback);
 
     public static App NewRecipeForm => _ => async env =>
         Response.Html(RecipeViews.Form(
@@ -41,6 +49,8 @@ public static class RecipeHandlers
             hints: string.Empty,
             ingredients: [(string.Empty, string.Empty, DefaultUnitId)],
             steps: [string.Empty],
+            prepTime: string.Empty,
+            cookTime: string.Empty,
             ctx: env.Ctx,
             units: await env.Units.All()));
 
@@ -73,6 +83,8 @@ public static class RecipeHandlers
                 ReadHints(request),
                 formIngredients,
                 formSteps,
+                ReadPrepTime(request),
+                ReadCookTime(request),
                 env.Ctx,
                 units));
         }
@@ -101,6 +113,8 @@ public static class RecipeHandlers
                 ReadHints(request),
                 formIngredients,
                 formSteps,
+                ReadPrepTime(request),
+                ReadCookTime(request),
                 env.Ctx,
                 units));
         }
@@ -117,12 +131,15 @@ public static class RecipeHandlers
                     ReadHints(request),
                     RecipeForm.ParseIngredients(request),
                     RecipeForm.ParseRawSteps(request),
+                    ReadPrepTime(request),
+                    ReadCookTime(request),
                     env.Ctx,
                     units,
                     existingImages: RecipeForm.ParseKeptImages(request)),
                 400)),
             success: async s =>
             {
+                var resolvedIngredients = await ResolveIngredients(env, s.Value.Form.Ingredients);
                 var recipe = Recipe.Create(
                     id: await env.Recipes.NextId(),
                     name: s.Value.Form.Name,
@@ -132,9 +149,12 @@ public static class RecipeHandlers
                     difficulty: s.Value.Form.Difficulty,
                     tags: s.Value.Form.Tags,
                     portions: s.Value.Form.Portions,
-                    ingredients: await ResolveIngredients(env, s.Value.Form.Ingredients),
+                    ingredients: resolvedIngredients,
                     images: await SaveImages(env, s.Value.Images),
-                    hints: s.Value.Form.Hints);
+                    hints: s.Value.Form.Hints,
+                    preparationTime: s.Value.Form.PreparationTime,
+                    cookingTime: s.Value.Form.CookingTime,
+                    calorificValue: await CalculateCaloriesPerServing(env, resolvedIngredients, s.Value.Form.Portions));
 
                 await env.Recipes.Save(recipe);
                 env.Search?.IndexRecipe(recipe);
@@ -244,6 +264,8 @@ public static class RecipeHandlers
                     hints: string.Join("\n", recipe.Hints.Select(h => h.Text)),
                     ingredients: ingredients,
                     steps: steps,
+                    prepTime: recipe.PreparationTime.ToString(),
+                    cookTime: recipe.CookingTime.ToString(),
                     ctx: env.Ctx,
                     units: await env.Units.All(),
                     formAction: $"/recipes/{id.Value}",
@@ -286,6 +308,8 @@ public static class RecipeHandlers
                 ReadHints(request),
                 formIngredients,
                 formSteps,
+                ReadPrepTime(request),
+                ReadCookTime(request),
                 env.Ctx,
                 units,
                 formAction,
@@ -317,6 +341,8 @@ public static class RecipeHandlers
                 ReadHints(request),
                 formIngredients,
                 formSteps,
+                ReadPrepTime(request),
+                ReadCookTime(request),
                 env.Ctx,
                 units,
                 formAction,
@@ -336,6 +362,8 @@ public static class RecipeHandlers
                     ReadHints(request),
                     RecipeForm.ParseIngredients(request),
                     RecipeForm.ParseRawSteps(request),
+                    ReadPrepTime(request),
+                    ReadCookTime(request),
                     env.Ctx,
                     units,
                     formAction,
@@ -346,6 +374,7 @@ public static class RecipeHandlers
             {
                 var keptImages = RecipeForm.ParseKeptImages(request);
                 var newImages = await SaveImages(env, s.Value.Images);
+                var resolvedIngredients = await ResolveIngredients(env, s.Value.Form.Ingredients);
 
                 var updated = Recipe.Create(
                     id: id,
@@ -356,9 +385,12 @@ public static class RecipeHandlers
                     difficulty: s.Value.Form.Difficulty,
                     tags: s.Value.Form.Tags,
                     portions: s.Value.Form.Portions,
-                    ingredients: await ResolveIngredients(env, s.Value.Form.Ingredients),
+                    ingredients: resolvedIngredients,
                     images: [.. keptImages, .. newImages],
-                    hints: s.Value.Form.Hints);
+                    hints: s.Value.Form.Hints,
+                    preparationTime: s.Value.Form.PreparationTime,
+                    cookingTime: s.Value.Form.CookingTime,
+                    calorificValue: await CalculateCaloriesPerServing(env, resolvedIngredients, s.Value.Form.Portions));
 
                 await env.Recipes.Save(updated);
                 env.Search?.IndexRecipe(updated);
@@ -464,4 +496,17 @@ public static class RecipeHandlers
     private static string ReadTags(Request r) => r.Form.GetValueOrDefault("tags", string.Empty);
 
     private static string ReadHints(Request r) => r.Form.GetValueOrDefault("hints", string.Empty);
+
+    private static string ReadPrepTime(Request r) => r.Form.GetValueOrDefault("preparation_time", string.Empty);
+
+    private static string ReadCookTime(Request r) => r.Form.GetValueOrDefault("cooking_time", string.Empty);
+
+    // The recipe's calorie figure is derived from its ingredients (not entered): the whole meal's
+    // calories divided by the serving count. Quick-created ingredients start at 0 kcal and simply
+    // contribute nothing until their nutrition is filled in and the recipe is saved again.
+    private static async Task<int> CalculateCaloriesPerServing(Env env, IReadOnlyList<RecipeIngredient> ingredients, int portions)
+    {
+        var catalog = (await env.Ingredients.All()).ToDictionary(i => i.Id);
+        return CalorieCalculator.PerServing(ingredients, portions, catalog);
+    }
 }

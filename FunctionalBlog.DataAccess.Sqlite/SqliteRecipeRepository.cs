@@ -19,7 +19,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
     public async ValueTask<IReadOnlyList<Recipe>> All()
     {
         var rows = (await _connection.QueryAsync<RecipeRow>(
-            "SELECT id AS Id, name AS Name, description AS Description, author_id AS AuthorId, difficulty AS Difficulty, portions AS Portions FROM recipes")).ToList();
+            "SELECT id AS Id, name AS Name, description AS Description, author_id AS AuthorId, difficulty AS Difficulty, portions AS Portions, preparation_time AS PreparationTime, cooking_time AS CookingTime, calorific_value AS CalorificValue FROM recipes")).ToList();
 
         if (rows.Count == 0)
         {
@@ -60,7 +60,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
     public async ValueTask<Option<Recipe>> Find(RecipeId id)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<RecipeRow>(
-            "SELECT id AS Id, name AS Name, description AS Description, author_id AS AuthorId, difficulty AS Difficulty, portions AS Portions FROM recipes WHERE id = @id",
+            "SELECT id AS Id, name AS Name, description AS Description, author_id AS AuthorId, difficulty AS Difficulty, portions AS Portions, preparation_time AS PreparationTime, cooking_time AS CookingTime, calorific_value AS CalorificValue FROM recipes WHERE id = @id",
             new { id = id.Value });
 
         if (row is null)
@@ -107,8 +107,8 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
 
         await _connection.ExecuteAsync(
             """
-            INSERT OR REPLACE INTO recipes (id, name, description, author_id, difficulty, portions)
-            VALUES (@Id, @Name, @Description, @AuthorId, @Difficulty, @Portions)
+            INSERT OR REPLACE INTO recipes (id, name, description, author_id, difficulty, portions, preparation_time, cooking_time, calorific_value)
+            VALUES (@Id, @Name, @Description, @AuthorId, @Difficulty, @Portions, @PreparationTime, @CookingTime, @CalorificValue)
             """,
             new
             {
@@ -118,6 +118,9 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
                 AuthorId = recipe.AuthorId.Value,
                 Difficulty = (int)recipe.Difficulty,
                 recipe.Portions,
+                recipe.PreparationTime,
+                recipe.CookingTime,
+                recipe.CalorificValue,
             },
             transaction);
 
@@ -171,6 +174,13 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
         transaction.Commit();
     }
 
+    public async ValueTask UpdateCalorificValue(RecipeId id, int value)
+    {
+        await _connection.ExecuteAsync(
+            "UPDATE recipes SET calorific_value = @value WHERE id = @id",
+            new { id = id.Value, value });
+    }
+
     public async ValueTask Delete(RecipeId id)
     {
         await _connection.ExecuteAsync("DELETE FROM recipes WHERE id = @id", new { id = id.Value });
@@ -202,9 +212,21 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
                     (UnitCategory)i.Category,
                     i.Factor))).ToList(),
             images.Select(i => i.Url).ToList(),
-            hints.Select(h => new RecipeHint(h.Text)).ToList());
+            hints.Select(h => new RecipeHint(h.Text)).ToList(),
+            (int)row.PreparationTime,
+            (int)row.CookingTime,
+            (int)row.CalorificValue);
 
-    private sealed record RecipeRow(long Id, string Name, string Description, long AuthorId, long Difficulty, long Portions);
+    private sealed record RecipeRow(
+        long Id,
+        string Name,
+        string Description,
+        long AuthorId,
+        long Difficulty,
+        long Portions,
+        long PreparationTime,
+        long CookingTime,
+        long CalorificValue);
 
     private sealed record StepRow(long RecipeId, long SortOrder, string Text);
 

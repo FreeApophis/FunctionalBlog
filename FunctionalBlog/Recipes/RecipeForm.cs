@@ -12,7 +12,9 @@ public static class RecipeForm
         IReadOnlyList<RecipeTag> Tags,
         IReadOnlyList<RecipeHint> Hints,
         IReadOnlyList<IngredientLine> Ingredients,
-        IReadOnlyList<PreparationStep> Steps);
+        IReadOnlyList<PreparationStep> Steps,
+        int PreparationTime,
+        int CookingTime);
 
     // A validated ingredient row carrying the typed/selected ingredient name. The name is
     // resolved to an IngredientId (creating a new ingredient when unknown) in the handler,
@@ -27,6 +29,8 @@ public static class RecipeForm
         var difficultyRaw = request.Form.GetValueOrNone("difficulty").GetOrElse(string.Empty).Trim();
         var tagsRaw = request.Form.GetValueOrNone("tags").GetOrElse(string.Empty).Trim();
         var hintsRaw = request.Form.GetValueOrNone("hints").GetOrElse(string.Empty).Trim();
+        var prepTimeRaw = request.Form.GetValueOrNone("preparation_time").GetOrElse(string.Empty).Trim();
+        var cookTimeRaw = request.Form.GetValueOrNone("cooking_time").GetOrElse(string.Empty).Trim();
 
         var rawIngredients = ParseIngredients(request);
         var rawSteps = ParseRawSteps(request);
@@ -34,8 +38,8 @@ public static class RecipeForm
         var tags = ParseTags(tagsRaw);
         var hints = ParseHints(hintsRaw);
 
-        Func<RecipeName, RecipeDescription, int, Difficulty, IReadOnlyList<IngredientLine>, IReadOnlyList<PreparationStep>, Valid> create =
-            (n, d, p, diff, ings, steps) => new Valid(n, d, p, diff, tags, hints, ings, steps);
+        Func<RecipeName, RecipeDescription, int, Difficulty, IReadOnlyList<IngredientLine>, IReadOnlyList<PreparationStep>, int, int, Valid> create =
+            (n, d, p, diff, ings, steps, prep, cook) => new Valid(n, d, p, diff, tags, hints, ings, steps, prep, cook);
 
         return create
             .Apply(TryParseName(name), Combine)
@@ -43,7 +47,9 @@ public static class RecipeForm
             .Apply(TryParsePortions(portionsRaw), Combine)
             .Apply(TryParseDifficulty(difficultyRaw), Combine)
             .Apply(TryParseIngredients(rawIngredients, units), Combine)
-            .Apply(TryParseSteps(rawSteps), Combine);
+            .Apply(TryParseSteps(rawSteps), Combine)
+            .Apply(TryParseTime(prepTimeRaw), Combine)
+            .Apply(TryParseTime(cookTimeRaw), Combine);
     }
 
     public static List<(string Name, string Amount, string Unit)> ParseIngredients(Request request)
@@ -104,6 +110,14 @@ public static class RecipeForm
         int.TryParse(portionsRaw, out var portions) && portions >= 1
             ? Validated.Succeed<IReadOnlyList<string>, int>(portions)
             : Validated.Fail<IReadOnlyList<string>, int>(["recipe.error.portions_invalid"]);
+
+    // A blank field means "unknown" and decodes to 0; a present value must be a non-negative integer.
+    private static Validated<IReadOnlyList<string>, int> TryParseTime(string raw) =>
+        raw.Length == 0
+            ? Validated.Succeed<IReadOnlyList<string>, int>(0)
+            : int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var value) && value >= 0
+                ? Validated.Succeed<IReadOnlyList<string>, int>(value)
+                : Validated.Fail<IReadOnlyList<string>, int>(["recipe.error.time_invalid"]);
 
     private static Validated<IReadOnlyList<string>, Difficulty> TryParseDifficulty(string difficultyRaw) =>
         int.TryParse(difficultyRaw, out var difficultyInt) && Enum.IsDefined(typeof(Difficulty), difficultyInt)

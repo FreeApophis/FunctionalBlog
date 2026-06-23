@@ -92,6 +92,36 @@ public abstract class RecipeRepositoryContract
         await repo.Delete(new RecipeId(987_654));
     }
 
+    [Fact]
+    public async Task UpdateCalorificValue_changes_only_the_calorie_field()
+    {
+        var repo = CreateRepository();
+        var id = await repo.NextId();
+        var recipe = ARecipe(id, name: "Suppe") with { CalorificValue = 100 };
+        await repo.Save(recipe);
+
+        await repo.UpdateCalorificValue(id, 250);
+
+        var found = FunctionalAssert.Some(await repo.Find(id));
+        Assert.Equal(250, found.CalorificValue);
+        Assert.Equal(new RecipeName("Suppe"), found.Name);
+    }
+
+    [Fact]
+    public async Task Save_then_Find_round_trips_preparation_and_cooking_time_and_calories()
+    {
+        var repo = CreateRepository();
+        var id = await repo.NextId();
+        var recipe = ARecipe(id) with { PreparationTime = 10, CookingTime = 20, CalorificValue = 227 };
+
+        await repo.Save(recipe);
+
+        var found = FunctionalAssert.Some(await repo.Find(id));
+        Assert.Equal(10, found.PreparationTime);
+        Assert.Equal(20, found.CookingTime);
+        Assert.Equal(227, found.CalorificValue);
+    }
+
     protected abstract IRecipeRepository CreateRepository();
 
     private static Recipe ARecipe(RecipeId id, string name = "Rezept") =>

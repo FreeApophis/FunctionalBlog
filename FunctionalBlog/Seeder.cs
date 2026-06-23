@@ -14,10 +14,28 @@ public static class Seeder
         await SeedSampleArticles(env);
         await SeedSampleIngredients(env);
         await SeedSampleRecipes(env);
+        await RecomputeRecipeCalories(env);
 
         if (env.Translations is not null)
         {
             await TranslationSeeder.SeedAsync(env.Translations);
+        }
+    }
+
+    // Recipe calories are derived from the ingredients, not entered. This brings every stored recipe
+    // in line with the current ingredient data on startup — fixing values created before calories
+    // were computed, and keeping them fresh as ingredient nutrition is edited. Cheap and idempotent.
+    private static async ValueTask RecomputeRecipeCalories(Env env)
+    {
+        var catalog = (await env.Ingredients.All()).ToDictionary(i => i.Id);
+
+        foreach (var recipe in await env.Recipes.All())
+        {
+            var perServing = CalorieCalculator.PerServing(recipe.Ingredients, recipe.Portions, catalog);
+            if (perServing != recipe.CalorificValue)
+            {
+                await env.Recipes.UpdateCalorificValue(recipe.Id, perServing);
+            }
         }
     }
 
@@ -192,7 +210,7 @@ public static class Seeder
             string.Empty,
             "Hühnereier (Größe M, ca. 60 g)",
             density: 1.0m,
-            pieceCount: 1m,
+            pieceCount: 60m,
             calorificValue: 155m,
             protein: 13m,
             fat: 11m,
@@ -515,7 +533,9 @@ public static class Seeder
                 new RecipeIngredient(milchId, 100m, Milliliter),
                 ],
                 [],
-                [new RecipeHint("Den Kuchen mit einem Holzstäbchen auf Gare prüfen – bleibt kein Teig kleben, ist er fertig.")]));
+                [new RecipeHint("Den Kuchen mit einem Holzstäbchen auf Gare prüfen – bleibt kein Teig kleben, ist er fertig.")],
+                preparationTime: 20,
+                cookingTime: 40));
 
             var pfannkuchenId = await env.Recipes.NextId();
             await env.Recipes.Save(Recipe.Create(
@@ -538,7 +558,9 @@ public static class Seeder
                 new RecipeIngredient(butterId, 20m, Gram),
                 ],
                 [],
-                [new RecipeHint("Den Teig nicht zu lange rühren – ein paar kleine Klümpchen sind in Ordnung.")]));
+                [new RecipeHint("Den Teig nicht zu lange rühren – ein paar kleine Klümpchen sind in Ordnung.")],
+                preparationTime: 10,
+                cookingTime: 15));
 
             await env.Recipes.Save(Recipe.Create(
                 await env.Recipes.NextId(),
@@ -568,7 +590,9 @@ public static class Seeder
                 new RecipeIngredient(gurkenwasserId, 1m, Tablespoon),
                 ],
                 [],
-                [new RecipeHint("Am zweiten Tag schmeckt das Gericht noch besser – einfach aufwärmen und genießen.")]));
+                [new RecipeHint("Am zweiten Tag schmeckt das Gericht noch besser – einfach aufwärmen und genießen.")],
+                preparationTime: 20,
+                cookingTime: 75));
 
             await env.Recipes.Save(Recipe.Create(
                 await env.Recipes.NextId(),
@@ -593,7 +617,9 @@ public static class Seeder
                 new RecipeIngredient(käseId, 79m, Gram),
                 ],
                 [],
-                [new RecipeHint("Das Gericht nicht zu lange kochen – die Magronen sollen noch bissfest sein.")]));
+                [new RecipeHint("Das Gericht nicht zu lange kochen – die Magronen sollen noch bissfest sein.")],
+                preparationTime: 10,
+                cookingTime: 20));
         }
     }
 }

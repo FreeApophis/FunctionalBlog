@@ -11,7 +11,10 @@ public sealed record Recipe(
     int Portions,
     IReadOnlyList<RecipeIngredient> Ingredients,
     IReadOnlyList<string> Images,
-    IReadOnlyList<RecipeHint> Hints)
+    IReadOnlyList<RecipeHint> Hints,
+    int PreparationTime,
+    int CookingTime,
+    int CalorificValue)
 {
     public static Recipe Create(
         RecipeId id,
@@ -24,8 +27,11 @@ public sealed record Recipe(
         int portions,
         IReadOnlyList<RecipeIngredient> ingredients,
         IReadOnlyList<string> images,
-        IReadOnlyList<RecipeHint> hints) =>
-        new(id, name, description, preparationSteps, authorId, difficulty, tags, portions, ingredients, images, hints);
+        IReadOnlyList<RecipeHint> hints,
+        int preparationTime = 0,
+        int cookingTime = 0,
+        int calorificValue = 0) =>
+        new(id, name, description, preparationSteps, authorId, difficulty, tags, portions, ingredients, images, hints, preparationTime, cookingTime, calorificValue);
 
     public bool Equals(Recipe? other) =>
         other is not null &&
@@ -39,7 +45,10 @@ public sealed record Recipe(
         Portions == other.Portions &&
         Ingredients.SequenceEqual(other.Ingredients) &&
         Images.SequenceEqual(other.Images) &&
-        Hints.SequenceEqual(other.Hints);
+        Hints.SequenceEqual(other.Hints) &&
+        PreparationTime == other.PreparationTime &&
+        CookingTime == other.CookingTime &&
+        CalorificValue == other.CalorificValue;
 
     public override int GetHashCode() => Id.GetHashCode();
 }

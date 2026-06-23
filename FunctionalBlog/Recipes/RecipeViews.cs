@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace FunctionalBlog.Recipes;
 
 public static class RecipeViews
@@ -69,35 +71,41 @@ public static class RecipeViews
         Recipe recipe,
         string authorName,
         IReadOnlyDictionary<IngredientId, Ingredient> ingredientMap,
+        int displayPortions,
         ViewContext ctx)
     {
         var (principal, t, csrfToken) = ctx;
+
+        // How much to scale ingredient amounts and calories for the chosen serving count.
+        var factor = recipe.Portions > 0 ? (decimal)displayPortions / recipe.Portions : 1m;
 
         var breadcrumb = Html.Breadcrumb(
             Crumb.Link(t("recipe.title"), "/recipes"),
             Crumb.Current(recipe.Name.Value));
 
-        var deleteButton = Html.Raw($"""<button type="submit" class="btn-secondary">{Html.Encode(t("common.delete"))}</button>""");
-        var actions =
-            Html.Raw("""<div class="recipe-actions">""") +
-            (principal.Can<Edit>(new RecipeResource())
-                ? Html.Link($"/recipes/{recipe.Id.Value}/edit", t("recipe.edit_link"))
-                : HtmlString.Empty) +
-            (principal.Can<Delete>(new RecipeResource())
-                ? Html.Form($"/recipes/{recipe.Id.Value}/delete", Html.CsrfField(csrfToken) + deleteButton, cssClass: "inline-form")
-                : HtmlString.Empty) +
-            Html.Raw("</div>");
+        var editButton = principal.Can<Edit>(new RecipeResource())
+            ? Html.Raw($"""<a class="icon-round" href="/recipes/{recipe.Id.Value}/edit" title="{Html.Encode(t("common.edit"))}" aria-label="{Html.Encode(t("common.edit"))}">{PencilIcon}</a>""")
+            : HtmlString.Empty;
+
+        var deleteIcon = Html.Raw($"""<button type="submit" class="icon-round icon-round-danger" title="{Html.Encode(t("common.delete"))}" aria-label="{Html.Encode(t("common.delete"))}">{TrashIcon}</button>""");
+        var deleteButton = principal.Can<Delete>(new RecipeResource())
+            ? Html.Form($"/recipes/{recipe.Id.Value}/delete", Html.CsrfField(csrfToken) + deleteIcon, cssClass: "inline-form")
+            : HtmlString.Empty;
+
+        var metaActions = Html.Raw("""<span class="recipe-meta-actions">""") + editButton + deleteButton + Html.Raw("</span>");
 
         var avatarLetter = authorName.Length > 0 ? authorName[..1].ToUpperInvariant() : "?";
-        var meta = Html.Raw($"""
-            <div class="recipe-meta">
-                <span><span class="avatar">{Html.Encode(avatarLetter)}</span>{Html.Encode(authorName)}</span>
-                <span class="dot">·</span>
-                <span class="difficulty-pill">{Html.Encode(t(DifficultyKey(recipe.Difficulty)))}</span>
-                <span class="dot">·</span>
-                <span>{recipe.Portions} {Html.Encode(t("recipe.portions"))}</span>
-            </div>
-            """);
+        var meta =
+            Html.Raw($"""
+                <div class="recipe-meta">
+                    <span><span class="avatar">{Html.Encode(avatarLetter)}</span>{Html.Encode(authorName)}</span>
+                    <span class="dot">·</span>
+                    <span class="difficulty-pill">{Html.Encode(t(DifficultyKey(recipe.Difficulty)))}</span>
+                    <span class="dot">·</span>
+                """) +
+            PortionsMenu(recipe.Id.Value, displayPortions, t) +
+            metaActions +
+            Html.Raw("</div>");
 
         var tags = recipe.Tags.Count > 0
             ? Html.Raw($"""<div class="tag-chips">{string.Concat(recipe.Tags.Select(tag => $"<span class=\"tag-chip\">{Html.Encode(tag.Value)}</span>"))}</div>""")
@@ -105,19 +113,27 @@ public static class RecipeViews
 
         var images = recipe.Images.Count > 0
             ? Slider(recipe.Images, recipe.Name.Value, recipe.Id.Value)
-            : HtmlString.Empty;
+            : ImagePlaceholder(recipe.Name.Value);
+
+        // Calories are stored per serving, so they stay constant regardless of the chosen portions.
+        var stats = StatStrip(recipe, recipe.CalorificValue, t);
 
         var description = Html.Div("post-text", Html.Raw(BbcodeRenderer.RenderToHtml(recipe.Description.Value)));
 
         var ingredientItems = string.Concat(recipe.Ingredients.Select(ri =>
         {
-            var name = ingredientMap.TryGetValue(ri.IngredientId, out var ing) ? Html.Encode(ing.Name.Value) : "?";
-            return $"""<li><span class="amount">{ri.Amount:G29} {Html.Encode(t(ri.Unit.AbbreviationKey))}</span><span class="name">{name}</span></li>""";
+            var found = ingredientMap.TryGetValue(ri.IngredientId, out var ing);
+            var name = found ? Html.Encode(ing!.Name.Value) : "?";
+            var kcal = found
+                ? (int)Math.Round(CalorieCalculator.ForIngredient(ri.Amount * factor, ri.Unit, ing!), MidpointRounding.AwayFromZero)
+                : 0;
+            var kcalLabel = kcal > 0 ? $"{kcal} {Html.Encode(t("recipe.unit.kcal"))}" : "—";
+            return $"""<li><span class="amount">{FormatAmount(ri.Amount * factor)} {Html.Encode(t(ri.Unit.AbbreviationKey))}</span><span class="name">{name}</span><span class="ingredient-kcal">{kcalLabel}</span></li>""";
         }));
         var ingredientsAside = recipe.Ingredients.Count > 0
             ? Html.Raw($"""
                 <aside class="recipe-ingredients card">
-                    <div class="recipe-ingredients-head"><h4>{Html.Encode(t("recipe.ingredients"))}</h4><span>{recipe.Portions} {Html.Encode(t("recipe.portions"))}</span></div>
+                    <div class="recipe-ingredients-head"><h4>{Html.Encode(t("recipe.ingredients"))}</h4><span>{displayPortions} {Html.Encode(t("recipe.portions"))}</span></div>
                     <ul class="ingredient-list">{ingredientItems}</ul>
                 </aside>
                 """)
@@ -129,8 +145,17 @@ public static class RecipeViews
             : $"<p>{Html.Encode(t("recipe.no_steps"))}</p>";
         var stepsColumn = Html.Raw($"""
             <div class="recipe-steps">
-                {SectionHead(t("recipe.preparation"))}
                 {stepCards}
+            </div>
+            """);
+
+        // Full-width section title spanning the ingredients + steps grid: "Anleitung" on the left,
+        // a rule, and the step count on the right.
+        var instructionsHead = Html.Raw($"""
+            <div class="recipe-section-head">
+                <h2>{Html.Encode(t("recipe.instructions"))}</h2>
+                <span class="rule"></span>
+                <span class="recipe-section-meta">{recipe.PreparationSteps.Count} {Html.Encode(t("recipe.steps"))}</span>
             </div>
             """);
 
@@ -143,12 +168,13 @@ public static class RecipeViews
             : HtmlString.Empty;
 
         var body = breadcrumb +
-            actions +
             Html.H1(recipe.Name.Value) +
             meta +
             tags +
             images +
+            stats +
             description +
+            instructionsHead +
             bodyGrid +
             hints;
 
@@ -165,6 +191,8 @@ public static class RecipeViews
         string hints,
         IReadOnlyList<(string Name, string Amount, string Unit)> ingredients,
         IReadOnlyList<string> steps,
+        string prepTime,
+        string cookTime,
         ViewContext ctx,
         IReadOnlyList<Unit> units,
         string formAction = "/recipes",
@@ -185,12 +213,23 @@ public static class RecipeViews
 
         HtmlString Field(string key, HtmlString control) => Html.Label(Html.Text(t(key)) + control);
 
+        // A number input with a fixed unit suffix (e.g. "min", "kcal") rendered to the right.
+        HtmlString SuffixedNumber(string fieldName, string value, string suffix) =>
+            Html.Raw($"""
+                <div class="input-suffix">
+                    {Html.InputNumber(fieldName, value, min: "0").Render()}
+                    <span class="input-suffix-label">{Html.Encode(suffix)}</span>
+                </div>
+                """);
+
         var basics =
             Html.Raw("""<section class="card">""") +
             Field("recipe.field.name", Html.Input("name", name)) +
             Field("recipe.field.description", Html.Raw($"""<textarea name="description" rows="3">{Html.Encode(description)}</textarea>""")) +
             Field("recipe.field.tags", Html.Input("tags", tags)) +
-            Html.Raw("""<div class="field-grid">""") +
+            Html.Raw("""<div class="field-grid field-grid-4">""") +
+            Field("recipe.preparation", SuffixedNumber("preparation_time", prepTime, t("recipe.unit.minutes"))) +
+            Field("recipe.cooking", SuffixedNumber("cooking_time", cookTime, t("recipe.unit.minutes"))) +
             Field("recipe.field.difficulty", Html.Raw($"""<select name="difficulty">{difficultyOptions}</select>""")) +
             Field("recipe.field.portions", Html.InputNumber("portions", portions, min: "1")) +
             Html.Raw("</div></section>");
@@ -363,8 +402,9 @@ public static class RecipeViews
             """;
     }
 
-    // A CSS-only slider: a horizontal scroll-snap track plus anchor-link dots that
-    // scroll each slide into view — no JavaScript involved.
+    // A CSS-only slider: a horizontal scroll-snap track plus anchor-link selection dots overlaid on
+    // the image (bottom-right) that scroll each slide into view — no JavaScript involved. Automatic
+    // advancing is intentionally not done here: animating scroll position needs JS, so it is deferred.
     private static HtmlString Slider(IReadOnlyList<string> urls, string alt, int recipeId)
     {
         string SlideId(int i) => $"recipe-{recipeId}-slide-{i}";
@@ -378,6 +418,15 @@ public static class RecipeViews
 
         return Html.Raw($"""<div class="slider"><div class="slider-track">{slides}</div>{dots}</div>""");
     }
+
+    // Stand-in shown when a recipe has no images: the design's diagonally-striped box with a small
+    // mono label naming the dish.
+    private static HtmlString ImagePlaceholder(string name) =>
+        Html.Raw($"""
+            <div class="recipe-image-placeholder">
+                <span class="recipe-image-label">[ {Html.Encode(name.ToLowerInvariant())} ]</span>
+            </div>
+            """);
 
     private static HtmlString ImagesField(IReadOnlyList<string> existingImages, Translate t)
     {
@@ -401,6 +450,56 @@ public static class RecipeViews
             Html.Raw("</section>");
     }
 
+    // The hero stat strip: three cards showing calories, preparation time and cooking time,
+    // each an icon + a mono label + a serif value. Calories are scaled to the chosen portions.
+    private static HtmlString StatStrip(Recipe recipe, int calories, Translate t)
+    {
+        string Card(string icon, string label, string value) =>
+            $"""
+            <div class="recipe-stat">
+                <span class="recipe-stat-icon">{icon}</span>
+                <span class="recipe-stat-text">
+                    <span class="recipe-stat-label">{Html.Encode(label)}</span>
+                    <span class="recipe-stat-value">{Html.Encode(value)}</span>
+                </span>
+            </div>
+            """;
+
+        var minutes = t("recipe.unit.minutes");
+
+        return Html.Raw($"""
+            <div class="recipe-stats">
+                {Card(CaloriesIcon, t("recipe.calories"), $"{calories} {t("recipe.unit.kcal")}")}
+                {Card(PrepIcon, t("recipe.preparation"), $"{recipe.PreparationTime} {minutes}")}
+                {Card(CookIcon, t("recipe.cooking"), $"{recipe.CookingTime} {minutes}")}
+            </div>
+            """);
+    }
+
+    // A no-JS serving-size selector: a pill trigger (people icon + count) revealing a hover/focus
+    // dropdown of preset links to /recipes/{id}?portions=N. The active preset is highlighted.
+    private static HtmlString PortionsMenu(int recipeId, int displayPortions, Translate t)
+    {
+        var options = string.Concat(PortionPresets.Select(n =>
+        {
+            var active = n == displayPortions ? " is-active" : string.Empty;
+            return $"""<a class="portions-option{active}" href="/recipes/{recipeId}?portions={n}">{n}</a>""";
+        }));
+
+        return Html.Raw($"""
+            <span class="portions-menu">
+                <button type="button" class="portions-trigger" aria-haspopup="true" title="{Html.Encode(t("recipe.adjust_portions"))}">
+                    {PeopleIcon}<span>{displayPortions} {Html.Encode(t("recipe.portions"))}</span>{ChevronIcon}
+                </button>
+                <span class="portions-dropdown"><span class="portions-panel">{options}</span></span>
+            </span>
+            """);
+    }
+
+    // Scaled ingredient amounts can be fractional; show at most two decimals and trim trailing zeros.
+    private static string FormatAmount(decimal amount) =>
+        Math.Round(amount, 2, MidpointRounding.AwayFromZero).ToString("0.##", CultureInfo.InvariantCulture);
+
     // A card section header: serif title + a thin divider rule, per the design.
     private static string SectionHead(string title) =>
         $"""<div class="card-section-head"><h3>{Html.Encode(title)}</h3><span class="rule"></span></div>""";
@@ -418,4 +517,27 @@ public static class RecipeViews
 
     private const string PlusIcon =
         """<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> """;
+
+    // Calories: a flame. Preparation: a clock. Cooking: a sand-glass / hourglass.
+    private const string CaloriesIcon =
+        """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5Z"/></svg>""";
+
+    private const string PrepIcon =
+        """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>""";
+
+    private const string CookIcon =
+        """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>""";
+
+    private const string PeopleIcon =
+        """<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></svg>""";
+
+    private const string PencilIcon =
+        """<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>""";
+
+    private const string ChevronIcon =
+        """<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>""";
+
+    // Serving sizes offered by the portions selector on the detail page. Any positive integer is
+    // accepted via ?portions=N — these are just the convenient presets.
+    private static readonly int[] PortionPresets = [1, 2, 3, 4, 6, 8, 12, 20, 40, 60, 100];
 }

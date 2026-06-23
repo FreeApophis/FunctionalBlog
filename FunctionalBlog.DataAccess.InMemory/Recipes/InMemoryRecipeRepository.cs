@@ -23,6 +23,16 @@ public sealed class InMemoryRecipeRepository : IRecipeRepository
         return ValueTask.CompletedTask;
     }
 
+    public ValueTask UpdateCalorificValue(RecipeId id, int value)
+    {
+        if (_recipes.TryGetValue(id.Value, out var recipe))
+        {
+            _recipes[id.Value] = recipe with { CalorificValue = value };
+        }
+
+        return ValueTask.CompletedTask;
+    }
+
     public ValueTask Delete(RecipeId id)
     {
         _recipes.TryRemove(id.Value, out _);
