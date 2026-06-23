@@ -59,6 +59,24 @@ public abstract class IngredientRepositoryContract
     }
 
     [Fact]
+    public async Task All_returns_ingredients_sorted_alphabetically_ignoring_case()
+    {
+        var repo = CreateRepository();
+
+        // Saved out of order; the lowercase "alpha" pins case-insensitivity (a case-sensitive sort
+        // would push a lowercase name behind the uppercase ones). Relative order is asserted so the
+        // test holds even when the store already contains other (e.g. seeded) ingredients.
+        await repo.Save(AnIngredient(await repo.NextId(), name: "Zebra"));
+        await repo.Save(AnIngredient(await repo.NextId(), name: "alpha"));
+        await repo.Save(AnIngredient(await repo.NextId(), name: "Mango"));
+
+        var names = (await repo.All()).Select(i => i.Name.Value).ToList();
+
+        Assert.True(names.IndexOf("alpha") < names.IndexOf("Mango"));
+        Assert.True(names.IndexOf("Mango") < names.IndexOf("Zebra"));
+    }
+
+    [Fact]
     public async Task Save_replaces_an_existing_ingredient_with_the_same_id()
     {
         var repo = CreateRepository();

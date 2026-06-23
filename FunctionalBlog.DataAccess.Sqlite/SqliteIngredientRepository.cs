@@ -13,7 +13,7 @@ public sealed class SqliteIngredientRepository : IIngredientRepository
     public async ValueTask<IReadOnlyList<Ingredient>> All()
     {
         var rows = await _connection.QueryAsync<IngredientRow>(
-            "SELECT id AS Id, name AS Name, image AS Image, description AS Description, density AS Density, piece_count AS PieceCount, calorific_value AS CalorificValue, protein AS Protein, fat AS Fat, carbohydrates AS Carbohydrates, sugar AS Sugar, fiber AS Fiber FROM ingredients");
+            "SELECT id AS Id, name AS Name, image AS Image, description AS Description, density AS Density, piece_count AS PieceCount, calorific_value AS CalorificValue, protein AS Protein, fat AS Fat, carbohydrates AS Carbohydrates, sugar AS Sugar, fiber AS Fiber FROM ingredients ORDER BY name COLLATE NOCASE");
         return rows.Select(ToIngredient).ToList();
     }
 
