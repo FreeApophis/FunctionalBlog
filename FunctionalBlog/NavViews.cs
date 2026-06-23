@@ -71,7 +71,6 @@ public static class NavViews
         if (principal is AuthenticatedUser user)
         {
             var name = user.DisplayName.Value;
-            var initial = name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
 
             var adminItem = AdminDashboardViews.HasAnyAccess(principal)
                 ? $"""<a href="/admin" role="menuitem">{Html.Encode(t("nav.admin"))}</a>"""
@@ -79,7 +78,7 @@ public static class NavViews
 
             return Html.Raw($"""
                 <div class="user-menu">
-                    <button type="button" class="user-trigger is-auth" aria-haspopup="true" aria-label="{Html.Encode(name)}">{Html.Encode(initial)}</button>
+                    <button type="button" class="user-trigger is-auth" aria-haspopup="true" aria-label="{Html.Encode(name)}">{PersonIcon}</button>
                     <div class="user-dropdown"><div class="user-panel">
                         <div class="user-panel-name">{Html.Encode(name)}</div>
                         <a href="/settings" role="menuitem">{Html.Encode(t("nav.settings"))}</a>
@@ -112,13 +111,25 @@ public static class NavViews
             </form>
             """);
 
+    // Circular trigger (same footprint as the user menu) revealing the same hover/focus
+    // dropdown. Each supported language is a submit button posting to /lang; the active
+    // language is marked with aria-current.
     private static HtmlString LanguageSelector(Translate t, string csrfToken, string current)
     {
-        var options = string.Join(string.Empty, Languages.Supported.Select(lang =>
-            $"<option value=\"{Html.Encode(lang)}\"{(lang == current ? " selected" : string.Empty)}>{Html.Encode(Languages.Names[lang])}</option>"));
+        var items = string.Join(string.Empty, Languages.Supported.Select(lang =>
+            $"""<button type="submit" role="menuitem" name="lang" value="{Html.Encode(lang)}"{(lang == current ? " aria-current=\"true\" class=\"is-current\"" : string.Empty)}>{Html.Encode(Languages.Names[lang])}</button>"""));
 
-        var selector = Html.Label(Html.Text(t("nav.language")) + Html.Raw($""":<select name="lang" onchange="this.form.submit()">{options}</select>"""));
-        return Html.Form("/lang", Html.CsrfField(csrfToken) + selector, cssClass: "lang-form");
+        return Html.Raw($"""
+            <div class="user-menu lang-menu">
+                <button type="button" class="user-trigger" aria-haspopup="true" aria-label="{Html.Encode(t("nav.language"))}">{GlobeIcon}</button>
+                <div class="user-dropdown"><div class="user-panel">
+                    <form method="post" action="/lang" class="lang-form">
+                        {Html.CsrfField(csrfToken).Render()}
+                        {items}
+                    </form>
+                </div></div>
+            </div>
+            """);
     }
 
     private static HtmlString ThemeToggle(string current, Translate t, string csrfToken)
@@ -139,6 +150,9 @@ public static class NavViews
 
     private const string PersonIcon =
         """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>""";
+
+    private const string GlobeIcon =
+        """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18"/></svg>""";
 
     private const string MoonIcon =
         """<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>""";

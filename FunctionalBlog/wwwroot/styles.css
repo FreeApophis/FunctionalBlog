@@ -1589,36 +1589,11 @@ button:hover, .btn:hover { filter: brightness(1.07); }
 
 /* ---- Inline nav forms (search / language / theme) ----------------------- */
 
-.lang-form, .theme-form {
+.theme-form {
     display: inline-flex;
     align-items: center;
     gap: .4rem;
     margin: 0;
-}
-
-.lang-form button {
-    padding: .4rem .9rem;
-    font-size: .85rem;
-    font-weight: 600;
-}
-
-.lang-form label, .mast-actions label {
-    display: inline-flex;
-    align-items: center;
-    gap: .35rem;
-    margin: 0;
-    font-family: var(--sans);
-    font-size: 13.5px;
-    font-weight: 500;
-    letter-spacing: 0;
-    text-transform: none;
-    color: var(--muted);
-}
-
-.lang-form select {
-    width: auto;
-    padding: .35rem .6rem;
-    border-radius: var(--radius-sm);
 }
 
 /* Search: a rounded field with an embedded icon button, per the design tokens. */
@@ -1743,6 +1718,10 @@ button:hover, .btn:hover { filter: brightness(1.07); }
 
 .user-panel a:hover,
 .user-panel button:hover { background: var(--chip-hover); color: var(--ink); }
+
+/* Language dropdown: the form is just a transparent wrapper for the menu buttons. */
+.user-panel .lang-form { margin: 0; display: block; }
+.user-panel button.is-current { color: var(--green); font-weight: 700; }
 
 /* ---- Errors -------------------------------------------------------------- */
 

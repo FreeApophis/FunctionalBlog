@@ -51,6 +51,17 @@ public sealed class NavViewsTests
     }
 
     [Fact]
+    public void Nav_for_authenticated_user_uses_person_icon_not_initial()
+    {
+        var user = BuildAuthUser([]);
+
+        var nav = NavViews.Masthead(new ViewContext(user, NoOp, string.Empty));
+
+        Assert.Contains("is-auth", nav);
+        Assert.Contains("M4 21v-1a6 6 0 0 1 6-6h4", nav); // person icon body path
+    }
+
+    [Fact]
     public void Nav_renders_user_menu_for_authenticated_user()
     {
         var user = BuildAuthUser([]);
@@ -95,19 +106,31 @@ public sealed class NavViewsTests
     }
 
     [Fact]
-    public void Language_selector_marks_current_language_as_selected()
+    public void Language_selector_renders_a_dropdown_with_a_button_per_language()
     {
         var nav = NavViews.Masthead(new ViewContext(Guest.Instance, NoOp, string.Empty, Language: "en"));
 
-        Assert.Contains("<option value=\"en\" selected>English</option>", nav);
+        Assert.Contains("lang-menu", nav);
+        Assert.Contains("name=\"lang\" value=\"de\"", nav);
+        Assert.Contains("Deutsch", nav);
+        Assert.Contains("name=\"lang\" value=\"en\"", nav);
+        Assert.Contains("English", nav);
     }
 
     [Fact]
-    public void Language_selector_does_not_mark_other_languages_as_selected()
+    public void Language_selector_marks_current_language_as_current()
     {
         var nav = NavViews.Masthead(new ViewContext(Guest.Instance, NoOp, string.Empty, Language: "en"));
 
-        Assert.Contains("<option value=\"de\">Deutsch</option>", nav);
+        Assert.Contains("name=\"lang\" value=\"en\" aria-current=\"true\"", nav);
+    }
+
+    [Fact]
+    public void Language_selector_does_not_mark_other_languages_as_current()
+    {
+        var nav = NavViews.Masthead(new ViewContext(Guest.Instance, NoOp, string.Empty, Language: "en"));
+
+        Assert.DoesNotContain("name=\"lang\" value=\"de\" aria-current=\"true\"", nav);
     }
 
     private static AuthenticatedUser BuildAuthUser(IReadOnlyList<Role> roles)
