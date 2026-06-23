@@ -94,7 +94,7 @@ public static class AdminIngredientViews
             Html.Raw($"""<section class="card">{SectionHead(t("ingredient.section.nutrition"))}<div class="ingredient-edit-grid">""") +
             NumberField("ingredient.field.density", "density", density, "g/ml", t, step: "0.001", min: "0.001") +
             NumberField("ingredient.field.piece_count", "piece_count", pieceCount, "g", t) +
-            NumberField("ingredient.field.calorific_value", "calorific_value", calorificValue, "kcal/100g", t) +
+            NumberField("ingredient.field.calorific_value", "calorific_value", calorificValue, "kJ/100g", t) +
             NumberField("ingredient.field.protein", "protein", protein, "g/100g", t) +
             NumberField("ingredient.field.fat", "fat", fat, "g/100g", t) +
             NumberField("ingredient.field.carbohydrates", "carbohydrates", carbohydrates, "g/100g", t) +

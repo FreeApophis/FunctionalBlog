@@ -48,7 +48,7 @@ public sealed class RecipeHandlerTests
     public async Task CreateRecipe_computes_calorific_value_per_serving_from_ingredients()
     {
         var env = BuildEnv();
-        await SeedIngredient(env, "Mehl", calorificValue: 350m);
+        await SeedIngredient(env, "Mehl", calorificValue: 1464m); // ~350 kcal/100 g as kJ
         var request = ARecipeRequest("/recipes") with
         {
             Form = RecipeForm(
@@ -63,7 +63,7 @@ public sealed class RecipeHandlerTests
         Assert.Equal(303, response.Status);
         var recipe = Assert.Single(await env.Recipes.All());
 
-        // 200 g Mehl @ 350 kcal/100 g = 700 kcal total, over 2 servings = 350 kcal/serving.
+        // 200 g Mehl @ 1464 kJ/100 g = 2928 kJ ≈ 700 kcal total, over 2 servings = 350 kcal/serving.
         Assert.Equal(350, recipe.CalorificValue);
     }
 
@@ -292,13 +292,13 @@ public sealed class RecipeHandlerTests
     public async Task ShowRecipe_lists_per_ingredient_calories()
     {
         var env = BuildEnv();
-        var mehl = await SeedIngredient(env, "Mehl", calorificValue: 350m);
+        var mehl = await SeedIngredient(env, "Mehl", calorificValue: 1464m); // ~350 kcal/100 g as kJ
         var id = await SeedScalableRecipe(env, mehl.Id, baseAmount: 200m, basePortions: 2, calories: 350);
 
         var response = await RecipeHandlers.ShowRecipe(id)(AnEmptyRequest())(env);
 
         Assert.Contains("ingredient-kcal", response.Body);
-        Assert.Contains("700", response.Body);  // 200 g Mehl @ 350 kcal/100 g = 700 kcal for this line
+        Assert.Contains("700", response.Body);  // 200 g Mehl @ 1464 kJ/100 g = 2928 kJ ≈ 700 kcal for this line
     }
 
     [Fact]

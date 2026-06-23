@@ -81,7 +81,7 @@ public sealed class AdminIngredientHandlersTests
 
         Assert.Contains("class=\"input-unit\"", response.Body);
         Assert.Contains("class=\"unit-addon\">g/ml<", response.Body);
-        Assert.Contains("class=\"unit-addon\">kcal/100g<", response.Body);
+        Assert.Contains("class=\"unit-addon\">kJ/100g<", response.Body);
     }
 
     [Fact]
