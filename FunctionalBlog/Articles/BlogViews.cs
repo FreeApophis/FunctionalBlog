@@ -102,29 +102,39 @@ public static class BlogViews
             Crumb.Link(t("blog.title"), "/"),
             Crumb.Current(article.Title.Value));
 
-        var actions = new List<HtmlString>();
-        if (principal.Can<Edit>(new ArticleResource()))
-        {
-            actions.Add(Html.Link($"/articles/{article.Id.Value}/edit", t("common.edit")));
-        }
+        // Author + date + edit/delete laid out like the recipe detail page: the name carries an
+        // avatar, and edit/delete are round icon buttons pushed to the end of the meta row.
+        var editButton = principal.Can<Edit>(new ArticleResource())
+            ? Html.Raw($"""<a class="icon-round" href="/articles/{article.Id.Value}/edit" title="{Html.Encode(t("common.edit"))}" aria-label="{Html.Encode(t("common.edit"))}">{PencilIcon}</a>""")
+            : HtmlString.Empty;
 
-        if (principal.Can<Delete>(new ArticleResource()))
-        {
-            actions.Add(Html.Form($"/articles/{article.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Button(t("common.delete")), style: "display:inline"));
-        }
+        var deleteIcon = Html.Raw($"""<button type="submit" class="icon-round icon-round-danger" title="{Html.Encode(t("common.delete"))}" aria-label="{Html.Encode(t("common.delete"))}">{TrashIcon}</button>""");
+        var deleteButton = principal.Can<Delete>(new ArticleResource())
+            ? Html.Form($"/articles/{article.Id.Value}/delete", Html.CsrfField(csrfToken) + deleteIcon, cssClass: "inline-form")
+            : HtmlString.Empty;
 
-        var actionsBar = actions.Count > 0 ? Html.P(HtmlString.Join(" · ", actions)) : HtmlString.Empty;
+        var metaActions = Html.Raw("""<span class="recipe-meta-actions">""") + editButton + deleteButton + Html.Raw("</span>");
+
+        var avatarLetter = authorName.Length > 0 ? authorName[..1].ToUpperInvariant() : "?";
+        var meta =
+            Html.Raw($"""
+                <div class="recipe-meta">
+                    <span><span class="avatar">{Html.Encode(avatarLetter)}</span>{Html.Encode(authorName)}</span>
+                    <span class="dot">·</span>
+                    <span>{Html.Encode(article.PublishedAt.LocalDateTime.ToString("g", CultureInfo.CurrentCulture))}</span>
+                """) +
+            metaActions +
+            Html.Raw("</div>");
 
         var cover = article.CoverImageId.Match(
             none: () => HtmlString.Empty,
             some: imageId => Html.Div("cover", Html.Img($"/images/{imageId.Value}", article.Title.Value, cssClass: "cover-image")));
 
         var body = breadcrumb +
-            actionsBar +
             Html.H1(article.Title.Value) +
-            Html.Small($"{t("article.by")} {authorName} · {article.PublishedAt.LocalDateTime:g}") +
+            meta +
             cover +
-            Html.P(Html.Text(article.Teaser.Value)) +
+            Html.Raw($"""<p class="blog-teaser">{Html.Encode(article.Teaser.Value)}</p>""") +
             Html.Div("post-text", Html.Raw(BbcodeRenderer.RenderToHtml(article.Text.Value)));
 
         return Layout.Page(article.Title.Value, body, ctx);
@@ -208,4 +218,10 @@ public static class BlogViews
 
         return recentCard + tagsCard;
     }
+
+    private const string PencilIcon =
+        """<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>""";
+
+    private const string TrashIcon =
+        """<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>""";
 }

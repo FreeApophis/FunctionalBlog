@@ -1497,6 +1497,10 @@ button:hover, .btn:hover { filter: brightness(1.07); }
 
 .blog-excerpt { font-size: 15px; line-height: 1.65; color: var(--excerpt); margin: 0 0 18px; }
 
+/* Lead-in teaser on the article detail page: italic and lightly emphasised so it reads apart
+   from the body text. */
+.blog-teaser { font-style: italic; font-size: 1.1rem; line-height: 1.7; color: var(--muted); margin: 0 0 1.2rem; }
+
 .blog-foot {
     display: flex;
     align-items: center;
