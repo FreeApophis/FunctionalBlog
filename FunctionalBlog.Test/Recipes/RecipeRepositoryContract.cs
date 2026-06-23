@@ -122,6 +122,23 @@ public abstract class RecipeRepositoryContract
         Assert.Equal(227, found.CalorificValue);
     }
 
+    [Fact]
+    public async Task Save_then_Find_round_trips_tags()
+    {
+        var repo = CreateRepository();
+        var id = await repo.NextId();
+        var recipe = ARecipe(id) with { Tags = [new RecipeTag("Backen"), new RecipeTag("Kuchen")] };
+
+        await repo.Save(recipe);
+
+        // Tags round-trip, modulo canonical casing: the SQLite impl deduplicates tags into a
+        // shared dictionary keyed by a case-folded slug, so the stored display casing may differ.
+        var found = FunctionalAssert.Some(await repo.Find(id));
+        var tags = found.Tags.Select(t => t.Value.ToLowerInvariant()).ToList();
+        Assert.Contains("backen", tags);
+        Assert.Contains("kuchen", tags);
+    }
+
     protected abstract IRecipeRepository CreateRepository();
 
     private static Recipe ARecipe(RecipeId id, string name = "Rezept") =>

@@ -11,6 +11,11 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
         "ri.unit_id AS UnitId, u.category AS Category, u.unit_factor AS Factor, u.name_key AS NameKey, u.abbreviation_key AS AbbreviationKey " +
         "FROM recipe_ingredients ri JOIN units u ON u.id = ri.unit_id";
 
+    // Tags reached through the recipe's 1:1 taggable — every join is on an integer key.
+    private const string TagSelect =
+        "SELECT r.id AS RecipeId, t.name AS Tag " +
+        "FROM recipes r JOIN taggings tg ON tg.taggable_id = r.taggable_id JOIN tags t ON t.id = tg.tag_id";
+
     private readonly IDbConnection _connection;
     private int _nextId = -1;
 
@@ -33,7 +38,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
             new { ids })).ToLookup(s => s.RecipeId);
 
         var tags = (await _connection.QueryAsync<TagRow>(
-            "SELECT recipe_id AS RecipeId, tag AS Tag FROM recipe_tags WHERE recipe_id IN @ids",
+            TagSelect + " WHERE r.id IN @ids ORDER BY t.name",
             new { ids })).ToLookup(t => t.RecipeId);
 
         var ingredients = (await _connection.QueryAsync<IngredientRow>(
@@ -73,7 +78,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
             new { id = id.Value })).ToList();
 
         var tags = (await _connection.QueryAsync<TagRow>(
-            "SELECT recipe_id AS RecipeId, tag AS Tag FROM recipe_tags WHERE recipe_id = @id",
+            TagSelect + " WHERE r.id = @id ORDER BY t.name",
             new { id = id.Value })).ToList();
 
         var ingredients = (await _connection.QueryAsync<IngredientRow>(
@@ -105,10 +110,14 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
     {
         using var transaction = _connection.BeginTransaction();
 
+        // Reuse the recipe's existing taggable on update, mint a fresh one on insert.
+        // Read it before the INSERT OR REPLACE below deletes the old row.
+        var taggableId = await EnsureTaggable(recipe.Id.Value, transaction);
+
         await _connection.ExecuteAsync(
             """
-            INSERT OR REPLACE INTO recipes (id, name, description, author_id, difficulty, portions, preparation_time, cooking_time, calorific_value)
-            VALUES (@Id, @Name, @Description, @AuthorId, @Difficulty, @Portions, @PreparationTime, @CookingTime, @CalorificValue)
+            INSERT OR REPLACE INTO recipes (id, name, description, author_id, difficulty, portions, preparation_time, cooking_time, calorific_value, taggable_id)
+            VALUES (@Id, @Name, @Description, @AuthorId, @Difficulty, @Portions, @PreparationTime, @CookingTime, @CalorificValue, @TaggableId)
             """,
             new
             {
@@ -121,6 +130,7 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
                 recipe.PreparationTime,
                 recipe.CookingTime,
                 recipe.CalorificValue,
+                TaggableId = taggableId,
             },
             transaction);
 
@@ -132,11 +142,28 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
                 transaction);
         }
 
+        // Re-sync the taggable's tags: clear, then upsert each tag and link it.
+        await _connection.ExecuteAsync(
+            "DELETE FROM taggings WHERE taggable_id = @TaggableId",
+            new { TaggableId = taggableId },
+            transaction);
+
         if (recipe.Tags.Count > 0)
         {
+            var tagParams = recipe.Tags
+                .Select(t => t.Value.Trim())
+                .Where(name => name.Length > 0)
+                .Select(name => new { TaggableId = taggableId, Slug = name.ToLowerInvariant(), Name = name })
+                .ToList();
+
             await _connection.ExecuteAsync(
-                "INSERT INTO recipe_tags (recipe_id, tag) VALUES (@RecipeId, @Tag)",
-                recipe.Tags.Select(t => new { RecipeId = recipe.Id.Value, Tag = t.Value }),
+                "INSERT INTO tags (slug, name) VALUES (@Slug, @Name) ON CONFLICT(slug) DO NOTHING",
+                tagParams,
+                transaction);
+
+            await _connection.ExecuteAsync(
+                "INSERT OR IGNORE INTO taggings (taggable_id, tag_id) SELECT @TaggableId, id FROM tags WHERE slug = @Slug",
+                tagParams,
                 transaction);
         }
 
@@ -183,7 +210,36 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
 
     public async ValueTask Delete(RecipeId id)
     {
-        await _connection.ExecuteAsync("DELETE FROM recipes WHERE id = @id", new { id = id.Value });
+        using var transaction = _connection.BeginTransaction();
+
+        var taggableId = await _connection.ExecuteScalarAsync<long?>(
+            "SELECT taggable_id FROM recipes WHERE id = @id", new { id = id.Value }, transaction);
+
+        await _connection.ExecuteAsync("DELETE FROM recipes WHERE id = @id", new { id = id.Value }, transaction);
+
+        // Removing the owned taggable cascades to its taggings.
+        if (taggableId is { } owned)
+        {
+            await _connection.ExecuteAsync(
+                "DELETE FROM taggables WHERE id = @owned", new { owned }, transaction);
+        }
+
+        transaction.Commit();
+    }
+
+    // Returns the recipe's taggable id, minting a new taggable when the recipe is new.
+    private async Task<long> EnsureTaggable(int recipeId, IDbTransaction transaction)
+    {
+        var existing = await _connection.ExecuteScalarAsync<long?>(
+            "SELECT taggable_id FROM recipes WHERE id = @id", new { id = recipeId }, transaction);
+
+        if (existing is { } taggableId)
+        {
+            return taggableId;
+        }
+
+        await _connection.ExecuteAsync("INSERT INTO taggables DEFAULT VALUES", transaction: transaction);
+        return await _connection.ExecuteScalarAsync<long>("SELECT last_insert_rowid()", transaction: transaction);
     }
 
     private static Recipe BuildRecipe(

@@ -38,10 +38,15 @@ public sealed class SqliteArticleRepository : IArticleRepository
 
     public async ValueTask Save(Article article)
     {
+        using var transaction = _connection.BeginTransaction();
+
+        // Reuse the article's existing taggable on update, mint a fresh one on insert.
+        var taggableId = await EnsureTaggable(article.Id.Value, transaction);
+
         await _connection.ExecuteAsync(
             """
-            INSERT OR REPLACE INTO articles (id, title, teaser, text, author_id, published_at, cover_image_id)
-            VALUES (@Id, @Title, @Teaser, @Text, @AuthorId, @PublishedAt, @CoverImageId)
+            INSERT OR REPLACE INTO articles (id, title, teaser, text, author_id, published_at, cover_image_id, taggable_id)
+            VALUES (@Id, @Title, @Teaser, @Text, @AuthorId, @PublishedAt, @CoverImageId, @TaggableId)
             """,
             new
             {
@@ -52,12 +57,45 @@ public sealed class SqliteArticleRepository : IArticleRepository
                 AuthorId = article.AuthorId.Value,
                 article.PublishedAt,
                 CoverImageId = article.CoverImageId.Match(none: (int?)null, some: imageId => imageId.Value),
-            });
+                TaggableId = taggableId,
+            },
+            transaction);
+
+        transaction.Commit();
     }
 
     public async ValueTask Delete(ArticleId id)
     {
-        await _connection.ExecuteAsync("DELETE FROM articles WHERE id = @id", new { id = id.Value });
+        using var transaction = _connection.BeginTransaction();
+
+        var taggableId = await _connection.ExecuteScalarAsync<long?>(
+            "SELECT taggable_id FROM articles WHERE id = @id", new { id = id.Value }, transaction);
+
+        await _connection.ExecuteAsync("DELETE FROM articles WHERE id = @id", new { id = id.Value }, transaction);
+
+        // Removing the owned taggable cascades to its taggings.
+        if (taggableId is { } owned)
+        {
+            await _connection.ExecuteAsync(
+                "DELETE FROM taggables WHERE id = @owned", new { owned }, transaction);
+        }
+
+        transaction.Commit();
+    }
+
+    // Returns the article's taggable id, minting a new taggable when the article is new.
+    private async Task<long> EnsureTaggable(int articleId, IDbTransaction transaction)
+    {
+        var existing = await _connection.ExecuteScalarAsync<long?>(
+            "SELECT taggable_id FROM articles WHERE id = @id", new { id = articleId }, transaction);
+
+        if (existing is { } taggableId)
+        {
+            return taggableId;
+        }
+
+        await _connection.ExecuteAsync("INSERT INTO taggables DEFAULT VALUES", transaction: transaction);
+        return await _connection.ExecuteScalarAsync<long>("SELECT last_insert_rowid()", transaction: transaction);
     }
 
     private static Article ToArticle(ArticleRow row) =>

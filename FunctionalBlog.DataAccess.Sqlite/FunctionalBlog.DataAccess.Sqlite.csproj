@@ -22,6 +22,8 @@
     <EmbeddedResource Include="Migrations\0007_recipe_times.sql" />
     <EmbeddedResource Include="Migrations\0008_energy_translation_labels.sql" />
     <EmbeddedResource Include="Migrations\0009_strip_plus_from_add_buttons.sql" />
+    <EmbeddedResource Include="Migrations\0010_fill_ingredient_nutrition.sql" />
+    <EmbeddedResource Include="Migrations\0011_normalize_tags.sql" />
   </ItemGroup>
 
   <ItemGroup>

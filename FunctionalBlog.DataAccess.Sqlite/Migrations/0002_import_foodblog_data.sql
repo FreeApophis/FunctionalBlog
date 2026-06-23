@@ -5,10 +5,24 @@
 
 -- Authors (passwords are the original bcrypt hashes and will not verify against
 -- the PBKDF2 hasher; these accounts are content authors and need a password reset to log in).
-INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (1, 'thomasbruderer@gmx.net', 'Thomas', '$2a$11$6AUIbd4nLVAR8faFA.oX5.t/Kkndf1Yq9fbON6nAV7cquzWKZhFQO', '2016-12-22T19:14:26.0000000+00:00');
-INSERT INTO user_roles (user_id, role_name) VALUES (1, 'Admin');
-INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (2, 'sabrinabrueckner@gmx.net', 'Sabrina', '$2a$11$aBGxjUrZD5F13svegdvwTuSrNUK7A/CKcr0FGx2V0mmdKU7QH.yKq', '2016-12-24T17:53:03.0000000+00:00');
+
+INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (2, 'admin@foodblog.ch', 'Admin', '', '2016-01-01T00:00:00.0000000+00:00');
 INSERT INTO user_roles (user_id, role_name) VALUES (2, 'Admin');
+INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (2, 'thomasbruderer@gmx.net', 'Thomas', '$2a$11$6AUIbd4nLVAR8faFA.oX5.t/Kkndf1Yq9fbON6nAV7cquzWKZhFQO', '2016-12-22T19:14:26.0000000+00:00');
+INSERT INTO user_roles (user_id, role_name) VALUES (2, 'Admin');
+INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (3, 'sabrinabrueckner@gmx.net', 'Sabrina', '$2a$11$aBGxjUrZD5F13svegdvwTuSrNUK7A/CKcr0FGx2V0mmdKU7QH.yKq', '2016-12-24T17:53:03.0000000+00:00');
+INSERT INTO user_roles (user_id, role_name) VALUES (3, 'Admin');
+INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (4, 'brucat@web.de', 'Cathrin', '$2a$11$eDXkDzETUBJqOP7vQIyMJe3JCwLSERi8uttPHFq5zoNBmHuCsw63i', '2017-04-19T18:45:46.0000000+00:00');
+INSERT INTO user_roles (user_id, role_name) VALUES (4, 'Benutzer');
+INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (5, 'flamasu98@hotmail.com', 'suterF', '$2a$11$eDXkDzETUBJqOP7vQIyMJe3JCwLSERi8uttPHFq5zoNBmHuCsw63i', '2018-09-25T11:47:09.0000000+00:00');
+INSERT INTO user_roles (user_id, role_name) VALUES (5, 'Benutzer');
+INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (6, 'jn_ferner@hotmail.de', 'Jan Nils Ferner', '$2a$11$PPbOJ4e7BwF/sqaa78xoN.QyUei4TiNzi6UVGNNFj5fM1I4NdY8xe', '2018-09-25T11:48:21.0000000+00:00');
+INSERT INTO user_roles (user_id, role_name) VALUES (6, 'Benutzer');
+INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (7, 'stefano@sabino.ch', 'Stefano Sabino', '$2a$11$Ad8Pa49OOeSLIspovPkbcuSZ0vJ57fs0ib5E7QihL50rcdPZvHbSu', '2019-11-06T10:46:16.0000000+00:00');
+INSERT INTO user_roles (user_id, role_name) VALUES (7, 'Benutzer');
+INSERT INTO users (id, email, display_name, password_hash, created_at) VALUES (8, 'sabrinabrueckner@gmx.net', 'Sabrina', '$2a$11$aBGxjUrZD5F13svegdvwTuSrNUK7A/CKcr0FGx2V0mmdKU7QH.yKq', '2016-12-24T17:53:03.0000000+00:00');
+INSERT INTO user_roles (user_id, role_name) VALUES (8, 'Benutzer');
+
 
 -- Blog articles
 INSERT INTO articles (id, title, teaser, text, author_id, published_at) VALUES (1, 'Merry Christmas', 'Ja wo bist du denn hier gelandet? Einfach mal hier drauf klicken :)', 'Das ist deine neue Webseite zum Rezepte sammeln. Ich hatte eigentlich gehofft dass ich die Seite bis Weihnachten ganz fertig kriege, aber es ist wie immer ;) alles ein bisschen komplizierter als man denkt.
