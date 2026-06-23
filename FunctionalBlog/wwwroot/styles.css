@@ -607,6 +607,10 @@ button:hover, .btn:hover { filter: brightness(1.07); }
 .btn-secondary:hover { filter: none; border-color: var(--tomato); color: var(--tomato); }
 
 .btn-add {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     background: none;
     color: var(--green);
     border: 1px dashed var(--border-tag);
@@ -770,7 +774,9 @@ button:hover, .btn:hover { filter: brightness(1.07); }
    page. Incomplete rows get a yellow warning badge next to the name. */
 .ingredient-editor .card-section-head { margin-bottom: .4rem; }
 
-.ingredient-head {
+/* Scoped to .ingredient-editor so these read-only overview rows don't override the recipe form's
+   own .ingredient-row layout (which has a fourth column for the remove button). */
+.ingredient-editor .ingredient-head {
     display: grid;
     padding: 0 2px 8px;
     font-family: var(--mono);
@@ -780,13 +786,13 @@ button:hover, .btn:hover { filter: brightness(1.07); }
     color: var(--muted2);
 }
 
-.ingredient-row {
+.ingredient-editor .ingredient-row {
     display: grid;
     align-items: center;
     margin: .45rem 0;
 }
 
-.ingredient-head, .ingredient-row {
+.ingredient-editor .ingredient-head, .ingredient-editor .ingredient-row {
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 2fr) 90px;
     gap: .7rem;
 }
@@ -862,8 +868,8 @@ button:hover, .btn:hover { filter: brightness(1.07); }
 }
 
 @media (max-width: 640px) {
-    .ingredient-head { display: none; }
-    .ingredient-row { grid-template-columns: 1fr; gap: .4rem; }
+    .ingredient-editor .ingredient-head { display: none; }
+    .ingredient-editor .ingredient-row { grid-template-columns: 1fr; gap: .4rem; }
 }
 
 /* ---- Admin dashboard: section cards ------------------------------------- */
