@@ -1,5 +1,3 @@
-using System.Globalization;
-
 namespace FunctionalBlog.Recipes;
 
 // Maps a recipe to a plain RecipePdfModel, scaling ingredient amounts to the requested serving count
@@ -17,7 +15,7 @@ public static class RecipePdfMapper
         var factor = recipe.Portions > 0 ? (decimal)displayPortions / recipe.Portions : 1m;
 
         var ingredients = recipe.Ingredients.Select(line => new RecipePdfIngredient(
-            $"{FormatAmount(line.Amount * factor)} {t(line.Unit.AbbreviationKey)}".Trim(),
+            $"{AmountFormat.Format(line.Amount * factor)} {t(line.Unit.AbbreviationKey)}".Trim(),
             ingredientNames.GetValueOrNone(line.IngredientId).GetOrElse("?"))).ToList();
 
         var eyebrow = recipe.Tags.Count > 0
@@ -38,9 +36,6 @@ public static class RecipePdfMapper
             Tips: recipe.Hints.Select(hint => hint.Text).ToList(),
             CoverImage: coverImage);
     }
-
-    private static string FormatAmount(decimal amount) =>
-        Math.Round(amount, 2, MidpointRounding.AwayFromZero).ToString("0.##", CultureInfo.InvariantCulture);
 
     private static string DifficultyKey(Difficulty difficulty) => difficulty switch
     {

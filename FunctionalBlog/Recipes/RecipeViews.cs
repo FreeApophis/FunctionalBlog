@@ -594,8 +594,7 @@ public static class RecipeViews
             """);
     }
 
-    private static string FormatAmount(decimal amount) =>
-        Math.Round(amount, 2, MidpointRounding.AwayFromZero).ToString("0.##", CultureInfo.InvariantCulture);
+    private static string FormatAmount(decimal amount) => AmountFormat.Format(amount);
 
     // A card section header: serif title + a thin divider rule, per the design.
     private static string SectionHead(string title) =>
