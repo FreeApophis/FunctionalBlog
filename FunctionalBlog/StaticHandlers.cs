@@ -6,7 +6,7 @@ public static class StaticHandlers
 {
     private static readonly Lazy<string> StylesContent = new(LoadStyles);
     private static readonly Lazy<string> HtmxContent = new(LoadHtmx);
-    private static readonly Lazy<string> QuickSearchContent = new(LoadQuickSearch);
+    private static readonly Lazy<string> ComboboxKeysContent = new(LoadComboboxKeys);
     private static readonly ConcurrentDictionary<string, byte[]> BinaryCache = new();
 
     // Self-hosted design fonts (latin subset, variable weight). Whitelist of servable files.
@@ -33,8 +33,8 @@ public static class StaticHandlers
     public static App HtmxScript => _ => _ =>
         ValueTask.FromResult(Response.Js(HtmxContent.Value));
 
-    public static App QuickSearchScript => _ => _ =>
-        ValueTask.FromResult(Response.Js(QuickSearchContent.Value));
+    public static App ComboboxKeysScript => _ => _ =>
+        ValueTask.FromResult(Response.Js(ComboboxKeysContent.Value));
 
     public static App Font(string file) => _ => _ =>
         Fonts.GetValueOrNone(file) is [var resourceName]
@@ -64,9 +64,9 @@ public static class StaticHandlers
         return LoadResource(resourceName);
     }
 
-    private static string LoadQuickSearch()
+    private static string LoadComboboxKeys()
     {
-        const string resourceName = "FunctionalBlog.wwwroot.quicksearch.js";
+        const string resourceName = "FunctionalBlog.wwwroot.combobox-keys.js";
         return LoadResource(resourceName);
     }
 

@@ -15,7 +15,7 @@ public static class Layout
             <link rel='icon' type='image/x-icon' href='/favicon.ico'>
             <link rel='icon' type='image/png' href='/favicon.png'>
             <script src="/htmx.min.js" defer></script>
-            <script src="/quicksearch.js" defer></script>
+            <script src="/combobox-keys.js" defer></script>
         </head>
         <body>
             {{NavViews.UtilityBar()}}

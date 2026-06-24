@@ -8,7 +8,7 @@ public static class Routes
         .Get("/tag/{slug}", p => TagHandlers.Show(p[0]))
         .Get("/styles.css", StaticHandlers.Styles)
         .Get("/htmx.min.js", StaticHandlers.HtmxScript)
-        .Get("/quicksearch.js", StaticHandlers.QuickSearchScript)
+        .Get("/combobox-keys.js", StaticHandlers.ComboboxKeysScript)
         .Get("/fonts/{file}", p => StaticHandlers.Font(p[0]))
         .Get("/assets/{file}", p => StaticHandlers.Asset(p[0]))
         .Get("/", BlogHandlers.Index)
