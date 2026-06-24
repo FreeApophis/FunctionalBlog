@@ -28,7 +28,7 @@ public static class RecipeHandlers
                     .GetOrElse("?");
                 var ingredients = (await env.Ingredients.All()).ToDictionary(i => i.Id);
                 var displayPortions = RequestedPortions(request, recipe.Portions);
-                return Response.Html(RecipeViews.Show(recipe, authorName, ingredients, displayPortions, env.Ctx));
+                return Response.Html(RecipeViews.Show(recipe, authorName, ingredients, displayPortions, env.Ctx, request.BaseUrl));
             });
 
     // The detail page can be re-scaled to a different serving count via ?portions=N. Any positive

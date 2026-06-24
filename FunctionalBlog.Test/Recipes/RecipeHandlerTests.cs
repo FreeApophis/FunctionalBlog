@@ -97,6 +97,37 @@ public sealed class RecipeHandlerTests
     }
 
     [Fact]
+    public async Task ShowRecipe_emits_recipe_json_ld_and_open_graph_tags()
+    {
+        var env = BuildEnv();
+        var id = await env.Recipes.NextId();
+        await env.Recipes.Save(Recipe.Create(
+            id,
+            new RecipeName("Rührkuchen"),
+            new RecipeDescription("Ein klassischer Rührkuchen."),
+            [new PreparationStep(1, "Alles verrühren.")],
+            new UserId(1),
+            Difficulty.Easy,
+            [],
+            4,
+            [],
+            ["/images/5"],
+            [],
+            preparationTime: 10,
+            cookingTime: 20,
+            calorificValue: 227));
+
+        var request = AnEmptyRequest() with { BaseUrl = "https://foodblog.ch" };
+        var response = await RecipeHandlers.ShowRecipe(id)(request)(env);
+
+        Assert.Contains("application/ld+json", response.Body);
+        Assert.Contains("\"@type\":\"Recipe\"", response.Body);
+        Assert.Contains($"https://foodblog.ch/recipes/{id.Value}", response.Body);
+        Assert.Contains("<meta property=\"og:image\" content=\"https://foodblog.ch/images/5\" />", response.Body);
+        Assert.Contains("<meta property=\"og:type\" content=\"article\" />", response.Body);
+    }
+
+    [Fact]
     public async Task CreateRecipe_rejects_an_invalid_image_and_saves_nothing()
     {
         var env = BuildEnv();

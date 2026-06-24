@@ -74,7 +74,8 @@ public static class RecipeViews
         string authorName,
         IReadOnlyDictionary<IngredientId, Ingredient> ingredientMap,
         int displayPortions,
-        ViewContext ctx)
+        ViewContext ctx,
+        string baseUrl)
     {
         var (principal, t, csrfToken) = ctx;
 
@@ -189,7 +190,9 @@ public static class RecipeViews
             bodyGrid +
             hints;
 
-        return Layout.Page(recipe.Name.Value, body, ctx);
+        var pageMeta = RecipeSeo.Build(recipe, ingredientMap, authorName, baseUrl, t);
+
+        return Layout.Page(recipe.Name.Value, body, ctx, pageMeta);
     }
 
     public static string Form(

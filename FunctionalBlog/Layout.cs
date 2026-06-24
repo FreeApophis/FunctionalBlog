@@ -2,7 +2,7 @@ namespace FunctionalBlog;
 
 public static class Layout
 {
-    public static string Page(string title, HtmlString body, ViewContext ctx)
+    public static string Page(string title, HtmlString body, ViewContext ctx, PageMeta? meta = null)
     {
         return $$"""
         <!doctype html>
@@ -11,6 +11,7 @@ public static class Layout
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
             <title>foodblog.ch - {{Html.Encode(title)}}</title>
+            {{MetaTags(title, meta)}}
             <link rel="stylesheet" href="/styles.css" />
             <link rel='icon' type='image/x-icon' href='/favicon.ico'>
             <link rel='icon' type='image/png' href='/favicon.png'>
@@ -31,4 +32,52 @@ public static class Layout
 
     public static string Page(string title, HtmlString body) =>
         Page(title, body, ViewContext.ForGuest());
+
+    // Open Graph / Twitter share-card tags, the canonical link, and any structured-data head
+    // extra (e.g. JSON-LD). Rendered only when a PageMeta is supplied; each field is optional
+    // and skipped when empty. HeadExtra is emitted verbatim (its producer must keep it safe).
+    private static string MetaTags(string title, PageMeta? meta)
+    {
+        if (meta is null)
+        {
+            return string.Empty;
+        }
+
+        var twitterCard = string.IsNullOrEmpty(meta.ImageUrl) ? "summary" : "summary_large_image";
+
+        var tags = new List<string>
+        {
+            $"""<meta property="og:type" content="{Html.Encode(meta.Type)}" />""",
+            $"""<meta property="og:title" content="{Html.Encode(title)}" />""",
+            $"""<meta property="og:site_name" content="foodblog.ch" />""",
+            $"""<meta name="twitter:card" content="{twitterCard}" />""",
+            $"""<meta name="twitter:title" content="{Html.Encode(title)}" />""",
+        };
+
+        if (!string.IsNullOrEmpty(meta.Description))
+        {
+            tags.Add($"""<meta name="description" content="{Html.Encode(meta.Description)}" />""");
+            tags.Add($"""<meta property="og:description" content="{Html.Encode(meta.Description)}" />""");
+            tags.Add($"""<meta name="twitter:description" content="{Html.Encode(meta.Description)}" />""");
+        }
+
+        if (!string.IsNullOrEmpty(meta.Url))
+        {
+            tags.Add($"""<meta property="og:url" content="{Html.Encode(meta.Url)}" />""");
+            tags.Add($"""<link rel="canonical" href="{Html.Encode(meta.Url)}" />""");
+        }
+
+        if (!string.IsNullOrEmpty(meta.ImageUrl))
+        {
+            tags.Add($"""<meta property="og:image" content="{Html.Encode(meta.ImageUrl)}" />""");
+            tags.Add($"""<meta name="twitter:image" content="{Html.Encode(meta.ImageUrl)}" />""");
+        }
+
+        if (!string.IsNullOrEmpty(meta.HeadExtra))
+        {
+            tags.Add(meta.HeadExtra);
+        }
+
+        return string.Join("\n            ", tags);
+    }
 }

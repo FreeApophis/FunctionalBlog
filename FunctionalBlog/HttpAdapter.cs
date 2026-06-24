@@ -33,6 +33,7 @@ public static class HttpAdapter
             Cookies: cookies)
         {
             Files = files,
+            BaseUrl = $"{http.Request.Scheme}://{http.Request.Host}",
         };
     }
 
