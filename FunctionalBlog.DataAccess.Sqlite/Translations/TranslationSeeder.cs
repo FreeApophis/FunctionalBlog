@@ -1203,5 +1203,9 @@ public static class TranslationSeeder
         ("search.type.page",         "en", "Page"),
         ("search.type.page",         "it", "Pagina"),
         ("search.type.page",         "fr", "Page"),
+        ("search.type.tag",          "de", "Schlagwörter"),
+        ("search.type.tag",          "en", "Tags"),
+        ("search.type.tag",          "it", "Tag"),
+        ("search.type.tag",          "fr", "Mots-clés"),
     ];
 }

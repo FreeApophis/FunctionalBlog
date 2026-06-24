@@ -13,6 +13,7 @@ global using FunctionalBlog.DataAccess.Images;
 global using FunctionalBlog.DataAccess.Pages;
 global using FunctionalBlog.DataAccess.Recipes;
 global using FunctionalBlog.DataAccess.Roles;
+global using FunctionalBlog.DataAccess.Search;
 global using FunctionalBlog.DataAccess.Sqlite;
 global using FunctionalBlog.DataAccess.Tags;
 global using FunctionalBlog.DataAccess.Translations;

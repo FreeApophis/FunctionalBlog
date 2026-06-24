@@ -17,4 +17,20 @@ public static class SearchHandlers
         return ValueTask.FromResult(Response.Html(
             SearchViews.Results(q, results, suggestions, env.Ctx)));
     };
+
+    // Live typeahead fragment for the nav search box: an empty body clears the dropdown, otherwise a
+    // category-grouped list of LIKE matches.
+    public static App Quick => request => async env =>
+    {
+        var q = request.Query.GetValueOrNone("q").GetOrElse(string.Empty).Trim();
+
+        if (q.Length == 0 || env.QuickSearch is null)
+        {
+            return Response.Html(string.Empty);
+        }
+
+        var hits = await env.QuickSearch.Search(q);
+
+        return Response.Html(SearchViews.QuickResults(hits, env.Ctx));
+    };
 }

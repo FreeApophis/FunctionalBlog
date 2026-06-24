@@ -5,6 +5,7 @@ global using FunctionalBlog.Application.Images;
 global using FunctionalBlog.Application.Pages;
 global using FunctionalBlog.Application.Recipes;
 global using FunctionalBlog.Application.Roles;
+global using FunctionalBlog.Application.Search;
 global using FunctionalBlog.Application.Tags;
 global using FunctionalBlog.Application.Translations;
 global using FunctionalBlog.Domain.Articles;

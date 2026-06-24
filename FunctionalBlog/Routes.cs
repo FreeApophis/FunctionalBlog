@@ -3,6 +3,7 @@ namespace FunctionalBlog;
 public static class Routes
 {
     public static RouteTable Build() => RouteTable.Empty
+        .Get("/search/quick", Search.SearchHandlers.Quick)
         .Get("/search", Search.SearchHandlers.Search)
         .Get("/tag/{slug}", p => TagHandlers.Show(p[0]))
         .Get("/styles.css", StaticHandlers.Styles)
@@ -52,6 +53,8 @@ public static class Routes
         .Post("/recipes/{id}/delete", p => Auth.RequirePermission<Delete>(new RecipeResource(), RecipeHandlers.DeleteRecipe(new RecipeId(int.Parse(p[0])))))
         .Post("/recipes/{id}", p => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.UpdateRecipe(new RecipeId(int.Parse(p[0])))))
         .Get("/recipes/{id}", p => RecipeHandlers.ShowRecipe(new RecipeId(int.Parse(p[0]))))
+        .Get("/ingredients", IngredientHandlers.Index)
+        .Get("/ingredients/{id}", p => IngredientHandlers.Show(new IngredientId(int.Parse(p[0]))))
         .Get("/admin", Auth.RequireAuth(AdminDashboardHandlers.Dashboard))
         .Get("/admin/ingredients/new", Auth.RequirePermission<Create>(new IngredientResource(), AdminIngredientHandlers.NewForm))
         .Get("/admin/ingredients", Auth.RequirePermission<Manage>(new IngredientResource(), AdminIngredientHandlers.List))

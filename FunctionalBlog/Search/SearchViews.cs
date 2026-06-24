@@ -41,6 +41,44 @@ public static class SearchViews
         return Layout.Page(t("search.title"), body, ctx);
     }
 
+    // Inner HTML for the nav quicksearch dropdown: matches grouped by category, in the order the
+    // quicksearch returns them (tags, articles, recipes, ingredients). Every match links to its page.
+    public static string QuickResults(IReadOnlyList<QuickSearchHit> hits, ViewContext ctx)
+    {
+        var (_, t, _) = ctx;
+
+        if (hits.Count == 0)
+        {
+            return $"""<div class="quicksearch-panel"><div class="quicksearch-empty">{Html.Encode(t("search.no_results"))}</div></div>""";
+        }
+
+        var groups = hits
+            .GroupBy(hit => hit.Category)
+            .Select(group => QuickGroup(group.Key, group.ToList(), t));
+
+        return $"""<div class="quicksearch-panel">{string.Concat(groups)}</div>""";
+    }
+
+    private static string QuickGroup(string category, IReadOnlyList<QuickSearchHit> hits, Translate t)
+    {
+        var heading = $"""<div class="quicksearch-cat">{Html.Encode(t($"search.type.{category}"))}</div>""";
+        return $"""<div class="quicksearch-group">{heading}{string.Concat(hits.Select(QuickItem))}</div>""";
+    }
+
+    private static string QuickItem(QuickSearchHit hit) =>
+        QuickUrl(hit) is { } url
+            ? $"""<a class="quicksearch-item" href="{Html.Encode(url)}">{Html.Encode(hit.Label)}</a>"""
+            : $"""<span class="quicksearch-item is-static">{Html.Encode(hit.Label)}</span>""";
+
+    private static string? QuickUrl(QuickSearchHit hit) => hit.Category switch
+    {
+        "tag" when hit.Slug is { } slug => $"/tag/{Uri.EscapeDataString(slug)}",
+        "article" => $"/articles/{hit.Id}",
+        "recipe" => $"/recipes/{hit.Id}",
+        "ingredient" => $"/ingredients/{hit.Id}",
+        _ => null,
+    };
+
     private static HtmlString SearchForm(string query, Translate t) =>
         Html.Raw($"""<form action="/search" method="get" class="search-form">""") +
         Html.Input("q", query) +

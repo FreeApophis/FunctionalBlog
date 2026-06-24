@@ -66,6 +66,7 @@ internal class Program
             Units: new SqliteUnitRepository(connection),
             Images: new SqliteImageRepository(connection),
             Pages: new SqlitePageRepository(connection),
+            QuickSearch: new SqliteQuickSearch(connection),
             Tags: new SqliteTagRepository(connection),
             Translations: translations);
 }

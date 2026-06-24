@@ -689,6 +689,72 @@ button:hover, .btn:hover { filter: brightness(1.07); }
     color: var(--muted);
 }
 
+/* ---- Public ingredient pages ------------------------------------------- */
+
+.ingredient-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+    margin: 1.25rem 0;
+}
+
+.ingredient-tile {
+    display: flex;
+    align-items: center;
+    min-height: 64px;
+    padding: .85rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .15s ease;
+}
+
+.ingredient-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--green);
+    color: var(--green);
+}
+
+.ingredient-detail-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.ingredient-detail-head h1 { margin: 0; }
+
+.ingredient-detail-media {
+    margin: 1.25rem 0;
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.ingredient-detail-media img { display: block; width: 100%; height: auto; }
+
+.nutrition-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: .25rem 2rem;
+}
+
+.nutrition-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .5rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.nutrition-label { color: var(--muted); }
+
+.nutrition-value { font-weight: 600; font-variant-numeric: tabular-nums; }
+
 /* Compact icon remove button (tomato outline → fill on hover), used by ingredient + step rows. */
 .icon-remove {
     display: inline-flex;
@@ -1656,6 +1722,60 @@ a.tag-chip:hover { opacity: .85; }
 }
 
 .search-form button:hover { background: var(--chip-hover); color: var(--green); }
+
+/* ---- Nav quicksearch dropdown ------------------------------------------- */
+
+.search-box { position: relative; }
+
+.quicksearch-results {
+    position: absolute;
+    z-index: 30;
+    left: 0;
+    right: 0;
+    margin-top: 8px;
+}
+
+.quicksearch-results:empty { display: none; }
+
+.quicksearch-panel {
+    min-width: 18rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-hover);
+    overflow: hidden;
+    padding: .35rem 0;
+}
+
+.quicksearch-cat {
+    padding: .4rem .9rem .2rem;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted2);
+}
+
+.quicksearch-group + .quicksearch-group { border-top: 1px solid var(--border); }
+
+.quicksearch-item {
+    display: block;
+    padding: .5rem .9rem;
+    font-size: 14px;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+a.quicksearch-item:hover { background: var(--row-alt); color: var(--green); }
+
+.quicksearch-item.is-static { color: var(--muted); cursor: default; }
+
+.quicksearch-empty {
+    padding: .6rem .9rem;
+    font-size: 14px;
+    color: var(--muted);
+}
 
 /* ---- Masthead user menu: circular trigger + hover/focus dropdown -------- */
 

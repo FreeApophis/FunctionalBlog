@@ -40,7 +40,8 @@ public static class NavViews
 
         string Item(string href, string label) => $"<li>{Html.Link(href, label).Render()}</li>";
 
-        var links = Item("/", t("nav.blog")) + Item("/recipes", t("nav.recipes")) + Item("/pages", t("nav.pages"));
+        var links = Item("/", t("nav.blog")) + Item("/recipes", t("nav.recipes")) +
+            Item("/ingredients", t("ingredient.list_title")) + Item("/pages", t("nav.pages"));
 
         return $"""
             <footer class="site-footer">
@@ -103,12 +104,22 @@ public static class NavViews
             """);
     }
 
+    // The text input drives a live quicksearch: keystrokes htmx-GET the grouped dropdown into the
+    // adjacent panel, while submitting the form still runs the full-text search at /search.
     private static HtmlString SearchBox(Translate t) =>
         Html.Raw($"""
-            <form action="/search" method="get" class="search-form" role="search">
-                <input name="q" placeholder="{Html.Encode(t("nav.search"))}" aria-label="{Html.Encode(t("nav.search"))}" />
-                <button type="submit" aria-label="{Html.Encode(t("nav.search"))}">{SearchIcon}</button>
-            </form>
+            <div class="search-box">
+                <form action="/search" method="get" class="search-form" role="search">
+                    <input name="q" placeholder="{Html.Encode(t("nav.search"))}" aria-label="{Html.Encode(t("nav.search"))}"
+                           autocomplete="off"
+                           hx-get="/search/quick"
+                           hx-trigger="keyup changed delay:250ms"
+                           hx-target="#quicksearch-results"
+                           hx-swap="innerHTML" />
+                    <button type="submit" aria-label="{Html.Encode(t("nav.search"))}">{SearchIcon}</button>
+                </form>
+                <div id="quicksearch-results" class="quicksearch-results"></div>
+            </div>
             """);
 
     // Circular trigger (same footprint as the user menu) revealing the same hover/focus
