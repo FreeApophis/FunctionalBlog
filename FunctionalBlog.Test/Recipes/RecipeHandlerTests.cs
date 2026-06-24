@@ -373,6 +373,31 @@ public sealed class RecipeHandlerTests
     }
 
     [Fact]
+    public async Task ShowRecipe_renders_a_pdf_split_button_offering_both_designs()
+    {
+        var env = BuildEnv();
+        var id = await SeedRecipe(env, []);
+
+        var response = await RecipeHandlers.ShowRecipe(id)(AnEmptyRequest())(env);
+
+        Assert.Contains("pdf-split", response.Body);
+        Assert.Contains($"href=\"/recipes/{id.Value}/pdf\"", response.Body);
+        Assert.Contains($"href=\"/recipes/{id.Value}/pdf?design=alternative\"", response.Body);
+    }
+
+    [Fact]
+    public async Task ShowRecipe_pdf_button_carries_the_selected_portion_count()
+    {
+        var env = BuildEnv();
+        var id = await SeedRecipe(env, []);
+
+        var response = await RecipeHandlers.ShowRecipe(id)(ARequest($"/recipes/{id.Value}", ("portions", "8")))(env);
+
+        Assert.Contains($"href=\"/recipes/{id.Value}/pdf?portions=8\"", response.Body);
+        Assert.Contains($"href=\"/recipes/{id.Value}/pdf?design=alternative&portions=8\"", response.Body);
+    }
+
+    [Fact]
     public async Task ShowRecipe_renders_a_breadcrumb_instead_of_a_back_link()
     {
         var env = BuildEnv();

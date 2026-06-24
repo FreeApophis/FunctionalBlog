@@ -52,6 +52,7 @@ public static class Routes
         .Get("/recipes/{id}/edit", p => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.EditRecipeForm(new RecipeId(int.Parse(p[0])))))
         .Post("/recipes/{id}/delete", p => Auth.RequirePermission<Delete>(new RecipeResource(), RecipeHandlers.DeleteRecipe(new RecipeId(int.Parse(p[0])))))
         .Post("/recipes/{id}", p => Auth.RequirePermission<Edit>(new RecipeResource(), RecipeHandlers.UpdateRecipe(new RecipeId(int.Parse(p[0])))))
+        .Get("/recipes/{id}/pdf", p => RecipePdfHandlers.Download(new RecipeId(int.Parse(p[0]))))
         .Get("/recipes/{id}", p => RecipeHandlers.ShowRecipe(new RecipeId(int.Parse(p[0]))))
         .Get("/ingredients", IngredientHandlers.Index)
         .Get("/ingredients/{id}", p => IngredientHandlers.Show(new IngredientId(int.Parse(p[0]))))

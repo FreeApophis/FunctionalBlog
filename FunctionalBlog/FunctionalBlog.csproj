@@ -10,12 +10,17 @@
 		<EmbeddedResource Include="wwwroot\htmx.min.js" />
 		<Content Remove="wwwroot\fonts\*.woff2" />
 		<EmbeddedResource Include="wwwroot\fonts\*.woff2" />
+		<Content Remove="wwwroot\fonts\*.ttf" />
+		<EmbeddedResource Include="wwwroot\fonts\*.ttf" />
 		<Content Remove="wwwroot\images\*.png" />
 		<EmbeddedResource Include="wwwroot\images\*.png" />
 	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Funcky.DiscriminatedUnion" PrivateAssets="all" />
 		<PackageReference Include="LeanCorpus" />
+		<PackageReference Include="QuestPDF" />
+		<PackageReference Include="SkiaSharp" />
+		<PackageReference Include="SkiaSharp.NativeAssets.Linux" />
 	</ItemGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\Bbcode\Bbcode.csproj" />

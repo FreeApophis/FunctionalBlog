@@ -1136,6 +1136,70 @@ button:hover, .btn:hover { filter: brightness(1.07); }
 .icon-round:hover { border-color: var(--green); color: var(--green); }
 .icon-round-danger:hover { border-color: var(--tomato); color: var(--tomato); }
 
+/* Recipe detail title row: name left, PDF action pinned top-right — even when the title wraps to
+   several lines (the title shrinks and wraps; the button never drops to its own line). */
+.recipe-head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin: 0 0 1.2rem; }
+.recipe-head-row h1 { margin: 0; flex: 1 1 auto; min-width: 0; }
+.recipe-head-row .pdf-split { flex: none; }
+
+/* PDF split button: tomato "print" action (left) + arrow that reveals the design dropdown (right),
+   matching the recipe design's Print button. Pure-CSS hover/focus dropdown like the other menus. */
+.pdf-split { display: inline-flex; align-items: stretch; height: 34px; position: relative; }
+
+.pdf-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 13px 0 14px;
+    background: var(--tomato);
+    color: #fffefb;
+    border-radius: 4px 0 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.pdf-main:hover { filter: brightness(1.07); color: #fffefb; }
+
+.pdf-menu { position: relative; display: inline-flex; }
+
+/* The arrow is a <summary>: drop the native disclosure triangle and toggle on click. */
+.pdf-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 100%;
+    padding: 0;
+    background: var(--tomato);
+    color: #fffefb;
+    border-left: 1px solid rgba(255, 254, 251, 0.28);
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    list-style: none;
+}
+
+.pdf-arrow::-webkit-details-marker { display: none; }
+.pdf-arrow::marker { content: ""; }
+.pdf-arrow:hover { filter: brightness(1.07); }
+
+.pdf-dropdown { position: absolute; top: 100%; right: 0; padding-top: 8px; display: none; z-index: 40; }
+
+.pdf-menu[open] .pdf-dropdown { display: block; }
+
+.pdf-panel {
+    min-width: 168px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-hover);
+    overflow: hidden;
+    padding: .3rem 0;
+}
+
+.pdf-panel a { display: block; padding: .5rem .9rem; font-size: 13.5px; color: var(--ink); text-decoration: none; }
+.pdf-panel a:hover { background: var(--row-alt); color: var(--green); }
+
 /* Serving-size selector: pill trigger + hover/focus dropdown of preset links. */
 .portions-menu { position: relative; display: inline-flex; }
 

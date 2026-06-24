@@ -96,6 +96,15 @@ public static class RecipeViews
 
         var metaActions = Html.Raw("""<span class="recipe-meta-actions">""") + editButton + deleteButton + Html.Raw("</span>");
 
+        // Title row: name on the left, the PDF download split button on the right at the title's
+        // height — matching the design's hero action card.
+        // Carry the chosen serving count into the PDF only when it differs from the recipe's base.
+        var pdfPortions = displayPortions != recipe.Portions ? displayPortions : (int?)null;
+        var titleRow =
+            Html.Raw($"""<div class="recipe-head-row"><h1>{Html.Encode(recipe.Name.Value)}</h1>""") +
+            PdfSplitButton(recipe.Id.Value, pdfPortions, t) +
+            Html.Raw("</div>");
+
         var avatarLetter = authorName.Length > 0 ? authorName[..1].ToUpperInvariant() : "?";
         var meta =
             Html.Raw($"""
@@ -170,7 +179,7 @@ public static class RecipeViews
             : HtmlString.Empty;
 
         var body = breadcrumb +
-            Html.H1(recipe.Name.Value) +
+            titleRow +
             meta +
             tags +
             images +
@@ -563,6 +572,28 @@ public static class RecipeViews
     }
 
     // Scaled ingredient amounts can be fractional; show at most two decimals and trim trailing zeros.
+    // Split button: the left half downloads the default (C1) PDF; the arrow is a <details> toggle that
+    // opens a click-to-pick dropdown for the alternative (C3) design (click, not hover — unlike the
+    // other menus). No JavaScript.
+    private static HtmlString PdfSplitButton(int recipeId, int? portions, Translate t)
+    {
+        var defaultUrl = $"/recipes/{recipeId}/pdf" + (portions is { } p ? $"?portions={p}" : string.Empty);
+        var alternativeUrl = $"/recipes/{recipeId}/pdf?design=alternative" + (portions is { } a ? $"&portions={a}" : string.Empty);
+
+        return Html.Raw($"""
+            <span class="pdf-split">
+                <a class="pdf-main" href="{defaultUrl}" title="{Html.Encode(t("recipe.pdf.title"))}">{PdfIcon}<span>{Html.Encode(t("recipe.pdf.button"))}</span></a>
+                <details class="pdf-menu">
+                    <summary class="pdf-arrow" aria-label="{Html.Encode(t("recipe.pdf.choose"))}">{ChevronIcon}</summary>
+                    <div class="pdf-dropdown"><div class="pdf-panel">
+                        <a href="{defaultUrl}">{Html.Encode(t("recipe.pdf.variant.default"))}</a>
+                        <a href="{alternativeUrl}">{Html.Encode(t("recipe.pdf.variant.alternative"))}</a>
+                    </div></div>
+                </details>
+            </span>
+            """);
+    }
+
     private static string FormatAmount(decimal amount) =>
         Math.Round(amount, 2, MidpointRounding.AwayFromZero).ToString("0.##", CultureInfo.InvariantCulture);
 
@@ -602,6 +633,9 @@ public static class RecipeViews
 
     private const string ChevronIcon =
         """<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>""";
+
+    private const string PdfIcon =
+        """<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>""";
 
     // Serving sizes offered by the portions selector on the detail page. Any positive integer is
     // accepted via ?portions=N — these are just the convenient presets.
