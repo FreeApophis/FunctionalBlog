@@ -37,7 +37,8 @@ public static class ImageViews
         var deleteForm = Html.Form(
             $"/images/{image.Id.Value}/delete",
             Html.CsrfField(csrfToken) + Html.Button(t("common.delete")),
-            style: "display:inline");
+            style: "display:inline",
+            confirm: t("common.confirm_delete"));
 
         var snippet = $"[img]/images/{image.Id.Value}[/img]";
         var embedField = Html.Raw($"""<input class="embed-snippet" type="text" value="{Html.Encode(snippet)}" readonly onclick="this.select()" />""");

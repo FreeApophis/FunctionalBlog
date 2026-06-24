@@ -76,13 +76,14 @@ public static class Html
 
     public static HtmlString Button(string text) => new HtmlString.Safe($"<button type=\"submit\">{Encode(text)}</button>");
 
-    public static HtmlString Form(string action, HtmlString body, Option<string> cssClass = default, Option<string> style = default, Option<string> enctype = default)
+    public static HtmlString Form(string action, HtmlString body, Option<string> cssClass = default, Option<string> style = default, Option<string> enctype = default, Option<string> confirm = default)
     {
         var classAttr = cssClass.Match(none: string.Empty, some: c => $" class=\"{Encode(c)}\"");
         var styleAttr = style.Match(none: string.Empty, some: s => $" style=\"{Encode(s)}\"");
         var enctypeAttr = enctype.Match(none: string.Empty, some: e => $" enctype=\"{Encode(e)}\"");
+        var confirmAttr = confirm.Match(none: string.Empty, some: c => $" data-confirm=\"{Encode(c)}\"");
 
-        return new HtmlString.Safe($"""<form method="post" action="{Encode(action)}"{classAttr}{styleAttr}{enctypeAttr}>{body.Render()}</form>""");
+        return new HtmlString.Safe($"""<form method="post" action="{Encode(action)}"{classAttr}{styleAttr}{enctypeAttr}{confirmAttr}>{body.Render()}</form>""");
     }
 
     public static HtmlString InputFile(string name, string accept, bool multiple = false) =>

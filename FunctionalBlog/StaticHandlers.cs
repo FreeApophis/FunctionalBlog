@@ -7,6 +7,7 @@ public static class StaticHandlers
     private static readonly Lazy<string> StylesContent = new(LoadStyles);
     private static readonly Lazy<string> HtmxContent = new(LoadHtmx);
     private static readonly Lazy<string> ComboboxKeysContent = new(LoadComboboxKeys);
+    private static readonly Lazy<string> ConfirmDeleteContent = new(LoadConfirmDelete);
     private static readonly ConcurrentDictionary<string, byte[]> BinaryCache = new();
 
     // Self-hosted design fonts (latin subset, variable weight). Whitelist of servable files.
@@ -35,6 +36,9 @@ public static class StaticHandlers
 
     public static App ComboboxKeysScript => _ => _ =>
         ValueTask.FromResult(Response.Js(ComboboxKeysContent.Value));
+
+    public static App ConfirmDeleteScript => _ => _ =>
+        ValueTask.FromResult(Response.Js(ConfirmDeleteContent.Value));
 
     public static App Font(string file) => _ => _ =>
         Fonts.GetValueOrNone(file) is [var resourceName]
@@ -67,6 +71,12 @@ public static class StaticHandlers
     private static string LoadComboboxKeys()
     {
         const string resourceName = "FunctionalBlog.wwwroot.combobox-keys.js";
+        return LoadResource(resourceName);
+    }
+
+    private static string LoadConfirmDelete()
+    {
+        const string resourceName = "FunctionalBlog.wwwroot.confirm-delete.js";
         return LoadResource(resourceName);
     }
 

@@ -60,6 +60,7 @@ public static class AdminUnitViews
                     <button type="button" class="icon-btn" title="{Html.Encode(t("common.edit"))}" aria-label="{Html.Encode(t("common.edit"))}"
                             hx-get="/admin/units/{id}/edit-row" hx-target="#unit-row-{id}" hx-swap="outerHTML">{PencilIcon}</button>
                     <button type="button" class="icon-remove" title="{Html.Encode(t("common.delete"))}" aria-label="{Html.Encode(t("common.delete"))}"
+                            data-confirm="{Html.Encode(t("common.confirm_delete"))}"
                             hx-post="/admin/units/{id}/delete" hx-target="#unit-row-{id}" hx-swap="outerHTML" hx-include="#units-csrf">{TrashIcon}</button>
                 </span>
             </div>

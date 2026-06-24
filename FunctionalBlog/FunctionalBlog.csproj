@@ -10,6 +10,8 @@
 		<EmbeddedResource Include="wwwroot\htmx.min.js" />
 		<Content Remove="wwwroot\combobox-keys.js" />
 		<EmbeddedResource Include="wwwroot\combobox-keys.js" />
+		<Content Remove="wwwroot\confirm-delete.js" />
+		<EmbeddedResource Include="wwwroot\confirm-delete.js" />
 		<Content Remove="wwwroot\fonts\*.woff2" />
 		<EmbeddedResource Include="wwwroot\fonts\*.woff2" />
 		<Content Remove="wwwroot\fonts\*.ttf" />

@@ -35,7 +35,7 @@ public static class PageViews
 
         if (principal.Can<Delete>(new PageResource()))
         {
-            actions.Add(Html.Form($"/pages/{page.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Button(t("common.delete")), style: "display:inline"));
+            actions.Add(Html.Form($"/pages/{page.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Button(t("common.delete")), style: "display:inline", confirm: t("common.confirm_delete")));
         }
 
         var actionsBar = actions.Count > 0 ? Html.P(HtmlString.Join(" · ", actions)) : HtmlString.Empty;

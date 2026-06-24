@@ -91,7 +91,7 @@ public static class RecipeViews
 
         var deleteIcon = Html.Raw($"""<button type="submit" class="icon-round icon-round-danger" title="{Html.Encode(t("common.delete"))}" aria-label="{Html.Encode(t("common.delete"))}">{TrashIcon}</button>""");
         var deleteButton = principal.Can<Delete>(new RecipeResource())
-            ? Html.Form($"/recipes/{recipe.Id.Value}/delete", Html.CsrfField(csrfToken) + deleteIcon, cssClass: "inline-form")
+            ? Html.Form($"/recipes/{recipe.Id.Value}/delete", Html.CsrfField(csrfToken) + deleteIcon, cssClass: "inline-form", confirm: t("common.confirm_delete"))
             : HtmlString.Empty;
 
         var metaActions = Html.Raw("""<span class="recipe-meta-actions">""") + editButton + deleteButton + Html.Raw("</span>");

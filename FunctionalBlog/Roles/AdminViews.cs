@@ -135,7 +135,7 @@ public static class AdminViews
                 Html.InputHidden("resource", r.ResourceKey) +
                 Html.Button(t("admin.roles.remove_rule"));
             return Html.Text(r.ActionName) + Html.Raw(" → ") + Html.Text(r.ResourceKey) + Html.Raw(" ") +
-                Html.Form($"/admin/roles/{role.Id.Value}/rules/delete", ruleFormBody, style: "display:inline");
+                Html.Form($"/admin/roles/{role.Id.Value}/rules/delete", ruleFormBody, style: "display:inline", confirm: t("common.confirm_delete"));
         }
 
         var ruleRows = role.Rules.Count == 0
@@ -148,7 +148,7 @@ public static class AdminViews
             Html.Label(Html.Text(t("admin.roles.resource")) + Html.Raw($"""<select name="resource">{resourceOptions}</select>""")) +
             Html.Button(t("admin.roles.add_rule"));
         var addForm = Html.Form($"/admin/roles/{role.Id.Value}/rules", addFormBody);
-        var deleteForm = Html.Form($"/admin/roles/{role.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Button(t("admin.roles.delete")));
+        var deleteForm = Html.Form($"/admin/roles/{role.Id.Value}/delete", Html.CsrfField(csrfToken) + Html.Button(t("admin.roles.delete")), confirm: t("common.confirm_delete"));
 
         var breadcrumb = Html.Breadcrumb(
             Crumb.Link(t("nav.admin"), "/admin"),

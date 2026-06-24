@@ -137,7 +137,8 @@ public static class AdminIngredientViews
         var deleteForm = Html.Form(
             $"/admin/ingredients/{id}/delete",
             Html.CsrfField(csrfToken) + deleteButton,
-            cssClass: "inline-form").Render();
+            cssClass: "inline-form",
+            confirm: t("common.confirm_delete")).Render();
 
         return $"""
             <div class="ingredient-row" id="ingredient-row-{id}">
