@@ -90,7 +90,9 @@ public sealed class IngredientHandlersTests
     public async Task Index_paginates_long_lists()
     {
         var env = BuildEnv();
-        for (var i = 0; i < 30; i++)
+
+        // Comfortably more than one page, whatever the configured page size.
+        for (var i = 0; i < 61; i++)
         {
             await SeedComplete(env, $"Zutat {i:D2}", "Beschreibung.");
         }

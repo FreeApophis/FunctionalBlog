@@ -156,20 +156,51 @@ public sealed class RecipeHandlerTests
         var response = await RecipeHandlers.ShowRecipe(id)(AnEmptyRequest())(env);
 
         Assert.Contains("recipe-image-placeholder", response.Body);
-        Assert.DoesNotContain("slider-track", response.Body);
+        Assert.DoesNotContain("slider-fade", response.Body);
     }
 
     [Fact]
-    public async Task ShowRecipe_renders_a_css_slider_with_every_image()
+    public async Task ShowRecipe_renders_an_autoplaying_crossfade_slider_with_every_image()
     {
         var env = BuildEnv();
         var id = await SeedRecipe(env, ["/images/3", "/images/4"]);
 
         var response = await RecipeHandlers.ShowRecipe(id)(AnEmptyRequest())(env);
 
-        Assert.Contains("slider-track", response.Body);
+        Assert.Contains("slider-fade", response.Body);
         Assert.Contains("/images/3", response.Body);
         Assert.Contains("/images/4", response.Body);
+
+        // Pure-CSS autoplay: a generated keyframe animation that loops without JS.
+        Assert.Contains("@keyframes", response.Body);
+        Assert.Contains("infinite", response.Body);
+    }
+
+    [Fact]
+    public async Task ShowRecipe_slider_offers_manual_selection_controls()
+    {
+        var env = BuildEnv();
+        var id = await SeedRecipe(env, ["/images/3", "/images/4"]);
+
+        var response = await RecipeHandlers.ShowRecipe(id)(AnEmptyRequest())(env);
+
+        // A hidden radio per image plus a clickable dot label lets the visitor take over from autoplay.
+        Assert.Contains("type=\"radio\"", response.Body);
+        Assert.Contains("class=\"slider-pick\"", response.Body);
+        Assert.Contains($"<label class=\"slider-dot\" for=\"recipe-{id.Value}-pick-0\"", response.Body);
+        Assert.Contains($"<label class=\"slider-dot\" for=\"recipe-{id.Value}-pick-1\"", response.Body);
+    }
+
+    [Fact]
+    public async Task ShowRecipe_shows_a_single_image_without_autoplay()
+    {
+        var env = BuildEnv();
+        var id = await SeedRecipe(env, ["/images/3"]);
+
+        var response = await RecipeHandlers.ShowRecipe(id)(AnEmptyRequest())(env);
+
+        Assert.Contains("/images/3", response.Body);
+        Assert.DoesNotContain("@keyframes", response.Body);
     }
 
     [Fact]

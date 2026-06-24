@@ -404,21 +404,85 @@ public static class RecipeViews
             """;
     }
 
-    // A CSS-only slider: a horizontal scroll-snap track plus anchor-link selection dots overlaid on
-    // the image (bottom-right) that scroll each slide into view — no JavaScript involved. Automatic
-    // advancing is intentionally not done here: animating scroll position needs JS, so it is deferred.
+    // A CSS-only crossfade slideshow: every image is stacked and faded in for its turn by a generated
+    // @keyframes animation, auto-advancing every 6s with no JavaScript or htmx. A lone image is shown
+    // statically. Each slide's animation is offset by its index so the slides hand over to one another,
+    // and the modulo wrap of the infinite loop makes the last→first transition crossfade seamlessly.
+    //
+    // The dots are <label>s for a hidden radio per image: clicking one checks its radio, and generated
+    // `:checked ~` rules halt the autoplay and reveal the chosen slide. So the show auto-advances until
+    // the visitor takes over, after which it stays on the picked image (CSS can't resume a reset
+    // animation without JS).
+    private const int SliderSecondsPerSlide = 6;
+
     private static HtmlString Slider(IReadOnlyList<string> urls, string alt, int recipeId)
     {
-        string SlideId(int i) => $"recipe-{recipeId}-slide-{i}";
+        if (urls.Count == 1)
+        {
+            return Html.Raw($"""<div class="slider"><div class="slider-stack"><figure class="slide is-static"><img src="{Html.Encode(urls[0])}" alt="{Html.Encode(alt)}" /></figure></div></div>""");
+        }
 
-        var slides = string.Concat(urls.Select((url, i) =>
-            $"""<figure class="slide" id="{Html.Encode(SlideId(i))}"><img src="{Html.Encode(url)}" alt="{Html.Encode(alt)}" /></figure>"""));
+        var count = urls.Count;
+        var total = count * SliderSecondsPerSlide;
+        var segment = 100m / count;
+        var fade = Math.Min(segment * 0.3m, 6m);
+        var segmentOut = segment + fade;
 
-        var dots = urls.Count > 1
-            ? $"""<div class="slider-dots">{string.Concat(urls.Select((_, i) => $"""<a href="#{Html.Encode(SlideId(i))}" aria-label="{i + 1}"></a>"""))}</div>"""
-            : string.Empty;
+        static string Pct(decimal value) => value.ToString("0.##", CultureInfo.InvariantCulture);
 
-        return Html.Raw($"""<div class="slider"><div class="slider-track">{slides}</div>{dots}</div>""");
+        var sliderId = $"recipe-slider-{recipeId}";
+        var slideKf = $"recipe-{recipeId}-fade";
+        var dotKf = $"recipe-{recipeId}-dot";
+        string PickId(int i) => $"recipe-{recipeId}-pick-{i}";
+
+        var keyframes = $$"""
+            @keyframes {{slideKf}} {
+                0% { opacity: 0; }
+                {{Pct(fade)}}% { opacity: 1; }
+                {{Pct(segment)}}% { opacity: 1; }
+                {{Pct(segmentOut)}}% { opacity: 0; }
+                100% { opacity: 0; }
+            }
+            @keyframes {{dotKf}} {
+                0% { background: var(--green); transform: scale(1.25); }
+                {{Pct(segment)}}% { background: var(--green); transform: scale(1.25); }
+                {{Pct(segmentOut)}}% { background: var(--ph-label-bg); transform: none; }
+                100% { background: var(--ph-label-bg); transform: none; }
+            }
+            """;
+
+        // Bind each slide/dot to its keyframe in the stylesheet (not inline) so the :checked freeze rule
+        // below can override it — an inline `animation` would always win. The per-index delay staggers
+        // the hand-over; no fill-mode means a waiting element shows its plain base style (hidden slide /
+        // grey dot) during its delay rather than the animation's first frame.
+        var bindings = string.Concat(Enumerable.Range(0, count).Select(i => $$"""
+            #{{sliderId}} .slider-stack .slide:nth-child({{i + 1}}) { animation: {{slideKf}} {{total}}s {{i * SliderSecondsPerSlide}}s infinite; }
+            #{{sliderId}} .slider-dots label:nth-child({{i + 1}}) { animation: {{dotKf}} {{total}}s {{i * SliderSecondsPerSlide}}s infinite; }
+            """));
+
+        // Once any dot is picked, freeze the autoplay; the per-pick rules below then reveal the choice.
+        var manualBase = $$"""
+            #{{sliderId}} .slider-pick:checked ~ .slider-stack .slide { animation: none; opacity: 0; }
+            #{{sliderId}} .slider-pick:checked ~ .slider-dots label { animation: none; }
+            """;
+
+        var manualPicks = string.Concat(Enumerable.Range(0, count).Select(i => $$"""
+            #{{sliderId}} #{{PickId(i)}}:checked ~ .slider-stack .slide:nth-child({{i + 1}}) { opacity: 1; }
+            #{{sliderId}} #{{PickId(i)}}:checked ~ .slider-dots label:nth-child({{i + 1}}) { background: var(--green); transform: scale(1.25); }
+            #{{sliderId}} #{{PickId(i)}}:focus-visible ~ .slider-dots label:nth-child({{i + 1}}) { outline: 2px solid var(--green); outline-offset: 2px; }
+            """));
+
+        var picks = string.Concat(urls.Select((_, i) =>
+            $"""<input type="radio" name="{sliderId}-sel" id="{PickId(i)}" class="slider-pick" aria-label="{i + 1}" />"""));
+
+        var slides = string.Concat(urls.Select(url =>
+            $"""<figure class="slide"><img src="{Html.Encode(url)}" alt="{Html.Encode(alt)}" /></figure>"""));
+
+        var dots = string.Concat(urls.Select((_, i) =>
+            $"""<label class="slider-dot" for="{PickId(i)}" aria-label="{i + 1}"></label>"""));
+
+        return Html.Raw(
+            $"""<div class="slider slider-fade" id="{sliderId}"><style>{keyframes}{bindings}{manualBase}{manualPicks}</style>{picks}<div class="slider-stack">{slides}</div><div class="slider-dots">{dots}</div></div>""");
     }
 
     // Stand-in shown when a recipe has no images: the design's diagonally-striped box with a small

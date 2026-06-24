@@ -410,33 +410,53 @@ article:hover {
 
 .slider { position: relative; margin: 1rem 0 1.5rem; }
 
-.slider-track {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
+/* Crossfade slideshow: slides are stacked and faded in turn by a generated keyframe animation
+   (see RecipeViews.Slider). A single image uses the static slide and keeps the box height. */
+.slider-stack {
+    position: relative;
+    height: 26rem;
     border-radius: var(--radius);
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
 }
 
-.slider-track .slide { flex: 0 0 100%; margin: 0; scroll-snap-align: center; }
-.slider-track .slide img { display: block; width: 100%; height: 26rem; object-fit: cover; }
+.slider-stack .slide { position: absolute; inset: 0; margin: 0; opacity: 0; }
+.slider-stack .slide.is-static { position: relative; opacity: 1; }
+.slider-stack .slide img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
-/* Selection dots overlaid on the image, bottom-right (per the design). */
+/* The per-image radios driving manual selection are visually hidden but stay keyboard-reachable. */
+.slider-pick {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    /* Honour reduced-motion: stop the rotation and reveal the first image. */
+    .slider-fade .slide { animation: none !important; opacity: 0; }
+    .slider-fade .slide:first-child { opacity: 1; }
+    .slider-fade .slider-dots label { animation: none !important; }
+}
+
+/* Synced progress dots overlaid on the image, bottom-right (per the design); also clickable to
+   take over from the autoplay. */
 .slider-dots { position: absolute; right: 14px; bottom: 14px; display: flex; gap: 7px; }
 
-.slider-dots a {
-    width: 8px;
-    height: 8px;
+.slider-dots label {
+    display: block;
+    width: 9px;
+    height: 9px;
     border-radius: 50%;
     background: var(--ph-label-bg);
     box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
-    transition: background .2s ease, transform .2s ease;
+    cursor: pointer;
 }
-
-.slider-dots a:hover, .slider-dots a:focus { background: var(--green); transform: scale(1.25); }
 
 /* No-image placeholder: diagonal stripes + a mono label, matching the design. */
 .recipe-image-placeholder {
