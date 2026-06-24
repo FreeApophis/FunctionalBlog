@@ -362,7 +362,7 @@ public static class RecipeViews
         {
             return string.Concat(matches.Select(m =>
                 $$"""
-                    <button type="button" name="name" value="{{Html.Encode(m.Name.Value)}}"
+                    <button type="button" name="selected" value="{{Html.Encode(m.Name.Value)}}"
                             class="ingredient-match"
                             hx-post="/recipes/form/ingredient-select"
                             hx-vals='{"index": "{{Html.Encode(index)}}"}'

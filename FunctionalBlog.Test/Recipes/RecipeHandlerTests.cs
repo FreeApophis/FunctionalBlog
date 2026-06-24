@@ -455,13 +455,28 @@ public sealed class RecipeHandlerTests
     public async Task IngredientSelect_renders_the_combobox_input_with_the_chosen_name()
     {
         var env = BuildEnv();
-        var form = new Dictionary<string, string> { ["index"] = "0", ["name"] = "Mehl" };
+        var form = new Dictionary<string, string> { ["index"] = "0", ["selected"] = "Mehl" };
         var request = new Request(HttpMethod.Post, "/recipes/form/ingredient-select", Empty, Empty, form, Empty);
 
         var response = await RecipeHandlers.IngredientSelect(request)(env);
 
         Assert.Contains("ingredient_name_0", response.Body);
         Assert.Contains("value=\"Mehl\"", response.Body);
+    }
+
+    // The recipe title field is named "name"; since the match button lives inside the same
+    // form, htmx serialises the whole form on click. The button must therefore post the chosen
+    // ingredient under a distinct key, or the two "name" values collide into "<title>,<chosen>".
+    [Fact]
+    public async Task IngredientMatches_button_does_not_post_under_the_colliding_name_key()
+    {
+        var env = BuildEnv();
+        var mehl = await SeedIngredient(env, "Mehl");
+
+        var html = RecipeViews.IngredientMatches("0", "Me", [mehl], env.T);
+
+        Assert.DoesNotContain("name=\"name\"", html);
+        Assert.Contains("name=\"selected\" value=\"Mehl\"", html);
     }
 
     private static async Task<Ingredient> SeedIngredient(

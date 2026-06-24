@@ -218,7 +218,7 @@ public static class RecipeHandlers
     public static App IngredientSelect => request => env =>
     {
         var index = request.Form.GetValueOrDefault("index", "0");
-        var name = request.Form.GetValueOrDefault("name", string.Empty);
+        var name = request.Form.GetValueOrDefault("selected", string.Empty);
         return ValueTask.FromResult(Response.Html(RecipeViews.IngredientCombobox(index, name, env.T)));
     };
 
