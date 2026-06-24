@@ -286,7 +286,8 @@ public static class RecipeViews
     public static string IngredientSection(
         IReadOnlyList<(string Name, string Amount, string Unit)> ingredients,
         Translate t,
-        IReadOnlyList<Unit> units)
+        IReadOnlyList<Unit> units,
+        Option<int> autofocusRow = default)
     {
         string IngredientRow(int i, string name, string amount, string unit)
         {
@@ -298,7 +299,7 @@ public static class RecipeViews
 
             return $"""
                 <div class="ingredient-row" id="ingredient-row-{i}">
-                    {Html.InputNumber($"ingredient_amount_{i}", amount, step: "any")}
+                    {Html.InputNumber($"ingredient_amount_{i}", amount, step: "any", autofocus: autofocusRow is [var focus] && focus == i)}
                     <select name="ingredient_unit_{i}" class="ingredient-unit">{unitOptions}</select>
                     {IngredientCombobox(i.ToString(), name, t)}
                     <button type="submit" name="action" value="remove-ingredient-{i}"
@@ -376,14 +377,15 @@ public static class RecipeViews
             : $"""<div class="ingredient-create-hint">{Html.Encode(t("recipe.ingredient_will_be_created"))}: «{Html.Encode(query)}»</div>""";
     }
 
-    public static string StepSection(IReadOnlyList<string> steps, Translate t)
+    public static string StepSection(IReadOnlyList<string> steps, Translate t, Option<int> autofocusRow = default)
     {
         string StepRow(int i, string text)
         {
+            var autofocus = autofocusRow is [var focus] && focus == i ? " autofocus" : string.Empty;
             return $"""
                 <div class="step-row" id="step-row-{i}">
                     <span class="step-badge">{i + 1}</span>
-                    <textarea name="step_{i}" rows="3">{Html.Encode(text)}</textarea>
+                    <textarea name="step_{i}" rows="3"{autofocus}>{Html.Encode(text)}</textarea>
                     <button type="submit" name="action" value="remove-step-{i}"
                             class="icon-remove" title="{Html.Encode(t("recipe.remove"))}" aria-label="{Html.Encode(t("recipe.remove"))}"
                             hx-post="/recipes/form/steps"

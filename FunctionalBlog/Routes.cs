@@ -10,6 +10,7 @@ public static class Routes
         .Get("/htmx.min.js", StaticHandlers.HtmxScript)
         .Get("/combobox-keys.js", StaticHandlers.ComboboxKeysScript)
         .Get("/confirm-delete.js", StaticHandlers.ConfirmDeleteScript)
+        .Get("/autofocus-swap.js", StaticHandlers.AutofocusSwapScript)
         .Get("/fonts/{file}", p => StaticHandlers.Font(p[0]))
         .Get("/assets/{file}", p => StaticHandlers.Asset(p[0]))
         .Get("/", BlogHandlers.Index)

@@ -479,6 +479,63 @@ public sealed class RecipeHandlerTests
         Assert.Contains("name=\"selected\" value=\"Mehl\"", html);
     }
 
+    // Adding a row swaps the whole section, replacing the button that had focus. The new row's
+    // first field carries `autofocus` so the script can move the cursor there for the next entry.
+    [Fact]
+    public async Task IngredientsSection_add_autofocuses_the_new_rows_first_field()
+    {
+        var env = BuildEnv();
+        var form = new Dictionary<string, string>
+        {
+            ["action"] = "add-ingredient",
+            ["ingredient_name_0"] = "Mehl",
+            ["ingredient_amount_0"] = "200",
+            ["ingredient_unit_0"] = "1",
+        };
+        var request = new Request(HttpMethod.Post, "/recipes/form/ingredients", Empty, Empty, form, Empty);
+
+        var response = await RecipeHandlers.IngredientsSection(request)(env);
+
+        Assert.Contains("ingredient_amount_1", response.Body);
+        Assert.Contains("value=\"\" autofocus", response.Body);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(response.Body, "autofocus"));
+    }
+
+    [Fact]
+    public async Task IngredientsSection_remove_does_not_autofocus_any_field()
+    {
+        var env = BuildEnv();
+        var form = new Dictionary<string, string>
+        {
+            ["action"] = "remove-ingredient-0",
+            ["ingredient_name_0"] = "Mehl",
+            ["ingredient_amount_0"] = "200",
+            ["ingredient_unit_0"] = "1",
+        };
+        var request = new Request(HttpMethod.Post, "/recipes/form/ingredients", Empty, Empty, form, Empty);
+
+        var response = await RecipeHandlers.IngredientsSection(request)(env);
+
+        Assert.DoesNotContain("autofocus", response.Body);
+    }
+
+    [Fact]
+    public async Task StepsSection_add_autofocuses_the_new_step_textarea()
+    {
+        var env = BuildEnv();
+        var form = new Dictionary<string, string>
+        {
+            ["action"] = "add-step",
+            ["step_0"] = "Erster Schritt.",
+        };
+        var request = new Request(HttpMethod.Post, "/recipes/form/steps", Empty, Empty, form, Empty);
+
+        var response = await RecipeHandlers.StepsSection(request)(env);
+
+        Assert.Contains("name=\"step_1\" rows=\"3\" autofocus", response.Body);
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(response.Body, "autofocus"));
+    }
+
     private static async Task<Ingredient> SeedIngredient(
         Env env, string name, decimal calorificValue = 0m, decimal density = 1m, decimal pieceCount = 0m)
     {

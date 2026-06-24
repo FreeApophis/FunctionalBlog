@@ -108,11 +108,12 @@ public static class Html
         return new HtmlString.Safe($"""<input name="{Encode(name)}" value="{Encode(value)}"{styleAttr} />""");
     }
 
-    public static HtmlString InputNumber(string name, string value, string min = "0", Option<string> step = default)
+    public static HtmlString InputNumber(string name, string value, string min = "0", Option<string> step = default, bool autofocus = false)
     {
         var stepAttr = step.Match(none: string.Empty, some: s => $" step=\"{Encode(s)}\"");
+        var autofocusAttr = autofocus ? " autofocus" : string.Empty;
 
-        return new HtmlString.Safe($"""<input name="{Encode(name)}" type="number"{stepAttr} min="{Encode(min)}" value="{Encode(value)}" />""");
+        return new HtmlString.Safe($"""<input name="{Encode(name)}" type="number"{stepAttr} min="{Encode(min)}" value="{Encode(value)}"{autofocusAttr} />""");
     }
 
     public static HtmlString InputEmail(string name, string value = "") =>

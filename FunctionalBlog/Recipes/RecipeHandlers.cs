@@ -166,10 +166,12 @@ public static class RecipeHandlers
     {
         var action = request.Form.GetValueOrDefault("action", string.Empty);
         var ingredients = RecipeForm.ParseIngredients(request);
+        var autofocus = Option<int>.None;
 
         if (action == "add-ingredient")
         {
             ingredients.Add((string.Empty, string.Empty, DefaultUnitId));
+            autofocus = Option.Some(ingredients.Count - 1);
         }
         else if (action.StartsWith("remove-ingredient-") &&
                  int.TryParse(action["remove-ingredient-".Length..], out var removeIdx) &&
@@ -178,17 +180,19 @@ public static class RecipeHandlers
             ingredients.RemoveAt(removeIdx);
         }
 
-        return Response.Html(RecipeViews.IngredientSection(ingredients, env.T, await env.Units.All()));
+        return Response.Html(RecipeViews.IngredientSection(ingredients, env.T, await env.Units.All(), autofocus));
     };
 
     public static App StepsSection => request => env =>
     {
         var action = request.Form.GetValueOrDefault("action", string.Empty);
         var steps = RecipeForm.ParseRawSteps(request);
+        var autofocus = Option<int>.None;
 
         if (action == "add-step")
         {
             steps.Add(string.Empty);
+            autofocus = Option.Some(steps.Count - 1);
         }
         else if (action.StartsWith("remove-step-") &&
                  int.TryParse(action["remove-step-".Length..], out var removeIdx) &&
@@ -197,7 +201,7 @@ public static class RecipeHandlers
             steps.RemoveAt(removeIdx);
         }
 
-        return ValueTask.FromResult(Response.Html(RecipeViews.StepSection(steps, env.T)));
+        return ValueTask.FromResult(Response.Html(RecipeViews.StepSection(steps, env.T, autofocus)));
     };
 
     public static App IngredientSearch => request => async env =>

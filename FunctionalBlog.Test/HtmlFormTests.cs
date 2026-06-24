@@ -17,4 +17,20 @@ public class HtmlFormTests
 
         Assert.Contains("data-confirm=\"Delete &quot;this&quot;?\"", html);
     }
+
+    [Fact]
+    public void InputNumber_omits_autofocus_by_default()
+    {
+        var html = Html.InputNumber("amount", string.Empty).Render();
+
+        Assert.DoesNotContain("autofocus", html);
+    }
+
+    [Fact]
+    public void InputNumber_emits_autofocus_when_requested()
+    {
+        var html = Html.InputNumber("amount", string.Empty, autofocus: true).Render();
+
+        Assert.Contains("autofocus", html);
+    }
 }
