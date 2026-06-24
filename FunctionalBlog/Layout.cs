@@ -10,7 +10,7 @@ public static class Layout
         <head>
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>{{Html.Encode(title)}}</title>
+            <title>foodblog.ch - {{Html.Encode(title)}}</title>
             <link rel="stylesheet" href="/styles.css" />
             <link rel='icon' type='image/x-icon' href='/favicon.ico'>
             <link rel='icon' type='image/png' href='/favicon.png'>

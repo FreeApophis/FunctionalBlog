@@ -11,6 +11,8 @@ public static class Routes
         .Get("/combobox-keys.js", StaticHandlers.ComboboxKeysScript)
         .Get("/confirm-delete.js", StaticHandlers.ConfirmDeleteScript)
         .Get("/autofocus-swap.js", StaticHandlers.AutofocusSwapScript)
+        .Get("/favicon.ico", StaticHandlers.FaviconIco)
+        .Get("/favicon.png", StaticHandlers.FaviconPng)
         .Get("/fonts/{file}", p => StaticHandlers.Font(p[0]))
         .Get("/assets/{file}", p => StaticHandlers.Asset(p[0]))
         .Get("/", BlogHandlers.Index)

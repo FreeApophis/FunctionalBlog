@@ -44,6 +44,16 @@ public static class StaticHandlers
     public static App AutofocusSwapScript => _ => _ =>
         ValueTask.FromResult(Response.Js(AutofocusSwapContent.Value));
 
+    public static App FaviconIco => _ => _ =>
+        ValueTask.FromResult(Response.Bytes(
+            "image/x-icon",
+            BinaryCache.GetOrAdd("FunctionalBlog.wwwroot.favicon.ico", LoadResourceBytes)));
+
+    public static App FaviconPng => _ => _ =>
+        ValueTask.FromResult(Response.Bytes(
+            "image/png",
+            BinaryCache.GetOrAdd("FunctionalBlog.wwwroot.favicon.png", LoadResourceBytes)));
+
     public static App Font(string file) => _ => _ =>
         Fonts.GetValueOrNone(file) is [var resourceName]
             ? ValueTask.FromResult(Response.Bytes(

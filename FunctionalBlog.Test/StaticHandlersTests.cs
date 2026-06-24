@@ -44,6 +44,28 @@ public sealed class StaticHandlersTests
         Assert.Equal(404, response.Status);
     }
 
+    [Fact]
+    public async Task FaviconIco_serves_the_embedded_icon()
+    {
+        var response = await StaticHandlers.FaviconIco(Request())(Env());
+
+        Assert.Equal(200, response.Status);
+        Assert.Equal("image/x-icon", response.ContentType);
+        Assert.NotNull(response.Binary);
+        Assert.NotEmpty(response.Binary!);
+    }
+
+    [Fact]
+    public async Task FaviconPng_serves_the_embedded_icon()
+    {
+        var response = await StaticHandlers.FaviconPng(Request())(Env());
+
+        Assert.Equal(200, response.Status);
+        Assert.Equal("image/png", response.ContentType);
+        Assert.NotNull(response.Binary);
+        Assert.NotEmpty(response.Binary!);
+    }
+
     private static Request Request() =>
         new(HttpMethod.Get, "/fonts/x", Empty, Empty, Empty, Empty);
 
