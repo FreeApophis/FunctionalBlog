@@ -11,7 +11,7 @@ public static class BlogHandlers
         return Response.Html(BlogViews.Index(articles, authorNames, recipes, env.Ctx));
     };
 
-    public static App ShowArticle(ArticleId id) => _ => async env =>
+    public static App ShowArticle(ArticleId id) => request => async env =>
     {
         if ((await env.Articles.Find(id)) is [var article])
         {
@@ -19,7 +19,7 @@ public static class BlogHandlers
                 .Select(u => u.DisplayName.Value)
                 .GetOrElse("?");
 
-            return Response.Html(BlogViews.Show(article, authorName, env.Ctx));
+            return Response.Html(BlogViews.Show(article, authorName, env.Ctx, request.BaseUrl));
         }
 
         return Response.NotFound(env.Ctx);

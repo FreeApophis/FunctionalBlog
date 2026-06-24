@@ -7,7 +7,7 @@ public sealed class BlogViewsTests
     [Fact]
     public void Show_renders_the_author_with_an_avatar_in_a_meta_row()
     {
-        var html = BlogViews.Show(AnArticle(), "Anna", new ViewContext(Guest.Instance, NoOp, string.Empty));
+        var html = BlogViews.Show(AnArticle(), "Anna", new ViewContext(Guest.Instance, NoOp, string.Empty), string.Empty);
 
         Assert.Contains("recipe-meta", html);
         Assert.Contains("class=\"avatar\">A<", html); // initial of "Anna"
@@ -17,7 +17,7 @@ public sealed class BlogViewsTests
     [Fact]
     public void Show_renders_the_teaser_in_its_own_styled_paragraph()
     {
-        var html = BlogViews.Show(AnArticle(), "Anna", new ViewContext(Guest.Instance, NoOp, string.Empty));
+        var html = BlogViews.Show(AnArticle(), "Anna", new ViewContext(Guest.Instance, NoOp, string.Empty), string.Empty);
 
         Assert.Contains("<p class=\"blog-teaser\">Ein ausreichend langer Teaser.</p>", html);
     }
@@ -25,7 +25,7 @@ public sealed class BlogViewsTests
     [Fact]
     public void Show_no_longer_uses_the_plain_by_line()
     {
-        var html = BlogViews.Show(AnArticle(), "Anna", new ViewContext(Guest.Instance, NoOp, string.Empty));
+        var html = BlogViews.Show(AnArticle(), "Anna", new ViewContext(Guest.Instance, NoOp, string.Empty), string.Empty);
 
         Assert.DoesNotContain("article.by", html);
     }
@@ -35,7 +35,7 @@ public sealed class BlogViewsTests
     {
         var principal = UserWith(new PermissionRule("Edit", "article"), new PermissionRule("Delete", "article"));
 
-        var html = BlogViews.Show(AnArticle(), "Anna", new ViewContext(principal, NoOp, string.Empty));
+        var html = BlogViews.Show(AnArticle(), "Anna", new ViewContext(principal, NoOp, string.Empty), string.Empty);
 
         Assert.Contains("recipe-meta-actions", html);
         Assert.Contains("icon-round", html);
@@ -47,7 +47,7 @@ public sealed class BlogViewsTests
     [Fact]
     public void Show_omits_edit_and_delete_for_guests()
     {
-        var html = BlogViews.Show(AnArticle(), "Anna", new ViewContext(Guest.Instance, NoOp, string.Empty));
+        var html = BlogViews.Show(AnArticle(), "Anna", new ViewContext(Guest.Instance, NoOp, string.Empty), string.Empty);
 
         Assert.DoesNotContain("icon-round", html);
         Assert.DoesNotContain("/articles/1/edit", html);

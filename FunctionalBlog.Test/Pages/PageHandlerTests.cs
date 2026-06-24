@@ -54,6 +54,20 @@ public sealed class PageHandlerTests
     }
 
     [Fact]
+    public async Task ShowPage_emits_open_graph_tags_for_sharing()
+    {
+        var env = BuildEnv();
+        var id = await env.Pages.NextId();
+        await env.Pages.Save(Page.Create(id, new PageTitle("Impressum"), new PageContent("Verantwortlich: [b]Anna[/b].")));
+
+        var request = AnEmptyRequest() with { BaseUrl = "https://foodblog.ch" };
+        var response = await PageHandlers.ShowPage(id)(request)(env);
+
+        Assert.Contains($"<meta property=\"og:url\" content=\"https://foodblog.ch/pages/{id.Value}\" />", response.Body);
+        Assert.Contains("<meta property=\"og:description\" content=\"Verantwortlich: Anna.\" />", response.Body);
+    }
+
+    [Fact]
     public async Task ShowPage_returns_404_for_an_unknown_page()
     {
         var env = BuildEnv();

@@ -93,6 +93,30 @@ public sealed class BlogHandlerTests
         Assert.Contains($"/images/{imageId.Value}", response.Body);
     }
 
+    [Fact]
+    public async Task ShowArticle_emits_blogposting_json_ld_and_open_graph_tags()
+    {
+        var env = BuildEnv();
+        var imageId = await env.Images.NextId();
+        await env.Images.Save(Image.Create(imageId, "titel.png", ImageContentType.Png, PngBytes, new UserId(1), env.Clock.Now));
+        var articleId = await env.Articles.NextId();
+        await env.Articles.Save(Article.Create(
+            articleId,
+            new ArticleTitle("Mit Bild"),
+            new ArticleTeaser("Ein ausreichend langer Teaser."),
+            new ArticleText("Ein ausreichend langer Text."),
+            new UserId(1),
+            env.Clock.Now,
+            Option.Some(imageId)));
+
+        var request = AnEmptyRequest() with { BaseUrl = "https://foodblog.ch" };
+        var response = await BlogHandlers.ShowArticle(articleId)(request)(env);
+
+        Assert.Contains("\"@type\":\"BlogPosting\"", response.Body);
+        Assert.Contains($"https://foodblog.ch/articles/{articleId.Value}", response.Body);
+        Assert.Contains($"<meta property=\"og:image\" content=\"https://foodblog.ch/images/{imageId.Value}\" />", response.Body);
+    }
+
     private static Request AFormRequest()
     {
         var form = new Dictionary<string, string>

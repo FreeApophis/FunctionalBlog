@@ -5,11 +5,11 @@ public static class PageHandlers
     public static App Index => _ => async env =>
         Response.Html(PageViews.Index(await env.Pages.All(), env.Ctx));
 
-    public static App ShowPage(PageId id) => _ => async env =>
+    public static App ShowPage(PageId id) => request => async env =>
     {
         if ((await env.Pages.Find(id)) is [var page])
         {
-            return Response.Html(PageViews.Show(page, env.Ctx));
+            return Response.Html(PageViews.Show(page, env.Ctx, request.BaseUrl));
         }
 
         return Response.NotFound(env.Ctx);

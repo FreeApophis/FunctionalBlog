@@ -19,7 +19,7 @@ public static class PageViews
         return Layout.Page(t("page.list_title"), body, ctx);
     }
 
-    public static string Show(Page page, ViewContext ctx)
+    public static string Show(Page page, ViewContext ctx, string baseUrl)
     {
         var (principal, t, csrfToken) = ctx;
 
@@ -45,7 +45,7 @@ public static class PageViews
             Html.H1(page.Title.Value) +
             Html.Div("post-text", Html.Raw(BbcodeRenderer.RenderToHtml(page.Content.Value)));
 
-        return Layout.Page(page.Title.Value, body, ctx);
+        return Layout.Page(page.Title.Value, body, ctx, PageSeo.Build(page, baseUrl));
     }
 
     public static string Form(

@@ -60,7 +60,7 @@ public static class BlogViews
         return Layout.Page(t("blog.title"), body, ctx);
     }
 
-    public static string Show(Article article, string authorName, ViewContext ctx)
+    public static string Show(Article article, string authorName, ViewContext ctx, string baseUrl)
     {
         var (principal, t, csrfToken) = ctx;
 
@@ -103,7 +103,7 @@ public static class BlogViews
             Html.Raw($"""<p class="blog-teaser">{Html.Encode(article.Teaser.Value)}</p>""") +
             Html.Div("post-text", Html.Raw(BbcodeRenderer.RenderToHtml(article.Text.Value)));
 
-        return Layout.Page(article.Title.Value, body, ctx);
+        return Layout.Page(article.Title.Value, body, ctx, ArticleSeo.Build(article, authorName, baseUrl));
     }
 
     public static string Form(
