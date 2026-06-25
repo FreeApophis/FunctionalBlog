@@ -79,6 +79,8 @@ public static class Routes
         .Post("/admin/units/{id}", p => Auth.RequirePermission<Edit>(new UnitResource(), AdminUnitHandlers.Update(new UnitId(int.Parse(p[0])))))
         .Get("/admin/search", Auth.RequirePermission<Manage>(new SearchResource(), AdminSearchHandlers.Status))
         .Post("/admin/search/rebuild", Auth.RequirePermission<Manage>(new SearchResource(), AdminSearchHandlers.Rebuild))
+        .Get("/admin/images/cleanup", Auth.RequirePermission<Manage>(new ImageResource(), ImageCleanupHandlers.Cleanup))
+        .Post("/admin/images/cleanup/delete", Auth.RequirePermission<Manage>(new ImageResource(), ImageCleanupHandlers.DeleteUnused))
         .Get("/admin/users", Auth.RequirePermission<Manage>(new UserResource(), AdminHandlers.UserList))
         .Get("/admin/users/{id}", p => Auth.RequirePermission<Manage>(new UserResource(), AdminHandlers.UserDetail(int.Parse(p[0]))))
         .Post("/admin/users/{id}/roles", p => Auth.RequirePermission<Manage>(new UserResource(), AdminHandlers.UpdateUserRoles(int.Parse(p[0]))))

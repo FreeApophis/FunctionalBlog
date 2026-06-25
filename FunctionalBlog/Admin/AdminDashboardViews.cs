@@ -29,6 +29,9 @@ public static class AdminDashboardViews
     private const string SearchIcon =
         """<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>""";
 
+    private const string CleanupIcon =
+        """<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>""";
+
     private const string WarnIcon =
         """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>""";
 
@@ -40,6 +43,7 @@ public static class AdminDashboardViews
         new("/admin/ingredients", "admin.dashboard.card.ingredients", "admin.dashboard.card.ingredients_desc", IngredientsIcon, p => p.Can<Manage>(new IngredientResource())),
         new("/admin/search", "admin.dashboard.card.search", "admin.dashboard.card.search_desc", SearchIcon, p => p.Can<Manage>(new SearchResource())),
         new("/images", "admin.dashboard.card.images", "admin.dashboard.card.images_desc", ImagesIcon, p => p.Can<Manage>(new ImageResource())),
+        new("/admin/images/cleanup", "admin.dashboard.card.image_cleanup", "admin.dashboard.card.image_cleanup_desc", CleanupIcon, p => p.Can<Manage>(new ImageResource())),
         new("/pages", "admin.dashboard.card.pages", "admin.dashboard.card.pages_desc", PagesIcon, p => p.Can<Create>(new PageResource())),
         new("/", "admin.dashboard.card.blog", "admin.dashboard.card.blog_desc", BlogIcon, p => p.Can<Create>(new ArticleResource())),
         new("/admin/translations", "admin.dashboard.card.translations", "admin.dashboard.card.translations_desc", TranslationsIcon, p => p.Can<Manage>(new UserResource())),
