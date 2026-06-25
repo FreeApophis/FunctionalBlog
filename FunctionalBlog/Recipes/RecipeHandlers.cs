@@ -160,6 +160,7 @@ public static class RecipeHandlers
                 await env.Recipes.Save(recipe);
                 env.Search?.IndexRecipe(recipe);
                 var slug = await env.EnsureSlug(SlugEntityType.Recipe, recipe.Id.Value, recipe.Name.Value);
+                await EnsureTagSlugs(env, recipe.Tags);
                 return Response.Redirect($"/recipes/{slug}");
             });
     };
@@ -401,9 +402,31 @@ public static class RecipeHandlers
                 await env.Recipes.Save(updated);
                 env.Search?.IndexRecipe(updated);
                 var slug = await env.EnsureSlug(SlugEntityType.Recipe, id.Value, updated.Name.Value);
+                await EnsureTagSlugs(env, updated.Tags);
                 return Response.Redirect($"/recipes/{slug}");
             });
     };
+
+    // Registers a slug for each of the recipe's tags so /tag/{slug} links resolve immediately after a
+    // save (the tag rows were just upserted by the repository). No-op when there is no tag store.
+    private static async Task EnsureTagSlugs(Env env, IReadOnlyList<RecipeTag> tags)
+    {
+        if (env.Tags is not { } tagRepo)
+        {
+            return;
+        }
+
+        foreach (var name in tags
+            .Select(tag => tag.Value.Trim())
+            .Where(name => name.Length > 0)
+            .Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            if (await tagRepo.FindIdByName(name) is [var id])
+            {
+                await env.EnsureSlug(SlugEntityType.Tag, id, name);
+            }
+        }
+    }
 
     private sealed record RecipeWithImages(RecipeForm.Valid Form, IReadOnlyList<ImageUploadForm.Valid> Images);
 

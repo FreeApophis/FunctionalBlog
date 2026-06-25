@@ -122,9 +122,13 @@ public sealed class SqliteQuickSearchTests : IDisposable
 
     private SqliteQuickSearch Subject() => new(_db.Connection);
 
-    private async Task SeedTag(string name, string slug) =>
+    private async Task SeedTag(string name, string slug)
+    {
+        await _db.Connection.ExecuteAsync("INSERT INTO tags (name) VALUES (@name)", new { name });
+        var id = await _db.Connection.ExecuteScalarAsync<long>("SELECT last_insert_rowid()");
         await _db.Connection.ExecuteAsync(
-            "INSERT INTO tags (slug, name) VALUES (@slug, @name)", new { slug, name });
+            "INSERT INTO slugs (slug, entity_type, entity_id) VALUES (@slug, 'tag', @id)", new { slug, id });
+    }
 
     private async Task SeedArticle(int id, string title, string text)
     {

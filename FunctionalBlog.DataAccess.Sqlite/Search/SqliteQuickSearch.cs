@@ -23,8 +23,9 @@ public sealed class SqliteQuickSearch : IQuickSearch
         var hits = new List<QuickSearchHit>();
 
         var tags = await _connection.QueryAsync<TagRow>(
-            "SELECT slug AS Slug, name AS Name FROM tags " +
-            "WHERE name LIKE @like ESCAPE '\\' ORDER BY name COLLATE NOCASE LIMIT 2",
+            "SELECT s.slug AS Slug, t.name AS Name FROM tags t " +
+            "JOIN slugs s ON s.entity_type = 'tag' AND s.entity_id = t.id " +
+            "WHERE t.name LIKE @like ESCAPE '\\' ORDER BY t.name COLLATE NOCASE LIMIT 2",
             new { like });
         hits.AddRange(tags.Select(row => new QuickSearchHit("tag", row.Name, Slug: row.Slug)));
 

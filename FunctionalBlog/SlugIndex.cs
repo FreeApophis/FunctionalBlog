@@ -11,7 +11,17 @@ public sealed class SlugIndex
 {
     private readonly IReadOnlyDictionary<string, IReadOnlyDictionary<int, string>> _byType;
 
-    public SlugIndex(IReadOnlyDictionary<string, IReadOnlyDictionary<int, string>> byType) => _byType = byType;
+    // Tags are referenced by name in the domain (RecipeTag), not by id, so their public slugs are
+    // looked up by case-folded name (Slug.From) rather than entity id.
+    private readonly IReadOnlyDictionary<string, string> _tagSlugs;
+
+    public SlugIndex(
+        IReadOnlyDictionary<string, IReadOnlyDictionary<int, string>> byType,
+        IReadOnlyDictionary<string, string>? tagSlugs = null)
+    {
+        _byType = byType;
+        _tagSlugs = tagSlugs ?? new Dictionary<string, string>();
+    }
 
     public static SlugIndex Empty { get; } = new(new Dictionary<string, IReadOnlyDictionary<int, string>>());
 
@@ -23,6 +33,15 @@ public sealed class SlugIndex
 
     // The canonical path for an entity, e.g. "/recipes/ruehrkuchen".
     public string Url(string entityType, int id) => $"/{Prefix(entityType)}/{For(entityType, id)}";
+
+    // The canonical /tag/{slug} path for a tag name. Falls back to the freshly-computed slug when the
+    // tag is unregistered (no registry, or a brand-new tag) — which equals the registered slug
+    // whenever there was no cross-type collision.
+    public string TagUrl(string name)
+    {
+        var folded = Slug.From(name);
+        return $"/tag/{_tagSlugs.GetValueOrNone(folded).GetOrElse(folded)}";
+    }
 
     private static string Prefix(string entityType) => entityType switch
     {

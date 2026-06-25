@@ -23,7 +23,7 @@ internal class Program
         var env = BuildEnv(connection, translations);
 
         await Seeder.SeedAsync(env);
-        await SlugBackfill.Run(new SlugService(env.Slugs!), env.Articles, env.Recipes, env.Pages, env.Ingredients);
+        await SlugBackfill.Run(new SlugService(env.Slugs!), env.Articles, env.Recipes, env.Pages, env.Ingredients, env.Tags!);
         var translationCache = await TranslationCache.LoadAsync(translations);
         env = env with { TranslationCache = translationCache };
 

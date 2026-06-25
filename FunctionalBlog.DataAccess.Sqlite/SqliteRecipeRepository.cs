@@ -34,7 +34,8 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
     {
         var rows = (await _connection.QueryAsync<RecipeRow>(
             $"{RecipeSelect} WHERE taggable_id IN " +
-            "(SELECT tg.taggable_id FROM taggings tg JOIN tags t ON t.id = tg.tag_id WHERE t.slug = @slug) " +
+            "(SELECT tg.taggable_id FROM taggings tg " +
+            "JOIN slugs s ON s.entity_type = 'tag' AND s.entity_id = tg.tag_id WHERE s.slug = @slug) " +
             "ORDER BY name",
             new { slug })).ToList();
         return await Hydrate(rows);
@@ -128,19 +129,23 @@ public sealed class SqliteRecipeRepository : IRecipeRepository
 
         if (recipe.Tags.Count > 0)
         {
+            // Tags now dedup on their display name (the URL slug lives in the central `slugs`
+            // registry, assigned by SlugService after the save). Insert each unseen name, then link.
             var tagParams = recipe.Tags
                 .Select(t => t.Value.Trim())
                 .Where(name => name.Length > 0)
-                .Select(name => new { TaggableId = taggableId, Slug = Slug.From(name), Name = name })
+                .Select(name => new { TaggableId = taggableId, Name = name })
                 .ToList();
 
             await _connection.ExecuteAsync(
-                "INSERT INTO tags (slug, name) VALUES (@Slug, @Name) ON CONFLICT(slug) DO NOTHING",
+                "INSERT INTO tags (name) SELECT @Name " +
+                "WHERE NOT EXISTS (SELECT 1 FROM tags WHERE name = @Name COLLATE NOCASE)",
                 tagParams,
                 transaction);
 
             await _connection.ExecuteAsync(
-                "INSERT OR IGNORE INTO taggings (taggable_id, tag_id) SELECT @TaggableId, id FROM tags WHERE slug = @Slug",
+                "INSERT OR IGNORE INTO taggings (taggable_id, tag_id) " +
+                "SELECT @TaggableId, id FROM tags WHERE name = @Name COLLATE NOCASE",
                 tagParams,
                 transaction);
         }

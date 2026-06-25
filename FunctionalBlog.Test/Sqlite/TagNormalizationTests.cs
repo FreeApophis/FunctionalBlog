@@ -32,9 +32,10 @@ public sealed class TagNormalizationTests : IDisposable
         await repo.Save(ARecipe(first, "Suppe", "Vegetarisch"));
         await repo.Save(ARecipe(second, "Eintopf", "Vegetarisch"));
 
-        // The shared tag is stored exactly once, no matter how many recipes carry it.
+        // The shared tag is stored exactly once (deduped case-insensitively), no matter how many
+        // recipes carry it.
         var tagRows = await _db.Connection.ExecuteScalarAsync<long>(
-            "SELECT COUNT(*) FROM tags WHERE slug = 'vegetarisch'");
+            "SELECT COUNT(*) FROM tags WHERE name = 'Vegetarisch' COLLATE NOCASE");
 
         // Both of the two recipes link to that single tag.
         var taggingRows = await _db.Connection.ExecuteScalarAsync<long>(
@@ -43,7 +44,7 @@ public sealed class TagNormalizationTests : IDisposable
             FROM taggings tg
             JOIN tags t ON t.id = tg.tag_id
             JOIN recipes r ON r.taggable_id = tg.taggable_id
-            WHERE t.slug = 'vegetarisch' AND r.id IN (@first, @second)
+            WHERE t.name = 'Vegetarisch' COLLATE NOCASE AND r.id IN (@first, @second)
             """,
             new { first = first.Value, second = second.Value });
 
@@ -98,6 +99,39 @@ public sealed class TagNormalizationTests : IDisposable
         var articles = new SqliteArticleRepository(_db.Connection);
         var tagged = await articles.FindByTag("suess");
         Assert.Contains(tagged, a => a.Title.Value == "Macarons selbst backen");
+    }
+
+    [Fact]
+    public void Tags_table_has_no_slug_column_after_folding_into_the_registry()
+    {
+        var columns = _db.Connection
+            .Query<string>("SELECT name FROM pragma_table_info('tags')")
+            .ToHashSet();
+
+        Assert.DoesNotContain("slug", columns);
+        Assert.Contains("name", columns);
+    }
+
+    [Fact]
+    public async Task Tag_slugs_live_in_the_central_registry()
+    {
+        // Migration 0017 copies each tag's slug into the shared `slugs` table under the 'tag' type.
+        var entityType = await _db.Connection.ExecuteScalarAsync<string>(
+            "SELECT entity_type FROM slugs WHERE slug = 'suess'");
+
+        Assert.Equal("tag", entityType);
+    }
+
+    [Fact]
+    public async Task FindIdByName_resolves_a_tag_id_case_insensitively()
+    {
+        var tags = new SqliteTagRepository(_db.Connection);
+
+        // SQLite's NOCASE folds ASCII case, so "Süss" (capital S) resolves to the stored "süss".
+        var id = FunctionalAssert.Some(await tags.FindIdByName("Süss"));
+        var all = await tags.All();
+
+        Assert.Contains(all, t => t.Id == id && t.Name == "süss");
     }
 
     private static Recipe ARecipe(RecipeId id, string name, params string[] tags) =>

@@ -220,7 +220,7 @@ public static class BlogViews
             .OrderByDescending(g => g.Count())
             .Select(g => g.First().Value)
             .Take(14)
-            .Select(tag => $"""<a class="sidebar-tag" href="/tag/{Html.Encode(Slug.From(tag))}">{Html.Encode(tag)}</a>""")
+            .Select(tag => $"""<a class="sidebar-tag" href="{Html.Encode(ctx.TagUrl(tag))}">{Html.Encode(tag)}</a>""")
             .ToList();
 
         var tagsCard = tags.Count > 0

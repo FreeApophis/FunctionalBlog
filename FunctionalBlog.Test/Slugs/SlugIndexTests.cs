@@ -23,4 +23,21 @@ public class SlugIndexTests
         Assert.Equal("/ingredients/9", SlugIndex.Empty.Url(SlugEntityType.Ingredient, 9));
         Assert.Equal("9", SlugIndex.Empty.For(SlugEntityType.Ingredient, 9));
     }
+
+    [Fact]
+    public void TagUrl_uses_the_registered_slug_for_the_folded_name()
+    {
+        var index = new SlugIndex(
+            new Dictionary<string, IReadOnlyDictionary<int, string>>(),
+            new Dictionary<string, string> { ["dessert"] = "dessert-2" });
+
+        // "Dessert" folds to "dessert", which the registry maps to the suffixed public slug.
+        Assert.Equal("/tag/dessert-2", index.TagUrl("Dessert"));
+    }
+
+    [Fact]
+    public void TagUrl_falls_back_to_the_folded_name_when_unregistered()
+    {
+        Assert.Equal("/tag/suess", SlugIndex.Empty.TagUrl("Süss"));
+    }
 }

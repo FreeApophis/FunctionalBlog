@@ -26,6 +26,21 @@ public static class SlugMiddleware
             byType[type] = await slugs.SlugsFor(type);
         }
 
-        return await next(request)(env with { SlugIndex = new SlugIndex(byType) });
+        // Tags are referenced by name (RecipeTag), so build a folded-name → public-slug map by
+        // joining the tag list to its registered slugs.
+        var tagSlugs = new Dictionary<string, string>();
+        var tagSlugById = await slugs.SlugsFor(SlugEntityType.Tag);
+        if (env.Tags is { } tagRepo)
+        {
+            foreach (var tag in await tagRepo.All())
+            {
+                if (tagSlugById.GetValueOrNone(tag.Id) is [var slug])
+                {
+                    tagSlugs[Slug.From(tag.Name)] = slug;
+                }
+            }
+        }
+
+        return await next(request)(env with { SlugIndex = new SlugIndex(byType, tagSlugs) });
     };
 }

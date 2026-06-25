@@ -1,8 +1,9 @@
 namespace FunctionalBlog.Application.Slugs;
 
-// Ensures every existing content entity has a slug in the registry. Runs at startup and is
-// idempotent (SlugService.Ensure keeps an entity's existing slug), so it safely picks up any
-// rows created before the slug write-path existed. Tag slugs are handled separately.
+// Ensures every existing entity has a slug in the registry. Runs at startup and is idempotent
+// (SlugService.Ensure keeps an entity's existing slug), so it safely picks up any rows created
+// before the slug write-path existed. Content types are processed before tags, so on a slug
+// collision the content entity keeps the bare slug and the tag is the one that gets suffixed.
 public static class SlugBackfill
 {
     public static async Task Run(
@@ -10,7 +11,8 @@ public static class SlugBackfill
         IArticleRepository articles,
         IRecipeRepository recipes,
         IPageRepository pages,
-        IIngredientRepository ingredients)
+        IIngredientRepository ingredients,
+        ITagRepository tags)
     {
         foreach (var article in await articles.All())
         {
@@ -30,6 +32,11 @@ public static class SlugBackfill
         foreach (var ingredient in await ingredients.All())
         {
             await slugs.Ensure(SlugEntityType.Ingredient, ingredient.Id.Value, ingredient.Name.Value);
+        }
+
+        foreach (var tag in await tags.All())
+        {
+            await slugs.Ensure(SlugEntityType.Tag, tag.Id, tag.Name);
         }
     }
 }

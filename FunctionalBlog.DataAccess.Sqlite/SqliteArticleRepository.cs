@@ -22,7 +22,8 @@ public sealed class SqliteArticleRepository : IArticleRepository
         var rows = await _connection.QueryAsync<ArticleRow>(
             "SELECT id AS Id, title AS Title, teaser AS Teaser, text AS Text, author_id AS AuthorId, published_at AS PublishedAt, cover_image_id AS CoverImageId " +
             "FROM articles WHERE taggable_id IN " +
-            "(SELECT tg.taggable_id FROM taggings tg JOIN tags t ON t.id = tg.tag_id WHERE t.slug = @slug) " +
+            "(SELECT tg.taggable_id FROM taggings tg " +
+            "JOIN slugs s ON s.entity_type = 'tag' AND s.entity_id = tg.tag_id WHERE s.slug = @slug) " +
             "ORDER BY published_at DESC",
             new { slug });
         return rows.Select(ToArticle).ToList();

@@ -126,7 +126,7 @@ public static class RecipeViews
             Html.Raw("</div>");
 
         var tags = recipe.Tags.Count > 0
-            ? Html.Raw($"""<div class="tag-chips">{string.Concat(recipe.Tags.Select(tag => $"<a class=\"tag-chip\" href=\"/tag/{Html.Encode(Slug.From(tag.Value))}\">{Html.Encode(tag.Value)}</a>"))}</div>""")
+            ? Html.Raw($"""<div class="tag-chips">{string.Concat(recipe.Tags.Select(tag => $"<a class=\"tag-chip\" href=\"{Html.Encode(ctx.TagUrl(tag.Value))}\">{Html.Encode(tag.Value)}</a>"))}</div>""")
             : HtmlString.Empty;
 
         var images = recipe.Images.Count > 0
