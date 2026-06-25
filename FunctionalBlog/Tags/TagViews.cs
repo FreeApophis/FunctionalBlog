@@ -7,6 +7,7 @@ public static class TagViews
         IReadOnlyList<Recipe> recipes,
         IReadOnlyList<Article> articles,
         IReadOnlyDictionary<UserId, string> authorNames,
+        IReadOnlyDictionary<UserId, Option<ImageId>> authorAvatars,
         ViewContext ctx)
     {
         var (_, t, _) = ctx;
@@ -32,13 +33,13 @@ public static class TagViews
         var recipeSection = Section(
             "recipe.title",
             "recipe-grid",
-            recipes.Select(r => RecipeViews.Card(r, authorNames, t)),
+            recipes.Select(r => RecipeViews.Card(r, authorNames, authorAvatars, t)),
             recipes.Count);
 
         var articleSection = Section(
             "blog.title",
             "blog-grid",
-            articles.Select(a => BlogViews.Card(a, authorNames, t)),
+            articles.Select(a => BlogViews.Card(a, authorNames, authorAvatars, t)),
             articles.Count);
 
         var empty = recipes.Count == 0 && articles.Count == 0

@@ -33,4 +33,21 @@ public class HtmlFormTests
 
         Assert.Contains("autofocus", html);
     }
+
+    [Fact]
+    public void Avatar_renders_the_initial_circle_when_no_image_is_set()
+    {
+        var html = Html.Avatar("Anna", Option<ImageId>.None).Render();
+
+        Assert.Equal("<span class=\"avatar\">A</span>", html);
+    }
+
+    [Fact]
+    public void Avatar_renders_an_image_circle_when_an_avatar_is_set()
+    {
+        var html = Html.Avatar("Anna", Option.Some(new ImageId(7)), "avatar-lg").Render();
+
+        Assert.Contains("class=\"avatar avatar-lg avatar-img\"", html);
+        Assert.Contains("<img src=\"/images/7\" alt=\"Anna\" />", html);
+    }
 }

@@ -21,6 +21,8 @@ public sealed class AuthenticatedUser : IPrincipal
 
     public IReadOnlyList<string> RoleNames => _user.RoleNames;
 
+    public Option<ImageId> AvatarImageId => _user.AvatarImageId;
+
     public bool Can<TAction>(IResource resource)
         where TAction : IAction
     {

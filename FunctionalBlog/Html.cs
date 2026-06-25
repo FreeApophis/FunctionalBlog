@@ -74,6 +74,18 @@ public static class Html
         return new HtmlString.Safe($"""<nav class="breadcrumb" aria-label="Breadcrumb">{trail}</nav>""");
     }
 
+    // A round avatar: the user's uploaded image when one is set, otherwise the coloured circle
+    // with their initial. `extraClass` lets callers size it (e.g. "avatar-lg" for a preview).
+    public static HtmlString Avatar(string name, Option<ImageId> avatarId, string extraClass = "")
+    {
+        var cls = string.IsNullOrEmpty(extraClass) ? "avatar" : $"avatar {extraClass}";
+        var initial = name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
+
+        return avatarId is [var id]
+            ? new HtmlString.Safe($"""<span class="{Encode(cls)} avatar-img"><img src="/images/{id.Value}" alt="{Encode(name)}" /></span>""")
+            : new HtmlString.Safe($"""<span class="{Encode(cls)}">{Encode(initial)}</span>""");
+    }
+
     public static HtmlString Button(string text) => new HtmlString.Safe($"<button type=\"submit\">{Encode(text)}</button>");
 
     public static HtmlString Form(string action, HtmlString body, Option<string> cssClass = default, Option<string> style = default, Option<string> enctype = default, Option<string> confirm = default)

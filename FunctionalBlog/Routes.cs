@@ -28,6 +28,7 @@ public static class Routes
         .Get("/users", Auth.RequireAuth(UsersHandlers.Index))
         .Get("/settings", Auth.RequireAuth(UserSettingsHandlers.Settings))
         .Post("/settings/password", Auth.RequireAuth(UserSettingsHandlers.ChangePassword))
+        .Post("/settings/avatar", Auth.RequireAuth(UserSettingsHandlers.UpdateAvatar))
         .Post("/lang", TranslationHandlers.SetLanguage)
         .Post("/theme", ThemeHandlers.SetTheme)
         .Get("/articles/new", Auth.RequirePermission<Create>(new ArticleResource(), BlogHandlers.NewArticleForm))

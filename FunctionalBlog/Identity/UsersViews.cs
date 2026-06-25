@@ -20,13 +20,18 @@ public static class UsersViews
             var initialStyle = isAuthor ? "color:rgba(255,255,255,0.92);" : string.Empty;
             var badge = isAuthor ? $"""<span class="user-badge">{Html.Encode(t("users.author_badge"))}</span>""" : string.Empty;
 
+            var avatarInner = e.User.AvatarImageId is [var avatarId]
+                ? $"""<img class="user-avatar-photo" src="/images/{avatarId.Value}" alt="{Html.Encode(name)}" />"""
+                : $"""<span class="initial" style="{initialStyle}">{Html.Encode(initial)}</span>""";
+            var avatarBg = e.User.AvatarImageId is [_] ? string.Empty : avatarStyle;
+
             var label = e.RecipeCount == 1
                 ? $"1 {t("users.recipe_singular")}"
                 : $"{e.RecipeCount} {t("users.recipe_plural")}";
 
             return $"""
                 <article class="user-card">
-                    <div class="user-avatar" style="{avatarStyle}"><span class="initial" style="{initialStyle}">{Html.Encode(initial)}</span>{badge}</div>
+                    <div class="user-avatar" style="{avatarBg}">{avatarInner}{badge}</div>
                     <div class="user-card-body">
                         <h3>{Html.Encode(name)}</h3>
                         <p class="user-joined">{Html.Encode(t("users.joined"))} {year}</p>

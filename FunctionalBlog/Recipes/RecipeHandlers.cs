@@ -12,10 +12,11 @@ public static class RecipeHandlers
         var recipes = await env.Recipes.All();
         var users = await env.Users.All();
         var authorNames = users.ToDictionary(u => u.Id, u => u.DisplayName.Value);
+        var authorAvatars = users.ToDictionary(u => u.Id, u => u.AvatarImageId);
 
         var page = Pagination.Paginate(recipes, Pagination.RequestedPage(request));
 
-        return Response.Html(RecipeViews.Index(page, authorNames, env.Ctx));
+        return Response.Html(RecipeViews.Index(page, authorNames, authorAvatars, env.Ctx));
     };
 
     public static App ShowRecipe(RecipeId id) => request => async env =>
@@ -23,12 +24,12 @@ public static class RecipeHandlers
             none: () => Task.FromResult(Response.NotFound(env.Ctx)),
             some: async recipe =>
             {
-                var authorName = (await env.Users.FindById(recipe.AuthorId))
-                    .Select(u => u.DisplayName.Value)
-                    .GetOrElse("?");
+                var author = await env.Users.FindById(recipe.AuthorId);
+                var authorName = author.Select(u => u.DisplayName.Value).GetOrElse("?");
+                var authorAvatar = author.SelectMany(u => u.AvatarImageId);
                 var ingredients = (await env.Ingredients.All()).ToDictionary(i => i.Id);
                 var displayPortions = RequestedPortions(request, recipe.Portions);
-                return Response.Html(RecipeViews.Show(recipe, authorName, ingredients, displayPortions, env.Ctx, request.BaseUrl));
+                return Response.Html(RecipeViews.Show(recipe, authorName, ingredients, displayPortions, env.Ctx, request.BaseUrl, authorAvatar));
             });
 
     // The detail page can be re-scaled to a different serving count via ?portions=N. Any positive

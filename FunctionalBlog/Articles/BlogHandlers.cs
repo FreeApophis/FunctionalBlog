@@ -8,18 +8,19 @@ public static class BlogHandlers
         var users = await env.Users.All();
         var recipes = await env.Recipes.All();
         var authorNames = users.ToDictionary(u => u.Id, u => u.DisplayName.Value);
-        return Response.Html(BlogViews.Index(articles, authorNames, recipes, env.Ctx));
+        var authorAvatars = users.ToDictionary(u => u.Id, u => u.AvatarImageId);
+        return Response.Html(BlogViews.Index(articles, authorNames, authorAvatars, recipes, env.Ctx));
     };
 
     public static App ShowArticle(ArticleId id) => request => async env =>
     {
         if ((await env.Articles.Find(id)) is [var article])
         {
-            var authorName = (await env.Users.FindById(article.AuthorId))
-                .Select(u => u.DisplayName.Value)
-                .GetOrElse("?");
+            var author = await env.Users.FindById(article.AuthorId);
+            var authorName = author.Select(u => u.DisplayName.Value).GetOrElse("?");
+            var authorAvatar = author.SelectMany(u => u.AvatarImageId);
 
-            return Response.Html(BlogViews.Show(article, authorName, env.Ctx, request.BaseUrl));
+            return Response.Html(BlogViews.Show(article, authorName, env.Ctx, request.BaseUrl, authorAvatar));
         }
 
         return Response.NotFound(env.Ctx);

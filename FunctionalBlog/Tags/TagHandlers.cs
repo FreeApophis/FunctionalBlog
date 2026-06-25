@@ -15,8 +15,10 @@ public static class TagHandlers
 
         var recipes = await env.Recipes.FindByTag(slug);
         var articles = await env.Articles.FindByTag(slug);
-        var authorNames = (await env.Users.All()).ToDictionary(u => u.Id, u => u.DisplayName.Value);
+        var users = await env.Users.All();
+        var authorNames = users.ToDictionary(u => u.Id, u => u.DisplayName.Value);
+        var authorAvatars = users.ToDictionary(u => u.Id, u => u.AvatarImageId);
 
-        return Response.Html(TagViews.Show(tag, recipes, articles, authorNames, env.Ctx));
+        return Response.Html(TagViews.Show(tag, recipes, articles, authorNames, authorAvatars, env.Ctx));
     };
 }

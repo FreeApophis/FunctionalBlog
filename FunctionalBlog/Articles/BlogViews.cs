@@ -7,6 +7,7 @@ public static class BlogViews
     public static string Index(
         IReadOnlyList<Article> articles,
         IReadOnlyDictionary<UserId, string> authorNames,
+        IReadOnlyDictionary<UserId, Option<ImageId>> authorAvatars,
         IReadOnlyList<Recipe> recipes,
         ViewContext ctx)
     {
@@ -20,7 +21,7 @@ public static class BlogViews
                     <h2>{Html.Encode(a.Title.Value)}</h2>
                     <p class="blog-excerpt">{Html.Encode(a.Teaser.Value)}</p>
                     <div class="blog-foot">
-                        {Author(a, authorNames)}
+                        {Author(a, authorNames, authorAvatars)}
                         <span class="blog-readmore">{Html.Encode(t("blog.read_more"))} →</span>
                     </div>
                 </div>
@@ -36,7 +37,7 @@ public static class BlogViews
         {
             var rest = articles.Skip(1).ToList();
             var grid = rest.Count > 0
-                ? Html.Raw($"""<div class="blog-grid">{string.Concat(rest.Select(a => Card(a, authorNames, t)))}</div>""")
+                ? Html.Raw($"""<div class="blog-grid">{string.Concat(rest.Select(a => Card(a, authorNames, authorAvatars, t)))}</div>""")
                 : HtmlString.Empty;
             feed = Html.Raw(Featured(articles[0])) + grid;
         }
@@ -60,7 +61,7 @@ public static class BlogViews
         return Layout.Page(t("blog.title"), body, ctx);
     }
 
-    public static string Show(Article article, string authorName, ViewContext ctx, string baseUrl)
+    public static string Show(Article article, string authorName, ViewContext ctx, string baseUrl, Option<ImageId> authorAvatar = default)
     {
         var (principal, t, csrfToken) = ctx;
 
@@ -81,11 +82,10 @@ public static class BlogViews
 
         var metaActions = Html.Raw("""<span class="recipe-meta-actions">""") + editButton + deleteButton + Html.Raw("</span>");
 
-        var avatarLetter = authorName.Length > 0 ? authorName[..1].ToUpperInvariant() : "?";
         var meta =
             Html.Raw($"""
                 <div class="recipe-meta">
-                    <span><span class="avatar">{Html.Encode(avatarLetter)}</span>{Html.Encode(authorName)}</span>
+                    <span>{Html.Avatar(authorName, authorAvatar).Render()}{Html.Encode(authorName)}</span>
                     <span class="dot">·</span>
                     <span>{Html.Encode(article.PublishedAt.LocalDateTime.ToString("g", CultureInfo.CurrentCulture))}</span>
                 """) +
@@ -157,14 +157,18 @@ public static class BlogViews
 
     // A blog grid card: cover media with date badge, title, excerpt and author. Shared by the
     // home feed and the tag page.
-    public static string Card(Article a, IReadOnlyDictionary<UserId, string> authorNames, Translate t) =>
+    public static string Card(
+        Article a,
+        IReadOnlyDictionary<UserId, string> authorNames,
+        IReadOnlyDictionary<UserId, Option<ImageId>> authorAvatars,
+        Translate t) =>
         $"""
         <a class="blog-card" href="/articles/{a.Id.Value}">
             {Media(a)}
             <div class="blog-card-body">
                 <h3>{Html.Encode(a.Title.Value)}</h3>
                 <p class="blog-excerpt">{Html.Encode(a.Teaser.Value)}</p>
-                <div class="blog-foot">{Author(a, authorNames)}<span>{a.PublishedAt.LocalDateTime:d}</span></div>
+                <div class="blog-foot">{Author(a, authorNames, authorAvatars)}<span>{a.PublishedAt.LocalDateTime:d}</span></div>
             </div>
         </a>
         """;
@@ -184,11 +188,14 @@ public static class BlogViews
         return $"""<div class="blog-media">{img}{DateBadge(a)}</div>""";
     }
 
-    private static string Author(Article a, IReadOnlyDictionary<UserId, string> authorNames)
+    private static string Author(
+        Article a,
+        IReadOnlyDictionary<UserId, string> authorNames,
+        IReadOnlyDictionary<UserId, Option<ImageId>> authorAvatars)
     {
         var name = authorNames.GetValueOrNone(a.AuthorId).GetOrElse("?");
-        var initial = name.Length > 0 ? name[..1].ToUpperInvariant() : "?";
-        return $"""<span class="blog-author"><span class="avatar">{Html.Encode(initial)}</span>{Html.Encode(name)}</span>""";
+        var avatar = authorAvatars.GetValueOrDefault(a.AuthorId, Option<ImageId>.None);
+        return $"""<span class="blog-author">{Html.Avatar(name, avatar).Render()}{Html.Encode(name)}</span>""";
     }
 
     // Home sidebar backed by real data: the newest recipes and the most common recipe tags,

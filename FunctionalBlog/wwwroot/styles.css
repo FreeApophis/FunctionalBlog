@@ -1273,6 +1273,14 @@ button:hover, .btn:hover { filter: brightness(1.07); }
     margin-right: 8px;
 }
 
+/* Uploaded avatar: the image fills and is clipped to the existing circle. */
+.avatar.avatar-img { padding: 0; overflow: hidden; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.avatar.avatar-lg { width: 72px; height: 72px; font-size: 28px; margin-right: 0; }
+
+/* Settings preview block for the profile picture. */
+.avatar-settings { margin: 4px 0 12px; }
+
 .difficulty-pill {
     display: inline-flex;
     align-items: center;
@@ -1474,6 +1482,8 @@ a.tag-chip:hover { opacity: .85; }
 }
 
 .user-avatar .initial { font-family: var(--serif); font-size: 54px; font-weight: 600; line-height: 1; color: var(--avatar-ink); }
+
+.user-avatar .user-avatar-photo { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .user-badge {
     position: absolute;
@@ -1886,6 +1896,7 @@ a.quicksearch-item:hover { background: var(--row-alt); color: var(--green); }
 
 .mast-actions .user-trigger.is-auth { background: var(--avatar-bg); color: var(--avatar-ink); border-color: transparent; }
 .mast-actions .user-trigger:hover { border-color: var(--green); color: var(--green); }
+.mast-actions .user-trigger .user-avatar-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
 
 /* The dropdown's top padding bridges the gap to the trigger so hover doesn't drop. */
 .user-dropdown {

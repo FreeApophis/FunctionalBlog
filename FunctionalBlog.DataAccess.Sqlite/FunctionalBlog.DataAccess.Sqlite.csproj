@@ -27,6 +27,7 @@
     <EmbeddedResource Include="Migrations\0012_tag_macaron_suess.sql" />
     <EmbeddedResource Include="Migrations\0013_reslug_tags.sql" />
     <EmbeddedResource Include="Migrations\0014_calories_per_portion.sql" />
+    <EmbeddedResource Include="Migrations\0015_user_avatar.sql" />
   </ItemGroup>
 
   <ItemGroup>

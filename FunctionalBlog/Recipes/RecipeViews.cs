@@ -7,6 +7,7 @@ public static class RecipeViews
     public static string Index(
         PagedResult<Recipe> page,
         IReadOnlyDictionary<UserId, string> authorNames,
+        IReadOnlyDictionary<UserId, Option<ImageId>> authorAvatars,
         ViewContext ctx)
     {
         var (principal, t, _) = ctx;
@@ -14,7 +15,7 @@ public static class RecipeViews
 
         var grid = recipes.Count == 0
             ? Html.P(Html.Text(t("recipe.no_recipes")))
-            : Html.Raw($"""<div class="recipe-grid">{string.Concat(recipes.Select(r => Card(r, authorNames, t)))}</div>""");
+            : Html.Raw($"""<div class="recipe-grid">{string.Concat(recipes.Select(r => Card(r, authorNames, authorAvatars, t)))}</div>""");
 
         var pagination = Html.Pagination(page.CurrentPage, page.TotalPages, "/recipes", t("common.pagination"));
 
@@ -35,10 +36,14 @@ public static class RecipeViews
 
     // A recipe grid card: image with a category badge, name, difficulty pill and author.
     // Shared by the recipe index and the tag page.
-    public static string Card(Recipe recipe, IReadOnlyDictionary<UserId, string> authorNames, Translate t)
+    public static string Card(
+        Recipe recipe,
+        IReadOnlyDictionary<UserId, string> authorNames,
+        IReadOnlyDictionary<UserId, Option<ImageId>> authorAvatars,
+        Translate t)
     {
         var author = authorNames.TryGetValue(recipe.AuthorId, out var n) ? n : "?";
-        var initial = author.Length > 0 ? author[..1].ToUpperInvariant() : "?";
+        var authorAvatar = authorAvatars.GetValueOrDefault(recipe.AuthorId, Option<ImageId>.None);
 
         var categoryBadge = recipe.Tags.Count > 0
             ? $"""<span class="recipe-card-cat">{Html.Encode(recipe.Tags[0].Value)}</span>"""
@@ -62,7 +67,7 @@ public static class RecipeViews
                     <h3>{Html.Encode(recipe.Name.Value)}</h3>
                     <div class="recipe-card-foot">
                         <span class="difficulty-pill {diffClass}">{Html.Encode(t(DifficultyKey(recipe.Difficulty)))}</span>
-                        <span class="recipe-card-author"><span class="avatar">{Html.Encode(initial)}</span>{Html.Encode(author)}</span>
+                        <span class="recipe-card-author">{Html.Avatar(author, authorAvatar).Render()}{Html.Encode(author)}</span>
                     </div>
                 </div>
             </a>
@@ -75,7 +80,8 @@ public static class RecipeViews
         IReadOnlyDictionary<IngredientId, Ingredient> ingredientMap,
         int displayPortions,
         ViewContext ctx,
-        string baseUrl)
+        string baseUrl,
+        Option<ImageId> authorAvatar = default)
     {
         var (principal, t, csrfToken) = ctx;
 
@@ -106,11 +112,10 @@ public static class RecipeViews
             PdfSplitButton(recipe.Id.Value, pdfPortions, t) +
             Html.Raw("</div>");
 
-        var avatarLetter = authorName.Length > 0 ? authorName[..1].ToUpperInvariant() : "?";
         var meta =
             Html.Raw($"""
                 <div class="recipe-meta">
-                    <span><span class="avatar">{Html.Encode(avatarLetter)}</span>{Html.Encode(authorName)}</span>
+                    <span>{Html.Avatar(authorName, authorAvatar).Render()}{Html.Encode(authorName)}</span>
                     <span class="dot">·</span>
                     <span class="difficulty-pill">{Html.Encode(t(DifficultyKey(recipe.Difficulty)))}</span>
                     <span class="dot">·</span>
