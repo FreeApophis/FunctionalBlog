@@ -67,29 +67,53 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
             return [];
         }
 
-        var parsedQuery = ParseQuery(query);
-
         lock (_gate)
         {
+            // ParseQuery and the highlighter both use the shared, stateful _analyser, whose
+            // Analyse mutates a non-thread-safe cache. It must only ever be touched under the
+            // gate, so parsing happens here rather than before the lock.
+            var parsedQuery = ParseQuery(query);
+
             return _manager.UsingSearcher(searcher =>
             {
                 var topDocs = searcher.Search(parsedQuery, topN);
                 var queryTerms = Highlighter.ExtractTerms(parsedQuery);
 
                 return (IReadOnlyList<SearchResult>)topDocs.ScoreDocs
-                    .Select(hit =>
-                    {
-                        var fields = searcher.GetStoredFields(hit.DocId);
-                        var type = fields["type"]?[0] ?? string.Empty;
-                        var id = int.Parse(fields["id"]?[0] ?? "0");
-                        var title = fields["title"]?[0] ?? string.Empty;
-                        var body = fields["body"]?[0] ?? string.Empty;
-                        var snippet = _highlighter.GetBestFragment(body, queryTerms, 200);
-                        return new SearchResult(type, id, title, snippet, hit.Score);
-                    })
+                    .SelectMany(hit => ToSearchResult(
+                        searcher.GetStoredFields(hit.DocId),
+                        hit.Score,
+                        body => _highlighter.GetBestFragment(body, queryTerms, 200)).ToEnumerable())
                     .ToList();
             });
         }
+    }
+
+    // Maps one search hit's stored fields to a SearchResult. Returns None when required fields are
+    // absent so an incomplete hit is dropped rather than surfaced or thrown on (a LeanCorpus churn
+    // race can hand back a hit whose stored fields are incomplete).
+    public static Option<SearchResult> ToSearchResult(
+        IReadOnlyDictionary<string, IReadOnlyList<string>> fields,
+        float score,
+        Func<string, string> makeSnippet)
+    {
+        if (FirstStoredValue(fields, "type") is not [var type])
+        {
+            return Option<SearchResult>.None;
+        }
+
+        if (FirstStoredValue(fields, "id") is not [var rawId] || !int.TryParse(rawId, out var id))
+        {
+            return Option<SearchResult>.None;
+        }
+
+        if (FirstStoredValue(fields, "title") is not [var title])
+        {
+            return Option<SearchResult>.None;
+        }
+
+        var body = FirstStoredValue(fields, "body").GetOrElse(string.Empty);
+        return Option.Some(new SearchResult(type, id, title, makeSnippet(body), score));
     }
 
     public IReadOnlyList<string> Suggestions(string query)
@@ -215,6 +239,9 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
             }
         }
     }
+
+    private static Option<string> FirstStoredValue(IReadOnlyDictionary<string, IReadOnlyList<string>> fields, string name) =>
+        fields.GetValueOrNone(name).SelectMany(values => values.FirstOrNone());
 
     private Query ParseQuery(string userInput)
     {
