@@ -27,6 +27,15 @@ public class ArticleSeoTests
     }
 
     [Fact]
+    public void Build_uses_the_slug_for_canonical_urls_when_supplied()
+    {
+        var meta = ArticleSeo.Build(Sample(), "Anna", "https://foodblog.ch", "sommerkueche");
+
+        Assert.Equal("https://foodblog.ch/articles/sommerkueche", meta.Url);
+        Assert.Contains("\"url\":\"https://foodblog.ch/articles/sommerkueche\"", meta.HeadExtra);
+    }
+
+    [Fact]
     public void Build_omits_image_when_there_is_no_cover()
     {
         var meta = ArticleSeo.Build(Sample(), "Anna", "https://foodblog.ch");

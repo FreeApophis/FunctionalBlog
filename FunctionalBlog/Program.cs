@@ -39,6 +39,7 @@ internal class Program
             Middlewares.RequestLogging,
             AuthMiddleware.Create(),
             CsrfMiddleware.Create(),
+            SlugMiddleware.Create(),
             Router.Create(Routes.Build()));
 
         web.Run(async http =>

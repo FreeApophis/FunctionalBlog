@@ -14,9 +14,10 @@ public static class RecipeSeo
         IReadOnlyDictionary<IngredientId, Ingredient> ingredients,
         string authorName,
         string baseUrl,
-        Translate t)
+        Translate t,
+        string? slug = null)
     {
-        var url = $"{baseUrl}/recipes/{recipe.Id.Value}";
+        var url = $"{baseUrl}/recipes/{slug ?? recipe.Id.Value.ToString()}";
         var imageUrls = recipe.Images.Select(image => Seo.Absolute(baseUrl, image)).ToList();
         var description = Seo.PlainTextSnippet(recipe.Description.Value);
 

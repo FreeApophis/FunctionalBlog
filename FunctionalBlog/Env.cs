@@ -21,6 +21,7 @@ public sealed record Env(
     IQuickSearch? QuickSearch = null,
     ITagRepository? Tags = null,
     ISlugRepository? Slugs = null,
+    SlugIndex? SlugIndex = null,
     string Language = Languages.Default,
     string Theme = "light",
     string CsrfToken = "")
@@ -39,5 +40,5 @@ public sealed record Env(
             ? await maker.Ensure(entityType, entityId, sourceText)
             : entityId.ToString();
 
-    public ViewContext Ctx => new(CurrentUser, T, CsrfToken, Theme, Language);
+    public ViewContext Ctx => new(CurrentUser, T, CsrfToken, Theme, Language, SlugIndex);
 }

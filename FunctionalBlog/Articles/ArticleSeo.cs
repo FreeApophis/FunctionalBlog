@@ -7,9 +7,9 @@ namespace FunctionalBlog.Articles;
 // JSON-LD block. The teaser doubles as the meta description.
 public static class ArticleSeo
 {
-    public static PageMeta Build(Article article, string authorName, string baseUrl)
+    public static PageMeta Build(Article article, string authorName, string baseUrl, string? slug = null)
     {
-        var url = $"{baseUrl}/articles/{article.Id.Value}";
+        var url = $"{baseUrl}/articles/{slug ?? article.Id.Value.ToString()}";
         var description = Seo.PlainTextSnippet(article.Teaser.Value);
         var imageUrl = article.CoverImageId.Match(
             none: () => string.Empty,

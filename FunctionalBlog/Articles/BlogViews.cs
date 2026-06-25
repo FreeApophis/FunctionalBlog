@@ -15,7 +15,7 @@ public static class BlogViews
 
         string Featured(Article a) =>
             $"""
-            <a class="blog-featured" href="/articles/{a.Id.Value}">
+            <a class="blog-featured" href="{ctx.Url(SlugEntityType.Article, a.Id.Value)}">
                 {Media(a)}
                 <div class="blog-featured-body">
                     <h2>{Html.Encode(a.Title.Value)}</h2>
@@ -37,7 +37,7 @@ public static class BlogViews
         {
             var rest = articles.Skip(1).ToList();
             var grid = rest.Count > 0
-                ? Html.Raw($"""<div class="blog-grid">{string.Concat(rest.Select(a => Card(a, authorNames, authorAvatars, t)))}</div>""")
+                ? Html.Raw($"""<div class="blog-grid">{string.Concat(rest.Select(a => Card(a, authorNames, authorAvatars, ctx)))}</div>""")
                 : HtmlString.Empty;
             feed = Html.Raw(Featured(articles[0])) + grid;
         }
@@ -54,7 +54,7 @@ public static class BlogViews
 
         var layout = Html.Raw("""<div class="blog-layout"><div class="blog-main">""") +
             feed +
-            Html.Raw($"""</div><aside class="blog-sidebar">{Sidebar(recipes, t)}</aside></div>""");
+            Html.Raw($"""</div><aside class="blog-sidebar">{Sidebar(recipes, ctx)}</aside></div>""");
 
         var body = head + layout;
 
@@ -103,7 +103,7 @@ public static class BlogViews
             Html.Raw($"""<p class="blog-teaser">{Html.Encode(article.Teaser.Value)}</p>""") +
             Html.Div("post-text", Html.Raw(BbcodeRenderer.RenderToHtml(article.Text.Value)));
 
-        return Layout.Page(article.Title.Value, body, ctx, ArticleSeo.Build(article, authorName, baseUrl));
+        return Layout.Page(article.Title.Value, body, ctx, ArticleSeo.Build(article, authorName, baseUrl, ctx.SlugFor(SlugEntityType.Article, article.Id.Value)));
     }
 
     public static string Form(
@@ -161,9 +161,9 @@ public static class BlogViews
         Article a,
         IReadOnlyDictionary<UserId, string> authorNames,
         IReadOnlyDictionary<UserId, Option<ImageId>> authorAvatars,
-        Translate t) =>
+        ViewContext ctx) =>
         $"""
-        <a class="blog-card" href="/articles/{a.Id.Value}">
+        <a class="blog-card" href="{ctx.Url(SlugEntityType.Article, a.Id.Value)}">
             {Media(a)}
             <div class="blog-card-body">
                 <h3>{Html.Encode(a.Title.Value)}</h3>
@@ -200,12 +200,14 @@ public static class BlogViews
 
     // Home sidebar backed by real data: the newest recipes and the most common recipe tags,
     // each linking to its dedicated tag page (/tag/{slug}).
-    private static string Sidebar(IReadOnlyList<Recipe> recipes, Translate t)
+    private static string Sidebar(IReadOnlyList<Recipe> recipes, ViewContext ctx)
     {
+        var (_, t, _) = ctx;
+
         var recent = recipes
             .OrderByDescending(r => r.Id.Value)
             .Take(5)
-            .Select((r, i) => $"""<li><a href="/recipes/{r.Id.Value}"><span class="num">{i + 1:D2}</span><span>{Html.Encode(r.Name.Value)}</span></a></li>""")
+            .Select((r, i) => $"""<li><a href="{ctx.Url(SlugEntityType.Recipe, r.Id.Value)}"><span class="num">{i + 1:D2}</span><span>{Html.Encode(r.Name.Value)}</span></a></li>""")
             .ToList();
 
         var recentCard = recent.Count > 0

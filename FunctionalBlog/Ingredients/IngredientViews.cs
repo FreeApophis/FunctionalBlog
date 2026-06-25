@@ -11,7 +11,7 @@ public static class IngredientViews
 
         var grid = page.TotalItems == 0
             ? Html.P(Html.Text(t("ingredient.no_ingredients")))
-            : Html.Raw($"""<div class="ingredient-grid">{string.Concat(page.Items.Select(Tile))}</div>""");
+            : Html.Raw($"""<div class="ingredient-grid">{string.Concat(page.Items.Select(i => Tile(i, ctx)))}</div>""");
 
         var breadcrumb = Html.Breadcrumb(Crumb.Current(t("ingredient.list_title")));
         var pagination = Html.Pagination(page.CurrentPage, page.TotalPages, "/ingredients", t("common.pagination"));
@@ -51,8 +51,8 @@ public static class IngredientViews
         return Layout.Page(ingredient.Name.Value, body, ctx);
     }
 
-    private static string Tile(Ingredient ingredient) =>
-        $"""<a class="ingredient-tile" href="/ingredients/{ingredient.Id.Value}">{Html.Encode(ingredient.Name.Value)}</a>""";
+    private static string Tile(Ingredient ingredient, ViewContext ctx) =>
+        $"""<a class="ingredient-tile" href="{ctx.Url(SlugEntityType.Ingredient, ingredient.Id.Value)}">{Html.Encode(ingredient.Name.Value)}</a>""";
 
     private static HtmlString Nutrition(Ingredient ingredient, Translate t)
     {

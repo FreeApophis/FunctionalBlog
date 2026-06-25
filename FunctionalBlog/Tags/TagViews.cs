@@ -33,13 +33,13 @@ public static class TagViews
         var recipeSection = Section(
             "recipe.title",
             "recipe-grid",
-            recipes.Select(r => RecipeViews.Card(r, authorNames, authorAvatars, t)),
+            recipes.Select(r => RecipeViews.Card(r, authorNames, authorAvatars, ctx)),
             recipes.Count);
 
         var articleSection = Section(
             "blog.title",
             "blog-grid",
-            articles.Select(a => BlogViews.Card(a, authorNames, authorAvatars, t)),
+            articles.Select(a => BlogViews.Card(a, authorNames, authorAvatars, ctx)),
             articles.Count);
 
         var empty = recipes.Count == 0 && articles.Count == 0

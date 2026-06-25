@@ -42,6 +42,17 @@ public class RecipeSeoTests
     }
 
     [Fact]
+    public void Build_uses_the_slug_for_canonical_urls_when_supplied()
+    {
+        var (recipe, ingredients) = Sample();
+
+        var meta = RecipeSeo.Build(recipe, ingredients, "Anna", "https://foodblog.ch", T, "ruehrkuchen");
+
+        Assert.Equal("https://foodblog.ch/recipes/ruehrkuchen", meta.Url);
+        Assert.Contains("\"url\":\"https://foodblog.ch/recipes/ruehrkuchen\"", meta.HeadExtra);
+    }
+
+    [Fact]
     public void Build_omits_optional_fields_when_absent()
     {
         var recipe = Recipe.Create(

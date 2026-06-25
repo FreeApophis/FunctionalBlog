@@ -8,7 +8,7 @@ public static class PageViews
 
         var items = pages.Count == 0
             ? Html.P(Html.Text(t("page.empty")))
-            : Html.Ul(pages.Select(p => Html.Link($"/pages/{p.Id.Value}", p.Title.Value)));
+            : Html.Ul(pages.Select(p => Html.Link(ctx.Url(SlugEntityType.Page, p.Id.Value), p.Title.Value)));
 
         var body = Html.H1(t("page.list_title")) +
             (principal.Can<Create>(new PageResource())
@@ -45,7 +45,7 @@ public static class PageViews
             Html.H1(page.Title.Value) +
             Html.Div("post-text", Html.Raw(BbcodeRenderer.RenderToHtml(page.Content.Value)));
 
-        return Layout.Page(page.Title.Value, body, ctx, PageSeo.Build(page, baseUrl));
+        return Layout.Page(page.Title.Value, body, ctx, PageSeo.Build(page, baseUrl, ctx.SlugFor(SlugEntityType.Page, page.Id.Value)));
     }
 
     public static string Form(

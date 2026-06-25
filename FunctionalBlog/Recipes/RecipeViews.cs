@@ -15,7 +15,7 @@ public static class RecipeViews
 
         var grid = recipes.Count == 0
             ? Html.P(Html.Text(t("recipe.no_recipes")))
-            : Html.Raw($"""<div class="recipe-grid">{string.Concat(recipes.Select(r => Card(r, authorNames, authorAvatars, t)))}</div>""");
+            : Html.Raw($"""<div class="recipe-grid">{string.Concat(recipes.Select(r => Card(r, authorNames, authorAvatars, ctx)))}</div>""");
 
         var pagination = Html.Pagination(page.CurrentPage, page.TotalPages, "/recipes", t("common.pagination"));
 
@@ -40,8 +40,9 @@ public static class RecipeViews
         Recipe recipe,
         IReadOnlyDictionary<UserId, string> authorNames,
         IReadOnlyDictionary<UserId, Option<ImageId>> authorAvatars,
-        Translate t)
+        ViewContext ctx)
     {
+        var (_, t, _) = ctx;
         var author = authorNames.TryGetValue(recipe.AuthorId, out var n) ? n : "?";
         var authorAvatar = authorAvatars.GetValueOrDefault(recipe.AuthorId, Option<ImageId>.None);
 
@@ -61,7 +62,7 @@ public static class RecipeViews
         };
 
         return $"""
-            <a class="recipe-card" href="/recipes/{recipe.Id.Value}">
+            <a class="recipe-card" href="{ctx.Url(SlugEntityType.Recipe, recipe.Id.Value)}">
                 {media}
                 <div class="recipe-card-body">
                     <h3>{Html.Encode(recipe.Name.Value)}</h3>
@@ -120,7 +121,7 @@ public static class RecipeViews
                     <span class="difficulty-pill">{Html.Encode(t(DifficultyKey(recipe.Difficulty)))}</span>
                     <span class="dot">·</span>
                 """) +
-            PortionsMenu(recipe.Id.Value, displayPortions, t) +
+            PortionsMenu(ctx.Url(SlugEntityType.Recipe, recipe.Id.Value), displayPortions, t) +
             metaActions +
             Html.Raw("</div>");
 
@@ -195,7 +196,7 @@ public static class RecipeViews
             bodyGrid +
             hints;
 
-        var pageMeta = RecipeSeo.Build(recipe, ingredientMap, authorName, baseUrl, t);
+        var pageMeta = RecipeSeo.Build(recipe, ingredientMap, authorName, baseUrl, t, ctx.SlugFor(SlugEntityType.Recipe, recipe.Id.Value));
 
         return Layout.Page(recipe.Name.Value, body, ctx, pageMeta);
     }
@@ -563,12 +564,12 @@ public static class RecipeViews
 
     // A no-JS serving-size selector: a pill trigger (people icon + count) revealing a hover/focus
     // dropdown of preset links to /recipes/{id}?portions=N. The active preset is highlighted.
-    private static HtmlString PortionsMenu(int recipeId, int displayPortions, Translate t)
+    private static HtmlString PortionsMenu(string recipeUrl, int displayPortions, Translate t)
     {
         var options = string.Concat(PortionPresets.Select(n =>
         {
             var active = n == displayPortions ? " is-active" : string.Empty;
-            return $"""<a class="portions-option{active}" href="/recipes/{recipeId}?portions={n}">{n}</a>""";
+            return $"""<a class="portions-option{active}" href="{recipeUrl}?portions={n}">{n}</a>""";
         }));
 
         return Html.Raw($"""

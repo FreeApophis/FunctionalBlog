@@ -4,11 +4,11 @@ namespace FunctionalBlog.Pages;
 // drawn from the page body. Generic pages get no structured data — just a clean share card.
 public static class PageSeo
 {
-    public static PageMeta Build(Page page, string baseUrl) =>
+    public static PageMeta Build(Page page, string baseUrl, string? slug = null) =>
         new()
         {
             Type = "website",
-            Url = $"{baseUrl}/pages/{page.Id.Value}",
+            Url = $"{baseUrl}/pages/{slug ?? page.Id.Value.ToString()}",
             Description = Seo.PlainTextSnippet(page.Content.Value),
         };
 }
