@@ -9,10 +9,10 @@ dotnet build                  # Debug build
 dotnet build -c Release       # Release build
 dotnet run                    # Run (HTTPS: localhost:65243, HTTP: localhost:65244)
 dotnet clean                  # Clean build artifacts
-dotnet test                   # Run the xunit test project
+dotnet test                   # Run every xunit test project in the solution
 ```
 
-Tests live in `FunctionalBlog.Test/` (xunit). There is no linting configuration. NuGet package versions are managed centrally in `Directory.Packages.props` (CPM is enabled).
+Tests live in `FunctionalBlog.Test/` and `Bbcode.Test/` (both xunit); `dotnet test` runs every test project. Code style is enforced by the `Polyadic.CodeStyle` analyzer and the Funcky analyzers (wired through `Directory.Build.props`); there is no separate linter. NuGet package versions are managed centrally in `Directory.Packages.props` (CPM is enabled). Every project targets `net10.0`, set once in `Directory.Build.props`.
 
 ## Workflow
 
@@ -20,7 +20,7 @@ This project follows **Test-Driven Development**. For every change to production
 
 1. Write a failing test in `FunctionalBlog.Test/` that captures the desired behavior.
 2. Run `dotnet test` and confirm it fails for the expected reason.
-3. Write the minimum production code in the project that owns the change (`FunctionalBlog.Domain`, `FunctionalBlog.Application`, `FunctionalBlog.DataAccess.InMemory`, `FunctionalBlog.DataAccess.Sqlite`, or `FunctionalBlog`) to make it pass.
+3. Write the minimum production code in the project that owns the change (`FunctionalBlog.Domain`, `FunctionalBlog.Application`, `FunctionalBlog.Pipeline`, `FunctionalBlog.DataAccess.InMemory`, `FunctionalBlog.DataAccess.Sqlite`, `Bbcode`, or `FunctionalBlog`) to make it pass.
 4. Run `dotnet test` again and confirm all tests pass.
 5. Refactor while keeping tests green.
 
@@ -30,16 +30,19 @@ When adding a new `IArticleRepository` implementation, derive its tests from `Ar
 
 ## Architecture
 
-The solution is split into six projects with a strict dependency direction (Domain ← Application ← DataAccess.* ← Web ← Test):
+The solution is split into nine projects. The core dependency direction is strict (Domain ← Application ← DataAccess.* ← Web ← Test); `Pipeline` and `Bbcode` are leaf libraries the Web project also references:
 
-- **`FunctionalBlog.Domain`** — entities and value objects. No project references. Pure domain.
-- **`FunctionalBlog.Application`** — repository contracts. References Domain.
-- **`FunctionalBlog.DataAccess.InMemory`** — in-memory repository implementations for use in tests. References Application.
-- **`FunctionalBlog.DataAccess.Sqlite`** — SQLite repository implementations for production, plus `Pbkdf2PasswordHasher` and `TranslationSeeder`. References Application. Uses Dapper and dbup-sqlite.
-- **`FunctionalBlog`** (Web) — handlers, views, the functional pipeline, and the ASP.NET bootstrap. References Application and DataAccess.Sqlite.
-- **`FunctionalBlog.Test`** — xunit. References Web (gets DataAccess.Sqlite transitively) and DataAccess.InMemory directly.
+- **`FunctionalBlog.Domain`** — entities and value objects (Articles, Identity, Roles/permissions, Recipes, Translations). No project references. Pure domain.
+- **`FunctionalBlog.Application`** — repository/service contracts (one folder per domain area). References Domain.
+- **`FunctionalBlog.Pipeline`** — the functional HTTP core as **generic** delegates: `Effect<TEnv, T>`, `App<TEnv, TRequest, TResponse>`, `Middleware<TEnv, TRequest, TResponse>`, and `Functional.Compose`. No project references — it knows nothing about the Web types. The Web project binds the concrete aliases via `global using` (e.g. `App = Pipeline.App<Env, Request, Response>`, `Middleware = Pipeline.Middleware<Env, Request, Response>`). Referenced by Web.
+- **`FunctionalBlog.DataAccess.InMemory`** — in-memory repository implementations for use in tests, one folder per domain area. References Application.
+- **`FunctionalBlog.DataAccess.Sqlite`** — SQLite repository implementations for production, plus `DatabaseMigrator`, `DapperTypeHandlers`, `Pbkdf2PasswordHasher`, and `TranslationSeeder`. Migrations are embedded `Migrations/NNNN_*.sql` resources run by dbup-sqlite. References Application. Uses Dapper and dbup-sqlite.
+- **`Bbcode`** — standalone, dependency-free `BbcodeRenderer` (encode-first BBCode → HTML, including inline gallery images). Referenced by Web; has its own `Bbcode.Test` project.
+- **`FunctionalBlog`** (Web) — handlers, views, forms, the concrete pipeline wiring, and the ASP.NET bootstrap. References Application, DataAccess.Sqlite, Pipeline, and Bbcode. Pulls in LeanCorpus (full-text search), QuestPDF + SkiaSharp (recipe PDF printing), and Funcky.DiscriminatedUnion.
+- **`FunctionalBlog.Test`** — xunit. References Web (gets DataAccess.Sqlite + Pipeline transitively) and DataAccess.InMemory directly.
+- **`Bbcode.Test`** — xunit. References Bbcode only.
 
-The Web project demonstrates functional programming principles in .NET 10. The core abstraction is a curried, reader-style pipeline expressed with delegates:
+The project demonstrates functional programming principles in .NET 10. The core abstraction is a curried, reader-style pipeline expressed with delegates (`FunctionalBlog.Pipeline`):
 
 ```
 Effect<T>  = Func<Env, ValueTask<T>>           // Effect.cs
@@ -47,25 +50,28 @@ App        = Func<Request, Effect<Response>>   // App.cs
 Middleware = Func<App, App>                    // Middleware.cs
 ```
 
-A handler is invoked as `app(request)(env)` — request first, then environment. `Functional.Compose(params Middleware[])` folds middlewares right-to-left over a `NotFound` terminator to produce the final `App`. In `Program.cs` the pipeline is `Recover → RequestLogging → Router`.
+A handler is invoked as `app(request)(env)` — request first, then environment. `Functional.Compose(notFound, params Middleware[])` folds middlewares right-to-left over a terminator (`Program.cs` passes a `NotFound` terminator). In `Program.cs` the live pipeline is `Language → Theme → Recover → RequestLogging → Auth → Csrf → Slug → Router`, and the `Router` middleware dispatches against the `RouteTable` built in `Routes.Build()`.
+
+The single `Env` instance is built once in `Program.cs` (`BuildEnv`), threaded through every handler, and refreshed with `with` expressions as startup wires in the translation cache and search index. Per-request state (current user, language, theme, CSRF token) is layered on by the upstream middlewares, again via `with`.
 
 ### Key types
 
-- **`Env`** (Web) — dependency injection record carrying `IArticleRepository`, `IClock`, and `ILog`. Passed through every handler.
-- **`Request`** / **`Response`** (Web) — HTTP abstractions. `Response` has `Html`, `Text`, `Css`, `Redirect`, and `NotFound` factory methods.
-- **`Router`** (Web) — a `Middleware` that pattern-matches on `(method, path)` and dispatches to `BlogHandlers`/`StaticHandlers`; falls through to `Response.NotFound()`.
-- **`BlogHandlers`** (Web) — `App`-valued handlers (Index, NewArticleForm, CreateArticle, ShowArticle).
-- **`StaticHandlers`** (Web) — serves `/styles.css` from the embedded resource `FunctionalBlog.wwwroot.styles.css`. Content cached in a `Lazy<string>`.
-- **`Middlewares`** (Web) — `Recover` (catches exceptions, logs, returns a 500 HTML page) and `RequestLogging` (times the inner app and logs method/path/status/elapsed).
-- **`Article` / `ArticleId` / `ArticleTitle` / `ArticleText`** (Domain) — domain model.
-- **`IArticleRepository`** (Application) — repository contract. Behavioral spec lives in `FunctionalBlog.Test/ArticleRepositoryContract.cs`.
-- **`ArticleForm`** (Web) — HTTP form decoding/validation returning `Validated<IReadOnlyList<string>, ArticleForm.Valid>`. Stays with the Web project because it's a presentation/transport concern, not a domain rule.
-- **`Validated<TFailure, TSuccess>`** (Web) — applicative-functor discriminated union for form validation. `Failure(TFailure Error)` accumulates all field errors; `Success(TSuccess Value)` carries the fully-typed valid form.
-- **`InMemoryArticleRepository`** (DataAccess.InMemory) — in-memory storage for tests. Pre-seeded with one sample article on construction (a fixture quirk, not part of the contract).
-- **`SqliteArticleRepository`** (DataAccess.Sqlite) — production SQLite storage using Dapper.
-- **`BlogViews`** / **`Layout`** / **`Html`** (Web) — server-rendered HTML with XSS protection via `WebUtility.HtmlEncode`. CSS lives in `wwwroot/styles.css`, embedded into the Web assembly.
+- **`Env`** (Web) — the reader environment record. Carries every repository/service (`Articles`, `Users`, `Roles`, `Sessions`, `PasswordResets`, `Recipes`, `Ingredients`, `Units`, `Images`, `Pages`, `Tags`, `Slugs`, `Translations`, `Search`, `QuickSearch`), the infra (`Clock`, `Log`, `PasswordHasher`), and per-request state (`CurrentUser`, `Language`, `Theme`, `CsrfToken`). Exposes derived helpers: `T` (translate via `TranslationCache`), `EnsureSlug`/`SlugMaker`, and `Ctx` (a `ViewContext` snapshot passed to views).
+- **`Request`** / **`Response`** (Web) — HTTP abstractions. `Response` factories: `Html`, `Text`, `Css`, `Js`, `Redirect`, `Forbidden`, `NotFound`, `Bytes` (images/favicon/PDF, with optional headers), and `JsonDownload`. `Request` exposes `Form`, query, route captures, cookies, and uploaded files (`UploadedFile`).
+- **`RouteTable`** / **`Routes`** / **`Router`** (Web) — `Routes.Build()` is the route registry (the composition root for routing) returning an immutable `RouteTable` of `(HttpMethod, pattern, factory)` entries with `{param}` capture. `Router.Create(table)` is the `Middleware` that matches a request and dispatches; falls through to `Response.NotFound`.
+- **`Auth`** (Web) — route guards: `Auth.RequireAuth(app)` and `Auth.RequirePermission<TAction>(resource, app)` wrap handlers and short-circuit unauthenticated/unauthorized requests. Permissions are evaluated against the role model in Domain (`IPrincipal`, `IResource`, `IAction`, `PermissionRule`, `Role`, `Guest`).
+- **Middlewares** (Web) — `Middlewares.cs` holds `Recover` (catches exceptions, logs, 500 page) and `RequestLogging`. Cross-cutting concerns live in their own files: `AuthMiddleware`, `CsrfMiddleware`, `SlugMiddleware`, `ThemeMiddleware`, `LanguageMiddleware` — each layers state onto `Env` for downstream handlers.
+- **Handlers** (Web) — `App`-valued handler classes per feature area: `BlogHandlers`, `RecipeHandlers`, `IngredientHandlers`, `PageHandlers`, `ImageHandlers`, `TagHandlers`, `AuthHandlers`, `UsersHandlers`, `UserSettingsHandlers`, `AdminHandlers`/`AdminDashboardHandlers`, `Admin*`/`AdminUnitHandlers`/`AdminIngredientHandlers`/`AdminSearchHandlers`, `SearchHandlers`, `TranslationHandlers`, `ThemeHandlers`, `RecipePdfHandlers`, `ImageCleanupHandlers`, `StaticHandlers`.
+- **`StaticHandlers`** (Web) — serves CSS, JS, fonts, favicon, and images from embedded `wwwroot` resources, cached in `Lazy<>`.
+- **Domain model** — Articles (`Article`, `ArticleId`, `ArticleTitle`, `ArticleTeaser`, `ArticleText`), plus Identity, Roles, Recipes (incl. `RecipeIngredient`, `PreparationStep`, `Unit`), Translations, and value objects under `FunctionalBlog.Domain/<Area>/`.
+- **Repository contracts** (Application) — `IArticleRepository`, `IUserRepository`, `IRoleRepository`, `ISessionStore`, `IPasswordResetTokenStore`, `IRecipeRepository`, `IIngredientRepository`, `IUnitRepository`, `IImageRepository`, `IPageRepository`, `ITagRepository`, `ISlugRepository`, `ITranslationRepository`, `ISearchIndex`, `IQuickSearch`, plus `IPasswordHasher`/`IEmailSender`. Each has both an `InMemory*` (tests) and `Sqlite*` (production) implementation. The `IArticleRepository` behavioral spec lives in `FunctionalBlog.Test/ArticleRepositoryContract.cs`.
+- **`*Form`** (Web) — one per form (`ArticleForm`, `RecipeForm`, `RegisterForm`, `LoginForm`, `ChangePasswordForm`, `PasswordReset*Form`, `IngredientForm`, `PageForm`, `UnitForm`, `ImageUploadForm`, `RoleForm`, `RuleForm`, `AssignRoleForm`). HTTP decoding/validation returning `Validated<IReadOnlyList<string>, Valid>`. Forms stay in Web — they're a presentation/transport concern, not a domain rule.
+- **`Validated<TFailure, TSuccess>`** (Web) — applicative-functor discriminated union for form validation. `Failure` accumulates all field errors; `Success` carries the fully-typed valid form.
+- **Views** (Web) — `*Views` classes (`BlogViews`, `RecipeViews`, `NavViews`, …), `Layout`, and the `Html`/`HtmlString` helpers. Server-rendered HTML with XSS protection via `WebUtility.HtmlEncode`; always use the `Html` helpers (see Html Helpers Policy). `BbcodeRenderer` (the `Bbcode` project) renders user BBCode bodies. CSS, JS, fonts, and images live under `wwwroot/` as embedded resources.
+- **Search** (Web) — `LeanCorpusSearchIndex` (`ISearchIndex`) is a LeanCorpus full-text index rebuilt on startup and updated on writes; `SqliteQuickSearch` (`IQuickSearch`) backs the instant `/search/quick` typeahead.
+- **PDF** (Web) — `RecipePdf*` render printable recipe PDFs with QuestPDF + SkiaSharp.
 - **`HttpAdapter`** (Web) — adapts ASP.NET Core's `HttpContext` to/from the domain `Request`/`Response`.
-- **`SystemClock`** / **`ConsoleLog`** (Web) — concrete `IClock` / `ILog` implementations wired up in `Program.cs`.
+- **`SystemClock`** / **`ConsoleLog`** (Web) — concrete `IClock` / `ILog`, wired in `Program.cs`. `Seeder` and `SlugBackfill` run idempotent startup seeding/backfill.
 
 ## Functional style with Funcky `Option<T>`
 
@@ -265,23 +271,25 @@ All user-facing text (form validation messages, article content, page labels) is
 
 ### File layout
 
-One public type per file; no namespaces (relies on the implicit global namespace and `ImplicitUsings`).
+One public type per file. Files are grouped into per-area folders, and each folder is a namespace (e.g. `FunctionalBlog.Domain.Articles`, `FunctionalBlog.Application.Identity`, `FunctionalBlog.Recipes`). The Web project's `GlobalUsings.cs` `global using`s every namespace (and binds the `App`/`Middleware` aliases), so within Web most code reads as if there were no namespaces. New files should sit in the folder for their area and declare the matching namespace.
 
-**`FunctionalBlog.Domain/`**: `Article.cs`, `ArticleId.cs`, `ArticleTitle.cs`, `ArticleText.cs`
+**`FunctionalBlog.Domain/`** — value objects/entities under `Articles/`, `Identity/`, `Roles/`, `Recipes/`, `Translations/` (and the polymorphic Tags/Slugs/Images/Pages types added by later features).
 
-**`FunctionalBlog.Application/`**: `IArticleRepository.cs`
+**`FunctionalBlog.Application/`** — repository/service contracts under one folder per area (`Articles/`, `Identity/`, `Images/`, `Pages/`, `Recipes/`, `Roles/`, `Search/`, `Slugs/`, `Tags/`, `Translations/`).
 
-**`FunctionalBlog.DataAccess.InMemory/`**: `InMemory*` repository implementations grouped by domain area (`Articles/`, `Identity/`, `Recipes/`, `Roles/`, `Translations/`).
+**`FunctionalBlog.Pipeline/`**: `Effect.cs`, `App.cs`, `Middleware.cs`, `Functional.cs` (generic delegates only).
 
-**`FunctionalBlog.DataAccess.Sqlite/`**: `Sqlite*` repository implementations, `DatabaseMigrator`, `DapperTypeHandlers`, `SqliteConnectionFactory`, `Pbkdf2PasswordHasher` (`Identity/`), `TranslationSeeder` (`Translations/`), and `Migrations/0001_initial_schema.sql` (embedded resource).
+**`Bbcode/`**: `BbcodeRenderer.cs` (+ `Bbcode.Test/BbcodeRendererTests.cs`).
 
-**`FunctionalBlog/`** (Web), grouped by role:
+**`FunctionalBlog.DataAccess.InMemory/`**: `InMemory*` repository implementations, one folder per domain area.
 
-1. Functional core: `Effect.cs`, `App.cs`, `Middleware.cs`, `Functional.cs`
-2. HTTP model: `Request.cs`, `Response.cs`, `Env.cs`
-3. Pipeline: `Middlewares.cs`, `Router.cs`
-4. Application: `BlogHandlers.cs`, `StaticHandlers.cs`
-5. Form: `ArticleForm.cs`, `RegisterForm.cs`, and other `*Form.cs` files — each exposes a `Valid` nested record and returns `Validated<IReadOnlyList<string>, TValid>`
-6. Views: `BlogViews.cs`, `Layout.cs`, `Html.cs`, `wwwroot/styles.css`
-7. Infrastructure: `IClock.cs`, `SystemClock.cs`, `ILog.cs`, `ConsoleLog.cs`, `HttpAdapter.cs`
-8. Bootstrap: `Program.cs`
+**`FunctionalBlog.DataAccess.Sqlite/`**: `Sqlite*` repository implementations, `DatabaseMigrator`, `DapperTypeHandlers`, `SqliteConnectionFactory`, `Pbkdf2PasswordHasher` (`Identity/`), `TranslationSeeder` (`Translations/`), and `Migrations/NNNN_*.sql` (embedded resources, run in order by dbup).
+
+**`FunctionalBlog/`** (Web), grouped by feature folder, with shared infrastructure at the root:
+
+1. HTTP model + bootstrap (root): `Request.cs`, `Response.cs`, `Env.cs`, `ViewContext.cs`, `HttpAdapter.cs`, `HttpMethod.cs`, `Program.cs`, `Seeder.cs`
+2. Pipeline + routing (root): `Middlewares.cs`, `Router.cs`, `RouteTable.cs`, `Routes.cs`, `SlugMiddleware.cs`, `SlugDispatch.cs`, `SlugIndex.cs`
+3. Shared view/form helpers (root): `Layout.cs`, `Html.cs`, `HtmlString.cs`, `Validated.cs`, `Pagination.cs`, `PagedResult.cs`, `Crumb.cs`, `Seo.cs`, `PageMeta.cs`, `AmountFormat.cs`
+4. Infrastructure (root): `IClock.cs`, `SystemClock.cs`, `ILog.cs`, `ConsoleLog.cs`
+5. Feature folders, each with its handlers/views/forms: `Articles/`, `Recipes/`, `Ingredients/`, `Pages/`, `Images/`, `Tags/`, `Identity/`, `Roles/`, `Units/`, `Admin/`, `Search/`, `Translations/`, `Theme/`
+6. `wwwroot/` — `styles.css`, `htmx.min.js` and small JS helpers, fonts, favicon, images (all embedded resources)
