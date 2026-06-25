@@ -20,12 +20,24 @@ public sealed record Env(
     ISearchIndex? Search = null,
     IQuickSearch? QuickSearch = null,
     ITagRepository? Tags = null,
+    ISlugRepository? Slugs = null,
     string Language = Languages.Default,
     string Theme = "light",
     string CsrfToken = "")
 {
     public Translate T =>
         key => TranslationCache?.Get(key, Language) ?? key;
+
+    // Convenience for the write path: a SlugService over the wired repository, or null when no
+    // slug repository is configured (e.g. minimal test envs).
+    public SlugService? SlugMaker => Slugs is null ? null : new SlugService(Slugs);
+
+    // Registers (or refreshes) an entity's slug and returns it. Falls back to the numeric id when
+    // no slug repository is configured, so id-based redirects still work in minimal test envs.
+    public async ValueTask<string> EnsureSlug(string entityType, int entityId, string sourceText) =>
+        SlugMaker is { } maker
+            ? await maker.Ensure(entityType, entityId, sourceText)
+            : entityId.ToString();
 
     public ViewContext Ctx => new(CurrentUser, T, CsrfToken, Theme, Language);
 }

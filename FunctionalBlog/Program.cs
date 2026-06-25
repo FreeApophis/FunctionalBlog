@@ -23,6 +23,7 @@ internal class Program
         var env = BuildEnv(connection, translations);
 
         await Seeder.SeedAsync(env);
+        await SlugBackfill.Run(new SlugService(env.Slugs!), env.Articles, env.Recipes, env.Pages, env.Ingredients);
         var translationCache = await TranslationCache.LoadAsync(translations);
         env = env with { TranslationCache = translationCache };
 
@@ -68,5 +69,6 @@ internal class Program
             Pages: new SqlitePageRepository(connection),
             QuickSearch: new SqliteQuickSearch(connection),
             Tags: new SqliteTagRepository(connection),
+            Slugs: new SqliteSlugRepository(connection),
             Translations: translations);
 }

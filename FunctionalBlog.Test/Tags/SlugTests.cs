@@ -10,6 +10,21 @@ public sealed class SlugTests
     [InlineData("One-Pot", "one-pot")]
     [InlineData("Größe", "groesse")]
     [InlineData("  süss  ", "suess")]
-    public void Transliterates_umlauts_lowercases_and_hyphenates(string input, string expected) =>
+    [InlineData("Crème brûlée", "creme-brulee")]
+    [InlineData("Tiramisù", "tiramisu")]
+    [InlineData("Pâté à la française", "pate-a-la-francaise")]
+    [InlineData("Café & Crème", "cafe-creme")]
+    [InlineData("Gnocchi (selbstgemacht)", "gnocchi-selbstgemacht")]
+    [InlineData("Niçoise", "nicoise")]
+    [InlineData("Zürich", "zuerich")]
+    public void Transliterates_accents_lowercases_and_hyphenates(string input, string expected) =>
+        Assert.Equal(expected, Slug.From(input));
+
+    [Theory]
+    [InlineData("", "n-a")]
+    [InlineData("   ", "n-a")]
+    [InlineData("!!!", "n-a")]
+    [InlineData("---", "n-a")]
+    public void Falls_back_when_nothing_sluggable_remains(string input, string expected) =>
         Assert.Equal(expected, Slug.From(input));
 }

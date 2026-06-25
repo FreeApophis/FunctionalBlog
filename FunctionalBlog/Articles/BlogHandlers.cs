@@ -46,6 +46,7 @@ public static class BlogHandlers
                 await env.Articles.Save(article);
                 env.Search?.IndexArticle(article);
 
+                await env.EnsureSlug(SlugEntityType.Article, article.Id.Value, article.Title.Value);
                 return Response.Redirect($"/articles/{article.Id.Value}");
             });
 
@@ -108,6 +109,7 @@ public static class BlogHandlers
                 await env.Articles.Save(updated);
                 env.Search?.IndexArticle(updated);
 
+                await env.EnsureSlug(SlugEntityType.Article, id.Value, updated.Title.Value);
                 return Response.Redirect($"/articles/{id.Value}");
             });
     };

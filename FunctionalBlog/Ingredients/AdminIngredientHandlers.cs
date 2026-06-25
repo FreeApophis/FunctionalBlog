@@ -39,6 +39,7 @@ public static class AdminIngredientHandlers
                 var ingredient = BuildIngredient(await env.Ingredients.NextId(), s.Value);
                 await env.Ingredients.Save(ingredient);
                 env.Search?.IndexIngredient(ingredient);
+                await env.EnsureSlug(SlugEntityType.Ingredient, ingredient.Id.Value, ingredient.Name.Value);
                 return Response.Redirect("/admin/ingredients");
             });
 
@@ -83,6 +84,7 @@ public static class AdminIngredientHandlers
                 var updated = BuildIngredient(id, s.Value);
                 await env.Ingredients.Save(updated);
                 env.Search?.IndexIngredient(updated);
+                await env.EnsureSlug(SlugEntityType.Ingredient, id.Value, updated.Name.Value);
                 return Response.Redirect("/admin/ingredients");
             });
     };

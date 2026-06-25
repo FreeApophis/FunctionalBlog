@@ -28,6 +28,7 @@ public static class PageHandlers
                 var page = Page.Create(await env.Pages.NextId(), s.Value.Title, s.Value.Content);
                 await env.Pages.Save(page);
                 env.Search?.IndexPage(page);
+                await env.EnsureSlug(SlugEntityType.Page, page.Id.Value, page.Title.Value);
                 return Response.Redirect($"/pages/{page.Id.Value}");
             });
 
@@ -69,6 +70,7 @@ public static class PageHandlers
                 var updated = Page.Create(id, s.Value.Title, s.Value.Content);
                 await env.Pages.Save(updated);
                 env.Search?.IndexPage(updated);
+                await env.EnsureSlug(SlugEntityType.Page, id.Value, updated.Title.Value);
                 return Response.Redirect($"/pages/{id.Value}");
             });
     };

@@ -159,6 +159,7 @@ public static class RecipeHandlers
 
                 await env.Recipes.Save(recipe);
                 env.Search?.IndexRecipe(recipe);
+                await env.EnsureSlug(SlugEntityType.Recipe, recipe.Id.Value, recipe.Name.Value);
                 return Response.Redirect($"/recipes/{recipe.Id.Value}");
             });
     };
@@ -399,6 +400,7 @@ public static class RecipeHandlers
 
                 await env.Recipes.Save(updated);
                 env.Search?.IndexRecipe(updated);
+                await env.EnsureSlug(SlugEntityType.Recipe, id.Value, updated.Name.Value);
                 return Response.Redirect($"/recipes/{id.Value}");
             });
     };

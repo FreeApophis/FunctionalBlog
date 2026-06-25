@@ -28,6 +28,7 @@
     <EmbeddedResource Include="Migrations\0013_reslug_tags.sql" />
     <EmbeddedResource Include="Migrations\0014_calories_per_portion.sql" />
     <EmbeddedResource Include="Migrations\0015_user_avatar.sql" />
+    <EmbeddedResource Include="Migrations\0016_slugs.sql" />
   </ItemGroup>
 
   <ItemGroup>
