@@ -364,6 +364,18 @@ public sealed class RecipeHandlerTests
     }
 
     [Fact]
+    public async Task ShowRecipe_links_each_ingredient_name_to_its_page()
+    {
+        var env = BuildEnv();
+        var mehl = await SeedIngredient(env, "Mehl");
+        var id = await SeedScalableRecipe(env, mehl.Id, baseAmount: 200m, basePortions: 2, calories: 350);
+
+        var response = await RecipeHandlers.ShowRecipe(id)(AnEmptyRequest())(env);
+
+        Assert.Contains($"""<span class="name"><a href="/ingredients/{mehl.Id.Value}">Mehl</a></span>""", response.Body);
+    }
+
+    [Fact]
     public async Task ShowRecipe_without_a_portions_query_shows_the_base_amounts()
     {
         var env = BuildEnv();

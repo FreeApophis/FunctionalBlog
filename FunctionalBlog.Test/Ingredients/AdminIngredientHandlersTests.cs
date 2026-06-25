@@ -17,6 +17,17 @@ public sealed class AdminIngredientHandlersTests
     }
 
     [Fact]
+    public async Task List_links_each_ingredient_name_to_its_public_page()
+    {
+        var env = BuildEnv();
+        var id = await SeedIngredient(env, "Mehl");
+
+        var response = await AdminIngredientHandlers.List(AnEmptyRequest())(env);
+
+        Assert.Contains($"href=\"/ingredients/{id.Value}\">Mehl</a>", response.Body);
+    }
+
+    [Fact]
     public async Task List_shows_at_most_fifteen_rows_and_links_to_the_next_page()
     {
         var env = BuildEnv();

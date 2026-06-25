@@ -141,7 +141,10 @@ public static class RecipeViews
         var ingredientItems = string.Concat(recipe.Ingredients.Select(ri =>
         {
             var found = ingredientMap.TryGetValue(ri.IngredientId, out var ing);
-            var name = found ? Html.Encode(ing!.Name.Value) : "?";
+            // A known ingredient links to its detail page; an unresolved one stays plain text.
+            var name = found
+                ? $"""<a href="{Html.Encode(ctx.Url(SlugEntityType.Ingredient, ri.IngredientId.Value))}">{Html.Encode(ing!.Name.Value)}</a>"""
+                : "?";
             var kcal = found
                 ? (int)Math.Round(CalorieCalculator.ForIngredient(ri.Amount * factor, ri.Unit, ing!), MidpointRounding.AwayFromZero)
                 : 0;

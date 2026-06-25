@@ -142,7 +142,7 @@ public static class AdminIngredientViews
 
         return $"""
             <div class="ingredient-row" id="ingredient-row-{id}">
-                <span class="ingredient-cell" data-label="{Html.Encode(t("ingredient.field.name"))}">{warning}{Html.Encode(ingredient.Name.Value)}</span>
+                <span class="ingredient-cell" data-label="{Html.Encode(t("ingredient.field.name"))}">{warning}<a href="{Html.Encode(ctx.Url(SlugEntityType.Ingredient, id))}">{Html.Encode(ingredient.Name.Value)}</a></span>
                 <span class="ingredient-cell" data-label="{Html.Encode(t("ingredient.field.description"))}">{Html.Encode(ingredient.Description)}</span>
                 <span class="unit-actions">
                     <a class="icon-btn" href="/admin/ingredients/{id}/edit" title="{Html.Encode(t("common.edit"))}" aria-label="{Html.Encode(t("common.edit"))}">{PencilIcon}</a>
