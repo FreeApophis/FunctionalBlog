@@ -120,6 +120,32 @@ public sealed class SearchIndexTests : IDisposable
     }
 
     [Fact]
+    public async Task Status_reports_per_type_counts_and_last_rebuilt()
+    {
+        var articles = new InMemoryArticleRepository();
+        var recipes = new InMemoryRecipeRepository();
+        var ingredients = new InMemoryIngredientRepository();
+        var pages = new InMemoryPageRepository();
+
+        await articles.Save(AnArticleEntity(await articles.NextId(), "Rührkuchen"));
+        await recipes.Save(ARecipeEntity(await recipes.NextId(), "Pfannkuchen"));
+        await ingredients.Save(AnIngredientEntity(await ingredients.NextId(), "Zucker"));
+        await pages.Save(APageEntity(await pages.NextId(), "Impressum"));
+
+        await _index.RebuildAsync(articles, recipes, ingredients, pages);
+
+        var status = _index.Status();
+
+        Assert.Equal((await articles.All()).Count, status.Articles);
+        Assert.Equal((await recipes.All()).Count, status.Recipes);
+        Assert.Equal((await ingredients.All()).Count, status.Ingredients);
+        Assert.Equal((await pages.All()).Count, status.Pages);
+        Assert.Equal(status.Articles + status.Recipes + status.Ingredients + status.Pages, status.Total);
+        Assert.True(status.Total > 0);
+        Assert.True(status.LastRebuilt is [_], "expected LastRebuilt to be set after a rebuild");
+    }
+
+    [Fact]
     public async Task IndexPage_makes_a_page_searchable_by_title()
     {
         _index.IndexPage(Page.Create(new PageId(7), new PageTitle("Über uns"), new PageContent("Wir backen seit 1990.")));

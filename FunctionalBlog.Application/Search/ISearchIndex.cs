@@ -16,6 +16,8 @@ public interface ISearchIndex
 
     IReadOnlyList<string> Suggestions(string query);
 
+    SearchIndexStatus Status();
+
     ValueTask RebuildAsync(
         IArticleRepository articles,
         IRecipeRepository recipes,

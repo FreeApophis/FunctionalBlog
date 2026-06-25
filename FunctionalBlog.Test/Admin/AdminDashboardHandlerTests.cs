@@ -45,6 +45,54 @@ public sealed class AdminDashboardHandlerTests
         Assert.DoesNotContain("admin.dashboard.card.blog", response.Body);
     }
 
+    [Fact]
+    public async Task Dashboard_shows_content_counts_for_accessible_sections()
+    {
+        var env = BuildEnv(FullAdmin());
+
+        var response = await AdminDashboardHandlers.Dashboard(ARequest())(env);
+
+        Assert.Contains("admin.dashboard.stat.articles", response.Body);
+        Assert.Contains("admin.dashboard.stat.ingredients", response.Body);
+        Assert.Contains("admin.dashboard.stat.users", response.Body);
+    }
+
+    [Fact]
+    public async Task Dashboard_flags_incomplete_ingredients_as_needing_attention()
+    {
+        var ingredients = new InMemoryIngredientRepository();
+        var id = await ingredients.NextId();
+        await ingredients.Save(Ingredient.Create(
+            id,
+            new IngredientName("Stub"),
+            image: string.Empty,
+            description: string.Empty,
+            density: 1m,
+            pieceCount: 0m,
+            calorificValue: 0m,
+            protein: 0m,
+            fat: 0m,
+            carbohydrates: 0m,
+            sugar: 0m,
+            fiber: 0m));
+
+        var env = BuildEnv(FullAdmin(), ingredients);
+
+        var response = await AdminDashboardHandlers.Dashboard(ARequest())(env);
+
+        Assert.Contains("admin.dashboard.attention.incomplete_ingredients", response.Body);
+    }
+
+    [Fact]
+    public async Task Dashboard_has_no_attention_notice_when_no_ingredients_are_incomplete()
+    {
+        var env = BuildEnv(FullAdmin());
+
+        var response = await AdminDashboardHandlers.Dashboard(ARequest())(env);
+
+        Assert.DoesNotContain("admin.dashboard.attention.incomplete_ingredients", response.Body);
+    }
+
     private static AuthenticatedUser FullAdmin()
     {
         var rules = new[]
@@ -69,7 +117,7 @@ public sealed class AdminDashboardHandlerTests
         return new AuthenticatedUser(user, [role]);
     }
 
-    private static Env BuildEnv(IPrincipal principal) => new(
+    private static Env BuildEnv(IPrincipal principal, IIngredientRepository? ingredients = null) => new(
         Articles: new InMemoryArticleRepository(),
         Users: new InMemoryUserRepository(),
         Roles: new InMemoryRoleRepository(),
@@ -80,7 +128,7 @@ public sealed class AdminDashboardHandlerTests
         Log: new ConsoleLog(),
         CurrentUser: principal,
         Recipes: new InMemoryRecipeRepository(),
-        Ingredients: new InMemoryIngredientRepository(),
+        Ingredients: ingredients ?? new InMemoryIngredientRepository(),
         Units: new InMemoryUnitRepository(),
         Images: new InMemoryImageRepository(),
         Pages: new InMemoryPageRepository());

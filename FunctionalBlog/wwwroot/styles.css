@@ -1963,3 +1963,61 @@ a.quicksearch-item:hover { background: var(--row-alt); color: var(--green); }
 .errors ul { margin: .25rem 0; padding-left: 1.2rem; }
 
 ul { line-height: 1.7; }
+
+/* In-flight feedback for htmx buttons: swap the label for a spinner while the request runs
+   (htmx adds .htmx-request to the requesting element). The button is also disabled via
+   hx-disabled-elt, so it greys out and can't be double-submitted. */
+.btn-busy { display: none; align-items: center; gap: .5rem; }
+.htmx-request .btn-label { display: none; }
+.htmx-request .btn-busy { display: inline-flex; }
+
+.spinner {
+    width: .9em;
+    height: .9em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    animation: spin .6s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Admin dashboard overview: a strip of count tiles and a "needs attention" notice above the cards. */
+.stat-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    gap: .75rem;
+    margin: 1.25rem 0;
+}
+
+.stat-tile {
+    display: flex;
+    flex-direction: column;
+    gap: .2rem;
+    padding: .9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    text-decoration: none;
+    color: inherit;
+}
+
+.stat-tile:hover { border-color: var(--accent, var(--tomato)); }
+.stat-num { font-size: 1.7rem; font-weight: 600; line-height: 1.1; }
+.stat-label { font-size: .85rem; color: var(--muted); }
+
+.attention {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    margin: 0 0 1.25rem;
+    padding: .6rem .9rem;
+    border: 1px solid color-mix(in srgb, var(--warn, #c9971c) 40%, var(--border));
+    background: color-mix(in srgb, var(--warn, #c9971c) 10%, var(--surface));
+    border-radius: 8px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.attention:hover { border-color: var(--warn, #c9971c); }

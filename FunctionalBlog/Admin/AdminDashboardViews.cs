@@ -26,12 +26,19 @@ public static class AdminDashboardViews
     private const string TranslationsIcon =
         """<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/></svg>""";
 
+    private const string SearchIcon =
+        """<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>""";
+
+    private const string WarnIcon =
+        """<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>""";
+
     private static readonly IReadOnlyList<CardDef> AllCards =
     [
         new("/admin/users", "admin.dashboard.card.users", "admin.dashboard.card.users_desc", UsersIcon, p => p.Can<Manage>(new UserResource())),
         new("/admin/roles", "admin.dashboard.card.roles", "admin.dashboard.card.roles_desc", RolesIcon, p => p.Can<Manage>(new RoleResource())),
         new("/admin/units", "admin.dashboard.card.units", "admin.dashboard.card.units_desc", UnitsIcon, p => p.Can<Manage>(new UnitResource())),
         new("/admin/ingredients", "admin.dashboard.card.ingredients", "admin.dashboard.card.ingredients_desc", IngredientsIcon, p => p.Can<Manage>(new IngredientResource())),
+        new("/admin/search", "admin.dashboard.card.search", "admin.dashboard.card.search_desc", SearchIcon, p => p.Can<Manage>(new SearchResource())),
         new("/images", "admin.dashboard.card.images", "admin.dashboard.card.images_desc", ImagesIcon, p => p.Can<Manage>(new ImageResource())),
         new("/pages", "admin.dashboard.card.pages", "admin.dashboard.card.pages_desc", PagesIcon, p => p.Can<Create>(new PageResource())),
         new("/", "admin.dashboard.card.blog", "admin.dashboard.card.blog_desc", BlogIcon, p => p.Can<Create>(new ArticleResource())),
@@ -41,7 +48,7 @@ public static class AdminDashboardViews
     // The admin landing page: a grid of cards, one per manageable section. Each card is only
     // rendered when the current principal actually has permission to reach its target route,
     // so the dashboard never advertises a section the user would get a 403 on.
-    public static string Dashboard(ViewContext ctx)
+    public static string Dashboard(DashboardStats stats, ViewContext ctx)
     {
         var (principal, t, _) = ctx;
 
@@ -59,13 +66,51 @@ public static class AdminDashboardViews
             </div>
             """);
 
-        return Layout.Page(t("admin.dashboard.title"), head + grid, ctx);
+        return Layout.Page(t("admin.dashboard.title"), head + StatsStrip(stats, principal, t) + Attention(stats, principal, t) + grid, ctx);
     }
 
     // True when the principal can reach at least one admin section — used by the nav to decide
     // whether to surface the "Admin" link at all.
     public static bool HasAnyAccess(IPrincipal principal) =>
         AllCards.Any(c => c.IsVisible(principal));
+
+    // A row of count tiles, one per content area the principal can reach. Counts come from the
+    // handler; visibility mirrors the section cards so the strip never reveals an off-limits area.
+    private static HtmlString StatsStrip(DashboardStats stats, IPrincipal principal, Translate t)
+    {
+        var tiles = AllStats.Where(s => s.IsVisible(principal)).ToList();
+        if (tiles.Count == 0)
+        {
+            return Html.Raw(string.Empty);
+        }
+
+        return Html.Raw($"""<div class="stat-strip">{string.Concat(tiles.Select(s => StatTile(s, stats, t)))}</div>""");
+    }
+
+    private static HtmlString StatTile(StatDef def, DashboardStats stats, Translate t) =>
+        Html.Raw($"""
+            <a class="stat-tile" href="{Html.Encode(def.Href)}">
+                <span class="stat-num">{def.Count(stats)}</span>
+                <span class="stat-label">{Html.Encode(t(def.LabelKey))}</span>
+            </a>
+            """);
+
+    // A "needs attention" notice for ingredients still missing information, shown only to users who
+    // can act on it (manage ingredients) and only when there is something to fix.
+    private static HtmlString Attention(DashboardStats stats, IPrincipal principal, Translate t)
+    {
+        if (stats.IncompleteIngredients <= 0 || !principal.Can<Manage>(new IngredientResource()))
+        {
+            return Html.Raw(string.Empty);
+        }
+
+        return Html.Raw($"""
+            <a class="attention" href="/admin/ingredients">
+                <span class="warn-badge">{WarnIcon}</span>
+                {Html.Encode(t("admin.dashboard.attention.incomplete_ingredients"))} ({stats.IncompleteIngredients})
+            </a>
+            """);
+    }
 
     private static HtmlString Card(CardDef def, Translate t) =>
         Html.Raw($"""
@@ -79,4 +124,16 @@ public static class AdminDashboardViews
             """);
 
     private sealed record CardDef(string Href, string TitleKey, string DescKey, string Icon, Func<IPrincipal, bool> IsVisible);
+
+    private static readonly IReadOnlyList<StatDef> AllStats =
+    [
+        new("/", "admin.dashboard.stat.articles", s => s.Articles, p => p.Can<Create>(new ArticleResource())),
+        new("/recipes", "admin.dashboard.stat.recipes", s => s.Recipes, p => p.Can<Create>(new RecipeResource())),
+        new("/admin/ingredients", "admin.dashboard.stat.ingredients", s => s.Ingredients, p => p.Can<Manage>(new IngredientResource())),
+        new("/pages", "admin.dashboard.stat.pages", s => s.Pages, p => p.Can<Create>(new PageResource())),
+        new("/images", "admin.dashboard.stat.images", s => s.Images, p => p.Can<Manage>(new ImageResource())),
+        new("/admin/users", "admin.dashboard.stat.users", s => s.Users, p => p.Can<Manage>(new UserResource())),
+    ];
+
+    private sealed record StatDef(string Href, string LabelKey, Func<DashboardStats, int> Count, Func<IPrincipal, bool> IsVisible);
 }

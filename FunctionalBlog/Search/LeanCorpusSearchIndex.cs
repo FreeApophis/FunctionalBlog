@@ -33,6 +33,8 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
 
     private readonly SearcherManager _manager;
 
+    private Option<DateTimeOffset> _lastRebuilt = Option<DateTimeOffset>.None;
+
     public LeanCorpusSearchIndex(string indexPath)
     {
         _indexPath = indexPath;
@@ -183,6 +185,22 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
 
             _writer.Commit();
             _manager.MaybeRefresh();
+            _lastRebuilt = Option.Some(DateTimeOffset.UtcNow);
+        }
+    }
+
+    // A snapshot of the live index for the admin maintenance page: how many documents of each type
+    // are indexed, and when the index was last rebuilt this process.
+    public SearchIndexStatus Status()
+    {
+        lock (_gate)
+        {
+            return _manager.UsingSearcher(searcher => new SearchIndexStatus(
+                _lastRebuilt,
+                CountOfType(searcher, "article"),
+                CountOfType(searcher, "recipe"),
+                CountOfType(searcher, "ingredient"),
+                CountOfType(searcher, "page")));
         }
     }
 
@@ -242,6 +260,11 @@ public sealed class LeanCorpusSearchIndex : ISearchIndex, IDisposable
 
     private static Option<string> FirstStoredValue(IReadOnlyDictionary<string, IReadOnlyList<string>> fields, string name) =>
         fields.GetValueOrNone(name).SelectMany(values => values.FirstOrNone());
+
+    // The total number of indexed documents of a type. TopDocs.TotalHits is the full match count
+    // regardless of the topN passed, so we ask for a single doc and read the total.
+    private static int CountOfType(IndexSearcher searcher, string type) =>
+        searcher.Search(new TermQuery("type", type), 1).TotalHits;
 
     private Query ParseQuery(string userInput)
     {

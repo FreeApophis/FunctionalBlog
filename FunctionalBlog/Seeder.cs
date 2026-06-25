@@ -78,6 +78,7 @@ public static class Seeder
         new("Edit", "page"),
         new("Delete", "page"),
         new("Manage", "page"),
+        new("Manage", "search"),
     ];
 
     private static async ValueTask SeedRoles(Env env)
