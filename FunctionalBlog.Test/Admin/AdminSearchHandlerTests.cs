@@ -19,6 +19,7 @@ public sealed class AdminSearchHandlerTests
         Assert.Contains("admin.search.field.articles", response.Body);
         Assert.Contains("admin.search.field.total", response.Body);
         Assert.Contains("admin.search.rebuild", response.Body);
+
         // The rebuild button must give in-flight feedback (it can take many seconds): it disables
         // itself and shows a busy/spinner state while the request runs.
         Assert.Contains("hx-disabled-elt", response.Body);

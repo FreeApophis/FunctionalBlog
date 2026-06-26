@@ -1,8 +1,3 @@
-using FunctionalBlog.Articles;
-using FunctionalBlog.Ingredients;
-using FunctionalBlog.Pages;
-using FunctionalBlog.Recipes;
-
 namespace FunctionalBlog.Test.Slugs;
 
 // End-to-end proof that the rendering layer builds canonical /type/{slug} URLs when a SlugIndex is

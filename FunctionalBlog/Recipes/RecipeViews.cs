@@ -141,6 +141,7 @@ public static class RecipeViews
         var ingredientItems = string.Concat(recipe.Ingredients.Select(ri =>
         {
             var found = ingredientMap.TryGetValue(ri.IngredientId, out var ing);
+
             // A known ingredient links to its detail page; an unresolved one stays plain text.
             var name = found
                 ? $"""<a href="{Html.Encode(ctx.Url(SlugEntityType.Ingredient, ri.IngredientId.Value))}">{Html.Encode(ing!.Name.Value)}</a>"""
