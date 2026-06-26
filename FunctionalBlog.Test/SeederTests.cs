@@ -163,6 +163,29 @@ public sealed class SeederTests
         Assert.Single(recipes, r => r.Name.Value == "Pfannkuchen");
     }
 
+    [Fact]
+    public async Task SeedAsync_seeds_default_configuration_keys()
+    {
+        var env = BuildEnv();
+
+        await Seeder.SeedAsync(env);
+
+        Assert.Equal(Option.Some("foodblog.ch"), await env.Configuration!.Get(ConfigurationKeys.SiteName));
+        Assert.Equal(Option.Some("587"), await env.Configuration!.Get(ConfigurationKeys.SmtpPort));
+        Assert.Equal(Option.Some(string.Empty), await env.Configuration!.Get(ConfigurationKeys.SmtpHost));
+    }
+
+    [Fact]
+    public async Task SeedAsync_does_not_overwrite_existing_configuration()
+    {
+        var env = BuildEnv();
+        await env.Configuration!.Set(ConfigurationKeys.SiteName, "Mein eigener Blog");
+
+        await Seeder.SeedAsync(env);
+
+        Assert.Equal(Option.Some("Mein eigener Blog"), await env.Configuration!.Get(ConfigurationKeys.SiteName));
+    }
+
     private static Env BuildEnv() => new(
         Articles: new InMemoryArticleRepository(),
         Users: new InMemoryUserRepository(),
@@ -177,5 +200,6 @@ public sealed class SeederTests
         Ingredients: new InMemoryIngredientRepository(),
         Units: new InMemoryUnitRepository(),
         Images: new InMemoryImageRepository(),
-        Pages: new InMemoryPageRepository());
+        Pages: new InMemoryPageRepository(),
+        Configuration: new InMemoryConfigurationRepository());
 }

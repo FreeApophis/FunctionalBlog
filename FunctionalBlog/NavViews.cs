@@ -3,10 +3,10 @@ namespace FunctionalBlog;
 public static class NavViews
 {
     // Dark brand strip above the masthead.
-    public static string UtilityBar() =>
-        """
+    public static string UtilityBar(ViewContext ctx) =>
+        $"""
         <div class="utility-bar"><div class="utility-inner">
-            <span>FOODBLOG.CH — KOCHEN · BACKEN · GENIESSEN</span>
+            <span>{Html.Encode(ctx.SiteName.ToUpperInvariant())} — KOCHEN · BACKEN · GENIESSEN</span>
             <span class="utility-meta"><span>SEIT 2016</span></span>
         </div></div>
         """;
@@ -26,7 +26,7 @@ public static class NavViews
         return $"""
             <header class="masthead"><div class="masthead-inner">
                 <a class="brand" href="/">
-                    <img class="brand-banner" src="/assets/foodblog-banner.png" alt="Foodblog" />
+                    <img class="brand-banner" src="/assets/foodblog-banner.png" alt="{Html.Encode(ctx.SiteName)}" />
                 </a>
                 <nav class="mast-nav">{chips.Render()}</nav>
                 <div class="mast-actions">{actions.Render()}</div>
@@ -47,7 +47,7 @@ public static class NavViews
             <footer class="site-footer">
                 <div class="footer-inner">
                     <div>
-                        <div class="footer-brand">Foodblog</div>
+                        <div class="footer-brand">{Html.Encode(ctx.SiteName)}</div>
                         <p class="footer-blurb">{Html.Encode(t("footer.blurb"))}</p>
                     </div>
                     <div>
@@ -56,7 +56,7 @@ public static class NavViews
                     </div>
                 </div>
                 <div class="footer-bar"><div class="footer-bar-inner">
-                    <span>© 2026 FOODBLOG.CH</span><span>MADE WITH ❤ IN ZÜRICH</span>
+                    <span>© 2026 {Html.Encode(ctx.SiteName.ToUpperInvariant())}</span><span>MADE WITH ❤ IN ZÜRICH</span>
                 </div></div>
             </footer>
             """;

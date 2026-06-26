@@ -80,6 +80,18 @@ public abstract class UserRepositoryContract
         Assert.Equal(Option.Some(updated), await repo.FindById(id));
     }
 
+    [Fact]
+    public async Task Save_round_trips_a_verified_user()
+    {
+        var repo = CreateRepository();
+        var user = AUser(await repo.NextId()) with { EmailVerified = true };
+
+        await repo.Save(user);
+
+        var found = FunctionalAssert.Some(await repo.FindById(user.Id));
+        Assert.True(found!.EmailVerified);
+    }
+
     protected abstract IUserRepository CreateRepository();
 
     private static User AUser(UserId id, string email = "test@blog.de") =>

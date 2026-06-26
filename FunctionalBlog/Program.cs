@@ -25,7 +25,9 @@ internal class Program
         await Seeder.SeedAsync(env);
         await SlugBackfill.Run(new SlugService(env.Slugs!), env.Articles, env.Recipes, env.Pages, env.Ingredients, env.Tags!);
         var translationCache = await TranslationCache.LoadAsync(translations);
-        env = env with { TranslationCache = translationCache };
+        var configurationCache = await ConfigurationCache.LoadAsync(env.Configuration!);
+        var email = new SmtpEmailSender(configurationCache, env.Log);
+        env = env with { TranslationCache = translationCache, Config = configurationCache, Email = email };
 
         using var search = new Search.LeanCorpusSearchIndex(indexPath);
         await search.RebuildAsync(env.Articles, env.Recipes, env.Ingredients, env.Pages);
@@ -71,5 +73,7 @@ internal class Program
             QuickSearch: new SqliteQuickSearch(connection),
             Tags: new SqliteTagRepository(connection),
             Slugs: new SqliteSlugRepository(connection),
+            Configuration: new SqliteConfigurationRepository(connection),
+            EmailVerifications: new SqliteEmailVerificationTokenStore(connection),
             Translations: translations);
 }

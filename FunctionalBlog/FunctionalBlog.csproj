@@ -25,6 +25,7 @@
 	<ItemGroup>
 		<PackageReference Include="Funcky.DiscriminatedUnion" PrivateAssets="all" />
 		<PackageReference Include="LeanCorpus" />
+		<PackageReference Include="MailKit" />
 		<PackageReference Include="QuestPDF" />
 		<PackageReference Include="SkiaSharp" />
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux" />

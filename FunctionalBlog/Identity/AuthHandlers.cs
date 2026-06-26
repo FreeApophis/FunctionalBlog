@@ -22,19 +22,39 @@ public static class AuthHandlers
                 400)),
             success: async s =>
             {
-                if ((await env.Users.FindByEmail(s.Value.Email)) is not [var existingUser])
+                var existing = await env.Users.FindByEmail(s.Value.Email);
+
+                // An already-verified account owns this email — refuse the registration.
+                if (existing is [var found] && found.EmailVerified)
+                {
+                    return Response.Html(
+                        AuthViews.RegisterForm(
+                            ["auth.error.email_taken"],
+                            s.Value.Email.Value,
+                            s.Value.DisplayName.Value,
+                            env.Ctx),
+                        400);
+                }
+
+                // New email, or an unverified account that never confirmed: (re)create/keep the
+                // account, then send a fresh verification link. No session — login is gated on
+                // verification.
+                User account;
+                if (existing is [var unverified])
+                {
+                    account = unverified;
+                }
+                else
                 {
                     var id = await env.Users.NextId();
                     var hash = env.PasswordHasher.Hash(s.Value.Password);
                     var roleNames = (await env.Roles.FindByName("Benutzer")).Select(role => role.Name).ToEnumerable().ToImmutableList();
-
-                    existingUser = User.Create(id, s.Value.Email, s.Value.DisplayName, hash, roleNames, env.Clock.Now);
-                    await env.Users.Save(existingUser);
+                    account = User.Create(id, s.Value.Email, s.Value.DisplayName, hash, roleNames, env.Clock.Now);
+                    await env.Users.Save(account);
                 }
 
-                var session = NewSession(existingUser.Id, env.Clock.Now);
-                await env.Sessions.Save(session);
-                return RedirectWithSession("/", session, env.Clock.Now);
+                await SendVerification(env, account);
+                return Response.Html(AuthViews.VerificationPending(account.Email.Value, env.Ctx));
             });
 
     public static App NewLoginForm => _ => env =>
@@ -63,6 +83,12 @@ public static class AuthHandlers
                             s.Value.Email.Value,
                             env.Ctx),
                         401);
+                }
+
+                // Credentials are correct, but an unconfirmed account cannot log in yet.
+                if (!user.EmailVerified)
+                {
+                    return Response.Html(AuthViews.VerificationPending(user.Email.Value, env.Ctx));
                 }
 
                 var session = NewSession(user.Id, env.Clock.Now);
@@ -99,11 +125,95 @@ public static class AuthHandlers
                 var token = GenerateToken();
                 var resetToken = new PasswordResetToken(token, user.Id, env.Clock.Now.AddHours(1), Consumed: false);
                 await env.PasswordResets.Save(resetToken);
-                env.Log.Info($"[Passwort-Reset] reset-token:{token} für {decoded.EmailRaw}");
+                var link = $"{BaseUrl(env)}/password-reset/confirm?token={token}";
+                await TrySend(env, decoded.EmailRaw, env.T("auth.email.reset_subject"), env.T("auth.email.reset_body") + "\n\n" + link);
             });
 
         return Response.Html(AuthViews.PasswordResetRequested(env.Ctx));
     };
+
+    // Landing endpoint for the emailed verification link: marks the account verified and consumes
+    // the token. Invalid, already-used or expired tokens render a neutral failure page.
+    public static App VerifyEmail => request => async env =>
+    {
+        var token = request.Query.GetValueOrDefault("token", string.Empty);
+        var valid = (await env.EmailVerifications!.Find(token))
+            .SelectMany(t => !t.Consumed && t.ExpiresAt > env.Clock.Now
+                ? Option.Some(t)
+                : Option<EmailVerificationToken>.None);
+
+        return await valid.Match(
+            none: () => Task.FromResult(Response.Html(AuthViews.VerifyResult(success: false, env.Ctx), 400)),
+            some: async t =>
+                await (await env.Users.FindById(t.UserId)).Match(
+                    none: () => Task.FromResult(Response.Html(AuthViews.VerifyResult(success: false, env.Ctx), 400)),
+                    some: async user =>
+                    {
+                        await env.Users.Save(user with { EmailVerified = true });
+                        await env.EmailVerifications!.Consume(token);
+                        return Response.Html(AuthViews.VerifyResult(success: true, env.Ctx));
+                    }));
+    };
+
+    // Re-sends the verification link for an unverified account. Always renders the same neutral
+    // pending page so the form never reveals whether an email is registered.
+    public static App ResendVerification => request => async env =>
+    {
+        var emailRaw = request.Form.GetValueOrNone("email").GetOrElse(string.Empty);
+
+        var userOption = await Email.ParseOrNone(emailRaw).Match(
+            none: () => Task.FromResult(Option<User>.None),
+            some: async email => await env.Users.FindByEmail(email));
+
+        await userOption.Match(
+            none: () => Task.CompletedTask,
+            some: async user =>
+            {
+                if (!user.EmailVerified)
+                {
+                    await SendVerification(env, user);
+                }
+            });
+
+        return Response.Html(AuthViews.VerificationPending(emailRaw, env.Ctx));
+    };
+
+    // Issues a fresh verification token (valid 24h) and emails the confirmation link.
+    private static async Task SendVerification(Env env, User user)
+    {
+        if (env.EmailVerifications is null)
+        {
+            return;
+        }
+
+        var token = GenerateToken();
+        await env.EmailVerifications.Save(new EmailVerificationToken(token, user.Id, env.Clock.Now.AddHours(24), Consumed: false));
+        var link = $"{BaseUrl(env)}/verify-email?token={token}";
+        await TrySend(env, user.Email.Value, env.T("auth.email.verify_subject"), env.T("auth.email.verify_body") + "\n\n" + link);
+    }
+
+    // Best-effort transactional send: a mail failure is logged, never surfaced to the user, so a
+    // flaky SMTP server can't 500 a registration or password-reset request.
+    private static async Task TrySend(Env env, string to, string subject, string body)
+    {
+        if (env.Email is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await env.Email.Send(to, subject, body);
+        }
+        catch (Exception exception)
+        {
+            env.Log.Error(exception);
+        }
+    }
+
+    // The configured public base URL, used to build absolute links in emails. Empty when unset,
+    // yielding a relative link the admin can fix by setting site.url.
+    private static string BaseUrl(Env env) => (env.Config?.SiteUrl ?? string.Empty).TrimEnd('/');
 
     public static App NewPasswordResetConfirmForm => request => env =>
     {

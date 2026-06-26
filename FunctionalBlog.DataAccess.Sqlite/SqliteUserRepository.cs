@@ -13,7 +13,7 @@ public sealed class SqliteUserRepository : IUserRepository
     public async ValueTask<IReadOnlyList<User>> All()
     {
         var rows = (await _connection.QueryAsync<UserRow>(
-            "SELECT id AS Id, email AS Email, display_name AS DisplayName, password_hash AS PasswordHash, created_at AS CreatedAt, avatar_image_id AS AvatarImageId FROM users")).ToList();
+            "SELECT id AS Id, email AS Email, display_name AS DisplayName, password_hash AS PasswordHash, created_at AS CreatedAt, avatar_image_id AS AvatarImageId, email_verified AS EmailVerified FROM users")).ToList();
         if (rows.Count == 0)
         {
             return [];
@@ -30,7 +30,7 @@ public sealed class SqliteUserRepository : IUserRepository
     public async ValueTask<Option<User>> FindById(UserId id)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<UserRow>(
-            "SELECT id AS Id, email AS Email, display_name AS DisplayName, password_hash AS PasswordHash, created_at AS CreatedAt, avatar_image_id AS AvatarImageId FROM users WHERE id = @id",
+            "SELECT id AS Id, email AS Email, display_name AS DisplayName, password_hash AS PasswordHash, created_at AS CreatedAt, avatar_image_id AS AvatarImageId, email_verified AS EmailVerified FROM users WHERE id = @id",
             new { id = id.Value });
         if (row is null)
         {
@@ -46,7 +46,7 @@ public sealed class SqliteUserRepository : IUserRepository
     public async ValueTask<Option<User>> FindByEmail(Email email)
     {
         var row = await _connection.QuerySingleOrDefaultAsync<UserRow>(
-            "SELECT id AS Id, email AS Email, display_name AS DisplayName, password_hash AS PasswordHash, created_at AS CreatedAt, avatar_image_id AS AvatarImageId FROM users WHERE email = @email",
+            "SELECT id AS Id, email AS Email, display_name AS DisplayName, password_hash AS PasswordHash, created_at AS CreatedAt, avatar_image_id AS AvatarImageId, email_verified AS EmailVerified FROM users WHERE email = @email",
             new { email = email.Value });
         if (row is null)
         {
@@ -73,14 +73,15 @@ public sealed class SqliteUserRepository : IUserRepository
     {
         await _connection.ExecuteAsync(
             """
-            INSERT INTO users (id, email, display_name, password_hash, created_at, avatar_image_id)
-            VALUES (@Id, @Email, @DisplayName, @PasswordHash, @CreatedAt, @AvatarImageId)
+            INSERT INTO users (id, email, display_name, password_hash, created_at, avatar_image_id, email_verified)
+            VALUES (@Id, @Email, @DisplayName, @PasswordHash, @CreatedAt, @AvatarImageId, @EmailVerified)
             ON CONFLICT(id) DO UPDATE SET
                 email           = excluded.email,
                 display_name    = excluded.display_name,
                 password_hash   = excluded.password_hash,
                 created_at      = excluded.created_at,
-                avatar_image_id = excluded.avatar_image_id
+                avatar_image_id = excluded.avatar_image_id,
+                email_verified  = excluded.email_verified
             """,
             new
             {
@@ -90,6 +91,7 @@ public sealed class SqliteUserRepository : IUserRepository
                 user.PasswordHash,
                 user.CreatedAt,
                 AvatarImageId = user.AvatarImageId.Match(none: (int?)null, some: imageId => imageId.Value),
+                EmailVerified = user.EmailVerified ? 1 : 0,
             });
 
         await _connection.ExecuteAsync(
@@ -112,9 +114,10 @@ public sealed class SqliteUserRepository : IUserRepository
             row.PasswordHash,
             roles,
             row.CreatedAt,
-            row.AvatarImageId is { } avatarId ? Option.Some(new ImageId((int)avatarId)) : Option<ImageId>.None);
+            row.AvatarImageId is { } avatarId ? Option.Some(new ImageId((int)avatarId)) : Option<ImageId>.None,
+            row.EmailVerified != 0);
 
-    private sealed record UserRow(long Id, string Email, string DisplayName, string PasswordHash, DateTimeOffset CreatedAt, long? AvatarImageId);
+    private sealed record UserRow(long Id, string Email, string DisplayName, string PasswordHash, DateTimeOffset CreatedAt, long? AvatarImageId, long EmailVerified);
 
     private sealed record RoleNameRow(long UserId, string RoleName);
 }

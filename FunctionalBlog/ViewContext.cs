@@ -1,6 +1,6 @@
 namespace FunctionalBlog;
 
-public sealed record ViewContext(IPrincipal Principal, Translate T, string CsrfToken, string Theme = "light", string Language = Languages.Default, SlugIndex? Slugs = null)
+public sealed record ViewContext(IPrincipal Principal, Translate T, string CsrfToken, string Theme = "light", string Language = Languages.Default, SlugIndex? Slugs = null, string SiteName = "foodblog.ch")
 {
     public static ViewContext ForGuest(string csrfToken = "") =>
         new(Guest.Instance, key => key, csrfToken);

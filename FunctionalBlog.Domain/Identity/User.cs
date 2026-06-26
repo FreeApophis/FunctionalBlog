@@ -7,7 +7,8 @@ public sealed record User(
     string PasswordHash,
     IReadOnlyList<string> RoleNames,
     DateTimeOffset CreatedAt,
-    Option<ImageId> AvatarImageId = default)
+    Option<ImageId> AvatarImageId = default,
+    bool EmailVerified = false)
 {
     public static User Create(
         UserId id,
@@ -16,8 +17,9 @@ public sealed record User(
         string passwordHash,
         IReadOnlyList<string> roleNames,
         DateTimeOffset createdAt,
-        Option<ImageId> avatarImageId = default) =>
-        new(id, email, displayName, passwordHash, roleNames, createdAt, avatarImageId);
+        Option<ImageId> avatarImageId = default,
+        bool emailVerified = false) =>
+        new(id, email, displayName, passwordHash, roleNames, createdAt, avatarImageId, emailVerified);
 
     public bool Equals(User? other) =>
         other is not null &&
@@ -27,7 +29,8 @@ public sealed record User(
         PasswordHash == other.PasswordHash &&
         RoleNames.SequenceEqual(other.RoleNames) &&
         CreatedAt == other.CreatedAt &&
-        AvatarImageId == other.AvatarImageId;
+        AvatarImageId == other.AvatarImageId &&
+        EmailVerified == other.EmailVerified;
 
     public override int GetHashCode() => Id.GetHashCode();
 }

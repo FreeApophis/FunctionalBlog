@@ -22,12 +22,19 @@ public sealed record Env(
     ITagRepository? Tags = null,
     ISlugRepository? Slugs = null,
     SlugIndex? SlugIndex = null,
+    IConfigurationRepository? Configuration = null,
+    ConfigurationCache? Config = null,
+    IEmailSender? Email = null,
+    IEmailVerificationTokenStore? EmailVerifications = null,
     string Language = Languages.Default,
     string Theme = "light",
     string CsrfToken = "")
 {
     public Translate T =>
         key => TranslationCache?.Get(key, Language) ?? key;
+
+    // The configured site name, falling back to the historical brand for minimal/test envs.
+    public string SiteName => Config?.SiteName ?? "foodblog.ch";
 
     // Convenience for the write path: a SlugService over the wired repository, or null when no
     // slug repository is configured (e.g. minimal test envs).
@@ -40,5 +47,5 @@ public sealed record Env(
             ? await maker.Ensure(entityType, entityId, sourceText)
             : entityId.ToString();
 
-    public ViewContext Ctx => new(CurrentUser, T, CsrfToken, Theme, Language, SlugIndex);
+    public ViewContext Ctx => new(CurrentUser, T, CsrfToken, Theme, Language, SlugIndex, SiteName);
 }

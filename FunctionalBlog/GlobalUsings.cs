@@ -1,6 +1,7 @@
 global using Bbcode;
 global using FunctionalBlog.Admin;
 global using FunctionalBlog.Application.Articles;
+global using FunctionalBlog.Application.Configuration;
 global using FunctionalBlog.Application.Identity;
 global using FunctionalBlog.Application.Images;
 global using FunctionalBlog.Application.Pages;
@@ -11,6 +12,7 @@ global using FunctionalBlog.Application.Slugs;
 global using FunctionalBlog.Application.Tags;
 global using FunctionalBlog.Application.Translations;
 global using FunctionalBlog.Articles;
+global using FunctionalBlog.Configuration;
 global using FunctionalBlog.DataAccess.Identity;
 global using FunctionalBlog.DataAccess.Images;
 global using FunctionalBlog.DataAccess.Pages;

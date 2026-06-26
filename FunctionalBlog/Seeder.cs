@@ -15,10 +15,30 @@ public static class Seeder
         await SeedSampleIngredients(env);
         await SeedSampleRecipes(env);
         await RecomputeRecipeCalories(env);
+        await SeedConfiguration(env);
 
         if (env.Translations is not null)
         {
             await TranslationSeeder.SeedAsync(env.Translations);
+        }
+    }
+
+    // Writes each default configuration value once, only when the key is still absent, so a fresh
+    // database gets the full set of keys (blank SMTP credentials, default site name) while existing
+    // databases — and any admin edits — are left untouched.
+    private static async ValueTask SeedConfiguration(Env env)
+    {
+        if (env.Configuration is null)
+        {
+            return;
+        }
+
+        foreach (var (key, value) in ConfigurationDefaults.Values)
+        {
+            if ((await env.Configuration.Get(key)) is [])
+            {
+                await env.Configuration.Set(key, value);
+            }
         }
     }
 
@@ -79,6 +99,7 @@ public static class Seeder
         new("Delete", "page"),
         new("Manage", "page"),
         new("Manage", "search"),
+        new("Manage", "settings"),
     ];
 
     private static async ValueTask SeedRoles(Env env)
@@ -114,7 +135,7 @@ public static class Seeder
         {
             var id = await env.Users.NextId();
             var hash = env.PasswordHasher.Hash(AdminPassword);
-            var user = User.Create(id, email, new DisplayName("Admin"), hash, [AdminRoleName], env.Clock.Now);
+            var user = User.Create(id, email, new DisplayName("Admin"), hash, [AdminRoleName], env.Clock.Now, emailVerified: true);
             await env.Users.Save(user);
         }
     }

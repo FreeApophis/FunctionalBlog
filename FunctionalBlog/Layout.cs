@@ -10,8 +10,8 @@ public static class Layout
         <head>
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>foodblog.ch - {{Html.Encode(title)}}</title>
-            {{MetaTags(title, meta)}}
+            <title>{{Html.Encode(ctx.SiteName)}} - {{Html.Encode(title)}}</title>
+            {{MetaTags(title, meta, ctx.SiteName)}}
             <link rel="stylesheet" href="/styles.css" />
             <link rel='icon' type='image/x-icon' href='/favicon.ico'>
             <link rel='icon' type='image/png' href='/favicon.png'>
@@ -21,7 +21,7 @@ public static class Layout
             <script src="/autofocus-swap.js" defer></script>
         </head>
         <body>
-            {{NavViews.UtilityBar()}}
+            {{NavViews.UtilityBar(ctx)}}
             {{NavViews.Masthead(ctx)}}
             <main>{{body.Render()}}</main>
             {{NavViews.Footer(ctx)}}
@@ -36,7 +36,7 @@ public static class Layout
     // Open Graph / Twitter share-card tags, the canonical link, and any structured-data head
     // extra (e.g. JSON-LD). Rendered only when a PageMeta is supplied; each field is optional
     // and skipped when empty. HeadExtra is emitted verbatim (its producer must keep it safe).
-    private static string MetaTags(string title, PageMeta? meta)
+    private static string MetaTags(string title, PageMeta? meta, string siteName)
     {
         if (meta is null)
         {
@@ -49,7 +49,7 @@ public static class Layout
         {
             $"""<meta property="og:type" content="{Html.Encode(meta.Type)}" />""",
             $"""<meta property="og:title" content="{Html.Encode(title)}" />""",
-            $"""<meta property="og:site_name" content="foodblog.ch" />""",
+            $"""<meta property="og:site_name" content="{Html.Encode(siteName)}" />""",
             $"""<meta name="twitter:card" content="{twitterCard}" />""",
             $"""<meta name="twitter:title" content="{Html.Encode(title)}" />""",
         };
