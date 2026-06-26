@@ -1,7 +1,7 @@
 namespace FunctionalBlog.Test.Sqlite;
 
-// Verifies the 0002_import_foodblog_data migration loads the real foodblog
-// content into a freshly-migrated database.
+// Verifies the 0002_seed migration loads the curated foodblog content into a
+// freshly-migrated database.
 public sealed class FoodblogImportMigrationTests : IDisposable
 {
     private readonly SqliteTestBase _db = new();
@@ -29,7 +29,7 @@ public sealed class FoodblogImportMigrationTests : IDisposable
         var all = await recipes.All();
         var unitIds = (await new SqliteUnitRepository(_db.Connection).All()).Select(u => u.Id.Value).ToHashSet();
 
-        Assert.Equal(34, all.Count);
+        Assert.Equal(36, all.Count);
         Assert.Contains(all, r => r.Name.Value == "Älpler One-Pot");
         Assert.Contains(all, r => r.Name.Value == "The Hamburger");
         Assert.All(all, r => Assert.All(r.Ingredients, i => Assert.Contains(i.Unit.Id.Value, unitIds)));
@@ -42,8 +42,8 @@ public sealed class FoodblogImportMigrationTests : IDisposable
 
         var all = await ingredients.All();
 
-        // 147, not 148: migration 0005 drops the duplicate placeholder "Apfel" (id 141).
-        Assert.Equal(147, all.Count);
+        // The duplicate placeholder "Apfel" (id 141) was dropped before the seed was snapshotted.
+        Assert.Equal(153, all.Count);
     }
 
     [Fact]
@@ -51,9 +51,10 @@ public sealed class FoodblogImportMigrationTests : IDisposable
     {
         var users = new SqliteUserRepository(_db.Connection);
 
-        // 0002 seeds a dedicated Admin at id 1, so the imported authors start at id 2.
-        var thomas = FunctionalAssert.Some(await users.FindById(new UserId(2)));
-        var sabrina = FunctionalAssert.Some(await users.FindById(new UserId(3)));
+        // The two content authors are seeded first (Thomas id 1, Sabrina id 2); the dedicated
+        // admin@blog.de account follows at id 3.
+        var thomas = FunctionalAssert.Some(await users.FindById(new UserId(1)));
+        var sabrina = FunctionalAssert.Some(await users.FindById(new UserId(2)));
 
         Assert.Equal("Thomas", thomas!.DisplayName.Value);
         Assert.Equal("Sabrina", sabrina!.DisplayName.Value);
